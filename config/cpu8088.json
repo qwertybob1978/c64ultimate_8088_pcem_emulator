@@ -89,7 +89,7 @@
     { "first": 205, "last": 205, "mnemonic": "INT imm8", "handler": "int_imm8", "length": 2, "cycles": 71 },
     { "first": 206, "last": 206, "mnemonic": "INTO", "handler": "into", "length": 1, "cycles": 4 },
     { "first": 207, "last": 207, "mnemonic": "IRET", "handler": "iret", "length": 1, "cycles": 44 },
-    { "first": 208, "last": 209, "mnemonic": "SHL/SHR/SAR r/m,1", "handler": "shift_one", "length": 2, "cycles": 2 },
+    { "first": 208, "last": 211, "mnemonic": "SHL/SHR/SAR r/m", "handler": "shift", "length": 2, "cycles": 2 },
     { "first": 232, "last": 232, "mnemonic": "CALL rel16", "handler": "call_rel16", "length": 3, "cycles": 23 },
     { "first": 233, "last": 233, "mnemonic": "JMP rel16", "handler": "jmp_rel16", "length": 3, "cycles": 15 },
     { "first": 234, "last": 234, "mnemonic": "JMP ptr16:16", "handler": "jmp_far", "length": 5, "cycles": 15 },

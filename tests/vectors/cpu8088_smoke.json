@@ -378,6 +378,20 @@
       "expectedMemory": [
         { "segment": 16384, "offset": 4660, "bytes": "c0" }
       ]
+    },
+    {
+      "name": "cl_count_shift_right_matches_bios_helper",
+      "initial": { "CS": 51200, "IP": 0, "AX": 45056, "CX": 6, "FLAGS": 19 },
+      "program": "d3e8f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 704, "CX": 6, "CS": 51200, "IP": 3, "FLAGS": 6 }
+    },
+    {
+      "name": "zero_count_shift_preserves_operand_and_flags",
+      "initial": { "CS": 51456, "IP": 0, "AX": 4660, "CX": 0, "FLAGS": 2631 },
+      "program": "d3e0f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 4660, "CX": 0, "CS": 51456, "IP": 3, "FLAGS": 2631 }
     }
   ]
 }

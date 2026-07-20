@@ -91,6 +91,8 @@ io_value:            .res 1
 io_cycles:           .res 1
 shift_pending:       .res 1
 shift_overflow:      .res 1
+shift_count:         .res 1
+shift_first:         .res 1
 
 .segment "CODE"
 
@@ -299,6 +301,10 @@ cpu8088_step:
     cmp #$D0                    ; SHL/SAL/SHR/SAR r/m8,1
     long_beq @shift_one
     cmp #$D1                    ; SHL/SAL/SHR/SAR r/m16,1
+    long_beq @shift_one
+    cmp #$D2                    ; SHL/SAL/SHR/SAR r/m8,CL
+    long_beq @shift_one
+    cmp #$D3                    ; SHL/SAL/SHR/SAR r/m16,CL
     long_beq @shift_one
 
     cmp #$B8                    ; MOV r16, imm16
@@ -798,6 +804,23 @@ cpu8088_step:
     lda cpu8088_last_opcode
     and #$01
     sta operand_width
+    lda #$01
+    sta shift_count
+    lda cpu8088_last_opcode
+    cmp #$D2
+    bcc @shift_have_count
+    lda cpu8088_state+CPU_CX
+    sta shift_count
+@shift_have_count:
+    lda #$00
+    sta shift_overflow
+    sta shift_first
+    lda shift_count
+    cmp #$01
+    bne :+
+    lda #$01
+    sta shift_first
+:
     jsr cpu8088_fetch_u8
     long_bcs @memory_error
     sta modrm_byte
@@ -832,6 +855,8 @@ cpu8088_step:
     lda #$02
     sta alu_last_cycles
 @shift_execute:
+    lda shift_count
+    long_beq @shift_noop
     lda source_offset
     cmp #$05
     beq @shift_right
@@ -863,7 +888,7 @@ cpu8088_step:
     lda #$01
 :
     eor alu_carry
-    sta shift_overflow
+    jsr @shift_record_overflow
     jmp @shift_finish
 
 @shift_right:
@@ -912,8 +937,16 @@ cpu8088_step:
     beq :+
     lda #$01
 :
-    sta shift_overflow
+    jsr @shift_record_overflow
 @shift_finish:
+    dec shift_count
+    beq @shift_flags
+    lda alu_result
+    sta alu_left
+    lda alu_result+1
+    sta alu_left+1
+    jmp @shift_execute
+@shift_flags:
     lda #$01
     sta shift_pending
     lda #$04                    ; logical flag path; result already computed
@@ -921,6 +954,21 @@ cpu8088_step:
     lda #$00
     sta alu_preserve_cf
     jmp @alu_flags
+
+@shift_record_overflow:
+    ldx shift_first
+    beq :+
+    sta shift_overflow
+    ldx #$00
+    stx shift_first
+:
+    rts
+
+@shift_noop:
+    lda #$08
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
 
 @alu_rm_immediate:
     lda #$00

@@ -142,6 +142,8 @@ memory destinations, including sign extension for the compact `83` encoding.
 Single-bit `SHL`/`SAL`, `SHR`, and `SAR` (`D0`/`D1`, ModR/M extensions 4–7)
 support byte and word register or memory destinations with 8088 CF, OF, SF,
 ZF, and PF results.
+The corresponding `D2`/`D3` forms iterate the unmasked 8088 `CL` count and
+leave operands and flags unchanged when that count is zero.
 All immediate- and DX-addressed `IN`/`OUT` forms execute natively as 8088 byte
 bus transfers. The initial XT I/O dispatcher returns `$FF` for open ports and
 provides `$80`/`$81` POST/debug latches with deterministic desktop traces.
