@@ -138,6 +138,8 @@ cache. Register and memory ModR/M forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
 `CMC` toggles CF without disturbing the remaining FLAGS state.
 Accumulator-immediate `TEST` (`A8`/`A9`) updates logical flags without changing
 AL or AX.
+`DAA` applies the 8088 packed-BCD correction to AL and updates AF/CF plus the
+result status flags.
 The native control-flow slice also supports register `INC`/`DEC`, register
 `PUSH`/`POP`, near relative `CALL`, near `RET`/`RET imm16`, and all sixteen
 short conditional branches with REU-backed SS:SP stack accesses.

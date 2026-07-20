@@ -693,6 +693,21 @@ class Reference8088:
                     self.update_result_flags(value, width)
                 self.write_operand(destination, value)
             cycles = metadata["cycles"] if opcode < 0xD2 else 8 + 4 * count
+        elif handler == "daa":
+            original = self.get_register(0, 8)
+            adjusted = original
+            old_cf = bool(self.registers["FLAGS"] & self.flags["CF"])
+            low_adjust = (original & 0x0F) > 9 or bool(self.registers["FLAGS"] & self.flags["AF"])
+            if low_adjust:
+                adjusted = (adjusted + 0x06) & 0xFF
+            high_adjust = original > 0x99 or old_cf
+            if high_adjust:
+                adjusted = (adjusted + 0x60) & 0xFF
+            self.set_register(0, 8, adjusted)
+            self.set_flag("AF", low_adjust)
+            self.set_flag("CF", high_adjust)
+            self.set_flag("OF", False)
+            self.update_result_flags(adjusted, 8)
         elif handler == "complement_cf":
             self.set_flag("CF", not bool(self.registers["FLAGS"] & self.flags["CF"]))
         elif handler in ("clear_cf", "set_cf", "clear_if", "set_if", "clear_df", "set_df"):

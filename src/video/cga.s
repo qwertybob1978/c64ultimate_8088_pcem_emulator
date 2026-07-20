@@ -8,6 +8,7 @@
 
 .export cga_render_text_40
 .export cga_test_render
+.export cga_test_error
 
 C64_SCREEN = $0400
 C64_COLOR  = $D800
@@ -30,6 +31,7 @@ cga_row_buffer:  .res CGA_ROW_BYTES
 cga_saved_row:   .res CGA_ROW_BYTES
 cga_source_index:.res 1
 cga_rows_left:   .res 1
+cga_test_error:  .res 1
 
 .segment "CODE"
 
@@ -116,6 +118,8 @@ cga_render_text_40:
 
 ; Seed and verify a visible CGA text row without permanently changing guest RAM.
 cga_test_render:
+    lda #$00
+    sta cga_test_error
     jsr cga_setup_b8000
     lda #<cga_saved_row
     sta reu_c64_addr
@@ -183,6 +187,8 @@ cga_test_render:
     bne @restore
 
 @restore_failed:
+    lda #$09
+    sta cga_test_error
     lda #$00
     sta cga_source_index
 @restore:
@@ -202,6 +208,11 @@ cga_test_render:
     sec
     rts
 @test_failed:
+    lda cga_test_error
+    bne :+
+    lda #$02
+    sta cga_test_error
+:
     clc
     rts
 

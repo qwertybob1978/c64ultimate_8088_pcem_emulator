@@ -99,6 +99,9 @@ shift_overflow:      .res 1
 shift_count:         .res 1
 shift_first:         .res 1
 rotate_input_carry:  .res 1
+daa_pending:         .res 1
+daa_auxiliary:       .res 1
+daa_original:        .res 1
 
 .segment "CODE"
 
@@ -125,6 +128,7 @@ cpu8088_step:
     lda #$00
     sta shift_pending
     sta alu_test_only
+    sta daa_pending
     lda #$FF
     sta cpu8088_segment_override
     lda #$00
@@ -183,6 +187,8 @@ cpu8088_step:
     long_beq @segment_stack
     cmp #$1F
     long_beq @segment_stack
+    cmp #$27                    ; DAA
+    long_beq @daa
     lda cpu8088_last_opcode
     cmp #$80
     bcc @not_group1_immediate
@@ -664,6 +670,62 @@ cpu8088_step:
     lda #$01
     sta alu_test_only
     jmp @alu_accumulator_immediate
+
+@daa:
+    lda cpu8088_state+CPU_AX
+    sta alu_left
+    sta daa_original
+    lda cpu8088_state+CPU_FLAGS
+    and #X86_FLAG_CF
+    sta alu_saved_cf
+    lda #$00
+    sta daa_auxiliary
+    lda cpu8088_state+CPU_FLAGS
+    and #X86_FLAG_AF
+    bne @daa_low_adjust
+    lda daa_original
+    and #$0F
+    cmp #$0A
+    bcc @daa_high_test
+@daa_low_adjust:
+    clc
+    lda alu_left
+    adc #$06
+    sta alu_left
+    lda #X86_FLAG_AF
+    sta daa_auxiliary
+@daa_high_test:
+    lda #$00
+    sta alu_carry
+    lda daa_original
+    cmp #$9A
+    bcs @daa_high_adjust
+    lda alu_saved_cf
+    beq @daa_finish
+@daa_high_adjust:
+    clc
+    lda alu_left
+    adc #$60
+    sta alu_left
+    lda #$01
+    sta alu_carry
+@daa_finish:
+    lda alu_left
+    sta alu_result
+    lda #$00
+    sta alu_result+1
+    sta operand_width
+    sta alu_destination_kind
+    sta destination_offset
+    sta alu_string_compare
+    sta alu_test_only
+    lda #$01
+    sta daa_pending
+    lda #$04                    ; logical result-flag path clears undefined OF
+    sta alu_operation
+    lda #$04
+    sta alu_last_cycles
+    jmp @alu_flags
 
 @group3_divide:
     and #$01
@@ -1618,6 +1680,14 @@ cpu8088_step:
     sta cpu8088_state+CPU_FLAGS+1
 
 @alu_flags_done:
+    lda daa_pending
+    beq :+
+    lda daa_auxiliary
+    beq :+
+    lda cpu8088_state+CPU_FLAGS
+    ora #X86_FLAG_AF
+    sta cpu8088_state+CPU_FLAGS
+:
     lda shift_pending
     beq @alu_preserve_carry
     lda shift_overflow

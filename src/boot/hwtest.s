@@ -19,6 +19,7 @@
 .import io_debug_latch
 .import io_read_u8
 .import cga_test_render
+.import cga_test_error
 .import reu_copy_to_reu
 .import reu_copy_from_reu
 .importzp reu_c64_addr
@@ -35,7 +36,6 @@ BORDER_COLOR = $D020
 COLOR_RED = $02
 COLOR_GREEN = $05
 COLOR_PURPLE = $04
-COLOR_ORANGE = $08
 
 .macro long_bne target
     beq :+
@@ -114,7 +114,7 @@ start:
     sta BORDER_COLOR
     jmp @done
 @cga_fail:
-    lda #COLOR_ORANGE
+    lda cga_test_error
     sta BORDER_COLOR
     lda #<msg_cga_fail
     ldx #>msg_cga_fail

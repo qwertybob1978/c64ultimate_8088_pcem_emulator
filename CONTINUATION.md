@@ -17,8 +17,8 @@ Current branch and known-good commit:
 
 ```text
 branch: master
-commit: f1c8cac
-subject: feat(cpu): add group3 test
+commit: f150476
+subject: feat(video): add status transitions
 ```
 
 The working tree was clean when this guide was created. Confirm before work:
@@ -35,6 +35,7 @@ and preserve them.
 Completed recent milestones, newest first:
 
 ```text
+f150476 feat(video): add status transitions
 f1c8cac feat(cpu): add group3 test
 e26642e feat(cpu): add group3 multiply
 b628513 feat(cpu): add accumulator test
@@ -45,7 +46,6 @@ c783907 feat(cpu): add rotate family
 8cac29d feat(cpu): add ModR/M exchange
 ddd09f6 feat(cpu): add LES and LDS
 3778e51 feat(cpu): add group5 near control flow
-ff9baa0 docs: add continuation handoff
 ```
 
 The end goal is not complete. Continue until the Generic XT BIOS displays via
@@ -101,27 +101,28 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: DAA
+## 4. Exact next task: XT PPI/DIP display selection
 
-Deterministic MDA/CGA status transitions are complete and break the BIOS video
-polling loop. The BIOS now executes 87,742 successful instructions and stops on
-instruction number 87,743 (zero-based trace index 87742):
+DAA is complete. A three-million-instruction BIOS trace encounters no further
+unsupported opcode, completes the long POST delay, and then waits for keyboard
+buffer state to change:
 
 ```text
-reported start: F000:E298
-bytes:          27
-meaning:        DAA
-opcode family:  27, decimal adjust AL after addition
-AX:             0203
-FLAGS:          0206 before DAA
+loop:           F000:E845 through E852
+bytes:          FA 8B 1E 1A 00 3B 1E 1C 00 75 03 FB EB F2
+meaning:        wait until BIOS keyboard-buffer head and tail differ
+state:          both compared values remain zero
+B8000:          all zero after 3,000,000 instructions
 ```
 
-Implement 8088 `DAA`: use the incoming AF/CF and original AL to apply the 06h
-and 60h corrections, update AF/CF plus SF/ZF/PF from adjusted AL, and choose a
-deterministic convention for undefined OF that matches the project reference
-and differential oracle. Cover no-adjust, low-digit, carry, and combined cases.
-Regenerate, test, build, run VICE in warp mode, trace the next blocker, update
-this guide, and commit the milestone. B8000 is still all zero at this blocker.
+The likely cause is the current `$FF` open-bus response on the XT 8255/PPI and
+motherboard switch ports, which advertises an MDA/error configuration instead
+of the intended 80-column CGA adapter. Verify the Generic XT BIOS switch-reading
+code and PCem's XT PPI model, then implement the minimum deterministic 60h-63h
+reads for a sane XT configuration with CGA 80-column video and installed floppy
+drives. Keep 03DAh status transitions enabled; 03BAh should not falsely claim an
+MDA when CGA is selected. Add reference/native I/O diagnostics, trace until the
+first B8000 write, render that page, update this guide, and commit the milestone.
 
 ## 5. How to trace the BIOS to the next blocker
 

@@ -648,6 +648,34 @@
         { "direction": "in", "port": 986, "value": 0 },
         { "direction": "in", "port": 986, "value": 1 }
       ]
+    },
+    {
+      "name": "daa_no_adjust_matches_bios_helper",
+      "initial": { "CS": 56320, "IP": 0, "AX": 515, "FLAGS": 518 },
+      "program": "27f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 515, "CS": 56320, "IP": 2, "FLAGS": 518 }
+    },
+    {
+      "name": "daa_uses_auxiliary_carry",
+      "initial": { "CS": 56384, "IP": 0, "AX": 21, "FLAGS": 530 },
+      "program": "27f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 27, "CS": 56384, "IP": 2, "FLAGS": 534 }
+    },
+    {
+      "name": "daa_adjusts_both_digits",
+      "initial": { "CS": 56448, "IP": 0, "AX": 155, "FLAGS": 2 },
+      "program": "27f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 1, "CS": 56448, "IP": 2, "FLAGS": 19 }
+    },
+    {
+      "name": "daa_uses_input_carry_for_high_digit",
+      "initial": { "CS": 56512, "IP": 0, "AX": 153, "FLAGS": 3 },
+      "program": "27f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 249, "CS": 56512, "IP": 2, "FLAGS": 135 }
     }
   ]
 }

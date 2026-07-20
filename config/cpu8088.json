@@ -45,6 +45,7 @@
     { "first": 28, "last": 28, "mnemonic": "SBB AL,imm8", "handler": "alu_acc_imm8", "operation": "sbb", "length": 2, "cycles": 4 },
     { "first": 29, "last": 29, "mnemonic": "SBB AX,imm16", "handler": "alu_acc_imm16", "operation": "sbb", "length": 3, "cycles": 4 },
     { "first": 30, "last": 31, "mnemonic": "PUSH/POP DS", "handler": "segment_stack", "length": 1, "cycles": 14 },
+    { "first": 39, "last": 39, "mnemonic": "DAA", "handler": "daa", "length": 1, "cycles": 4 },
     { "first": 32, "last": 35, "mnemonic": "AND", "handler": "alu_modrm", "operation": "and", "length": 2, "cycles": 3 },
     { "first": 36, "last": 36, "mnemonic": "AND AL,imm8", "handler": "alu_acc_imm8", "operation": "and", "length": 2, "cycles": 4 },
     { "first": 37, "last": 37, "mnemonic": "AND AX,imm16", "handler": "alu_acc_imm16", "operation": "and", "length": 3, "cycles": 4 },
