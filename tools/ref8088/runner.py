@@ -353,6 +353,15 @@ class Reference8088:
             reg_operand = {"kind": "register", "index": reg_index, "width": width}
             destination, source = (reg_operand, rm_operand) if opcode & 2 else (rm_operand, reg_operand)
             self.write_operand(destination, self.read_operand(source))
+        elif handler == "xchg_modrm":
+            width = 16 if opcode & 1 else 8
+            rm_operand, reg_index = self.decode_modrm(width)
+            reg_operand = {"kind": "register", "index": reg_index, "width": width}
+            rm_value = self.read_operand(rm_operand)
+            reg_value = self.read_operand(reg_operand)
+            self.write_operand(rm_operand, reg_value)
+            self.write_operand(reg_operand, rm_value)
+            cycles = 4 if rm_operand["kind"] == "register" else 17
         elif handler == "mov_segment":
             rm_operand, segment_index = self.decode_modrm(16)
             if segment_index > 3 or (opcode == 0x8E and segment_index == 1):

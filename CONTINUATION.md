@@ -92,6 +92,7 @@ The native 6502 8088 core already has these major slices:
 - LOOPNE, LOOPE, LOOP, and JCXZ;
 - Group-5 near indirect CALL/JMP with general ModR/M segment overrides;
 - LES/LDS memory far-pointer loads;
+- byte/word ModR/M XCHG;
 - a four-bank 32 KiB Magic Desk CRT with a RAM-resident multi-bank loader;
 - automated VICE 3.10 CRT smoke testing with a 16 MiB REU in warp mode.
 
@@ -99,38 +100,25 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: XCHG ModR/M operands
+## 4. Exact next task: complement carry flag
 
-LES/LDS is complete. The Generic XT BIOS now executes 25,427 successful
-instructions and stops on instruction number 25,428 (zero-based trace index
-25427):
-
-```text
-reported start: F000:F78D
-bytes:          86 C4
-meaning:        XCHG AL,AH
-opcode family:  86, XCHG r/m8,r8
-AX before:      0061
-```
-
-Bytes around the helper:
+ModR/M XCHG is complete. The Generic XT BIOS now executes 26,010 successful
+instructions and stops on instruction number 26,011 (zero-based trace index
+26010):
 
 ```text
-FF780: C5 E8 04 00 FE C4 8A C1 52 8B 16 63 00 86 C4 EE
-FF790: 86 C4 FE C2 EE 5A C3 FF FF FF FF FF FF FF FF FF
+reported start: F000:F6F4
+bytes:          F5
+meaning:        CMC
+opcode family:  F5, complement carry flag
+FLAGS before:   arithmetic result from CMP AL,imm8
 ```
 
-Implement both ModR/M exchange forms:
-
-- `86 /r`: XCHG r/m8,r8;
-- `87 /r`: XCHG r/m16,r16.
-
-Support register and memory destinations, use normal segment defaults and
-overrides, and leave all FLAGS unchanged. Read both operands before writing
-either so same-register and overlapping cases behave safely. Add vectors for
-the BIOS `86 C4` case, word register exchange, and memory exchange with a
-segment override. Regenerate, run all tests, build the CRT, run VICE in warp
-mode, trace the next blocker, update this guide, and commit the milestone.
+Implement `CMC` in the desktop reference and native core by toggling only CF.
+All other FLAGS bits must remain unchanged. Add vectors with CF initially clear
+and set, update opcode metadata and README, regenerate, run all tests, build the
+CRT, run VICE in warp mode, trace the next blocker, update this guide, and
+commit the milestone.
 
 ## 5. How to trace the BIOS to the next blocker
 

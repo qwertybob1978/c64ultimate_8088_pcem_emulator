@@ -480,6 +480,34 @@
       ],
       "statuses": ["ok", "halted"],
       "expected": { "AX": 48879, "DS": 16384, "ES": 12288, "CS": 54528, "IP": 6, "FLAGS": 135 }
+    },
+    {
+      "name": "xchg_bios_al_ah",
+      "initial": { "CS": 54784, "IP": 0, "AX": 97, "FLAGS": 71 },
+      "program": "86c4f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 24832, "CS": 54784, "IP": 3, "FLAGS": 71 }
+    },
+    {
+      "name": "xchg_word_registers",
+      "initial": { "CS": 55040, "IP": 0, "AX": 4660, "BX": 43981, "FLAGS": 2051 },
+      "program": "87d8f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 43981, "BX": 4660, "CS": 55040, "IP": 3, "FLAGS": 2051 }
+    },
+    {
+      "name": "xchg_word_memory_es_override",
+      "initial": { "CS": 55296, "IP": 0, "DS": 4096, "ES": 12288, "BX": 51966, "FLAGS": 2 },
+      "program": "26871e3412f4",
+      "memory": [
+        { "segment": 12288, "offset": 4660, "bytes": "3412" },
+        { "segment": 4096, "offset": 4660, "bytes": "ffff" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "BX": 4660, "DS": 4096, "ES": 12288, "CS": 55296, "IP": 6, "FLAGS": 2 },
+      "expectedMemory": [
+        { "segment": 12288, "offset": 4660, "bytes": "feca" }
+      ]
     }
   ]
 }

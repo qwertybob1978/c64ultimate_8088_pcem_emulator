@@ -286,6 +286,10 @@ cpu8088_step:
     long_beq @load_far_pointer
     cmp #$C5                    ; LDS r16,m16:16
     long_beq @load_far_pointer
+    cmp #$86                    ; XCHG r/m8,r8
+    long_beq @xchg_modrm
+    cmp #$87                    ; XCHG r/m16,r16
+    long_beq @xchg_modrm
     cmp #$C2                    ; RET imm16
     long_beq @ret_near_imm
     cmp #$C3                    ; RET
@@ -1580,6 +1584,72 @@ cpu8088_step:
     lda far_target+3
     sta cpu8088_state+1,x
     lda #$10
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@xchg_modrm:
+    and #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    jsr @register_offset
+    stx source_offset
+    jsr @read_register_to_right
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @xchg_register
+    lda #$01
+    sta alu_destination_kind
+    jsr @read_ea_to_left
+    long_bcs @memory_error
+    jsr cpu8088_ea_recompute
+    lda alu_right
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    lda operand_width
+    beq @xchg_store_source
+    jsr cpu8088_ea_next_byte
+    lda alu_right+1
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    jmp @xchg_store_source
+@xchg_register:
+    lda #$00
+    sta alu_destination_kind
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    stx destination_offset
+    jsr @read_register_to_left
+    ldx destination_offset
+    lda alu_right
+    sta cpu8088_state,x
+    lda operand_width
+    beq @xchg_store_source
+    lda alu_right+1
+    sta cpu8088_state+1,x
+@xchg_store_source:
+    ldx source_offset
+    lda alu_left
+    sta cpu8088_state,x
+    lda operand_width
+    beq @xchg_done
+    lda alu_left+1
+    sta cpu8088_state+1,x
+@xchg_done:
+    lda #$04
+    ldx alu_destination_kind
+    beq :+
+    lda #$11
+:
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts

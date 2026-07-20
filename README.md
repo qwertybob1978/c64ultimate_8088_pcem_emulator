@@ -120,6 +120,8 @@ register and REU-memory operands.
 branch family without modifying arithmetic flags.
 Group-5 near indirect `CALL` and `JMP` support register and memory targets,
 including segment-overridden BIOS dispatch tables.
+Byte and word ModR/M `XCHG` supports register/register and REU-memory exchanges
+without modifying FLAGS.
 Native prefix decoding applies ES/CS/SS/DS overrides to ModR/M operands and
 supports interruptible-instruction groundwork for `REP`/`REPNE`. Byte and word
 `MOVS`, `CMPS`, `STOS`, `LODS`, and `SCAS` execute directly against REU-backed
