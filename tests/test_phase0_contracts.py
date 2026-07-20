@@ -26,6 +26,14 @@ def load_crt_module():
     return module
 
 
+def load_dos_media_module():
+    path = ROOT / "tools/validate_dos_media.py"
+    spec = importlib.util.spec_from_file_location("validate_dos_media", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def parse_hex_constant(source: str, name: str) -> int:
     match = re.search(rf"^{name}\s*=\s*\$([0-9A-Fa-f]+)", source, re.MULTILINE)
     if not match:
@@ -147,6 +155,23 @@ class Phase0Contracts(unittest.TestCase):
                 image[bank_one:bank_one + len(payload_bytes) - first_size],
                 payload_bytes[first_size:],
             )
+
+    def test_dos_boot_media_manifest_describes_360k_geometry(self):
+        manifest = json.loads((ROOT / "config/dos_media.json").read_text())
+        boot = manifest["disks"]["boot"]
+        self.assertEqual(boot["size"], 360 * 1024)
+        self.assertEqual(boot["bytesPerSector"], 512)
+        self.assertEqual(boot["totalSectors"], 720)
+        self.assertEqual(boot["sectorsPerTrack"], 9)
+        self.assertEqual(boot["heads"], 2)
+        self.assertIn("never commit", manifest["distribution"].lower())
+
+    def test_local_dos_boot_media_when_present(self):
+        candidates = list((ROOT / ".cache/media/msdos330").rglob("DISK01.IMG"))
+        if not candidates:
+            self.skipTest("user-supplied DOS media not present")
+        details = load_dos_media_module().validate(candidates[0])
+        self.assertEqual(details["size"], 368640)
 
 
 if __name__ == "__main__":

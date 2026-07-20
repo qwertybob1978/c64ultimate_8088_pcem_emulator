@@ -225,6 +225,20 @@ This writes `build/guest-genxt.reu`, which is ignored because it contains the
 locally acquired ROM. It can be preloaded at REU address zero for bootstrap
 testing.
 
+## User-supplied DOS boot media
+
+The XT boot target uses Microsoft MS-DOS 3.30 `DISK01.IMG` from the WinWorld
+download recorded in `config/dos_media.json`. Keep the downloaded archive and
+extracted images under `.cache/media`; they are proprietary test inputs and
+must never be committed or redistributed. Validate the extracted boot disk:
+
+```powershell
+python tools/validate_dos_media.py ".cache/media/msdos330/Microsoft MS-DOS 3.30 (5.25)/DISK01.IMG"
+```
+
+The expected image is a raw 360 KiB floppy with 512-byte sectors, 9 sectors
+per track, 2 heads, 40 cylinders, and an `MSDOS3.3` boot sector.
+
 ## Host tests
 
 ```sh
