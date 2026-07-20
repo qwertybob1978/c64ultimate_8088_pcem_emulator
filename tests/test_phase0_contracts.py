@@ -120,6 +120,34 @@ class Phase0Contracts(unittest.TestCase):
             self.assertEqual(details["banks"], 4)
             self.assertEqual(details["size"], 0x40 + 4 * (0x10 + 0x2000))
 
+    def test_magic_desk_payload_crosses_bank_boundary(self):
+        module = load_crt_module()
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = pathlib.Path(directory)
+            bootstrap = temporary / "bootstrap.bin"
+            payload = temporary / "payload.prg"
+            output = temporary / "test.crt"
+            header = bytearray([0x00, 0x80, 0x00, 0x80])
+            header.extend(module.AUTOSTART_SIGNATURE)
+            header.extend(bytes(0x100 - len(header)))
+            bootstrap.write_bytes(header)
+            payload_bytes = bytes(index & 0xFF for index in range(0x2100))
+            payload.write_bytes(b"\x01\x08" + payload_bytes)
+            module.build(bootstrap, payload, output)
+
+            image = output.read_bytes()
+            bank_zero = 0x40 + 0x10
+            bank_one = bank_zero + module.BANK_SIZE + 0x10
+            first_size = module.BANK_SIZE - module.BOOTSTRAP_SIZE
+            self.assertEqual(
+                image[bank_zero + module.BOOTSTRAP_SIZE:bank_zero + module.BANK_SIZE],
+                payload_bytes[:first_size],
+            )
+            self.assertEqual(
+                image[bank_one:bank_one + len(payload_bytes) - first_size],
+                payload_bytes[first_size:],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

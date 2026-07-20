@@ -5,6 +5,10 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+BANK_SIZE = 0x2000
+BOOTSTRAP_SIZE = 0x100
+CARTRIDGE_BANKS = 4
+MAX_PAYLOAD_SIZE = BANK_SIZE * CARTRIDGE_BANKS - BOOTSTRAP_SIZE
 
 
 def parse_labels(path: Path) -> dict[str, int]:
@@ -29,10 +33,12 @@ def generate(prg: Path, labels_path: Path, output: Path) -> None:
     if missing:
         raise ValueError(f"missing linker labels: {', '.join(missing)}")
 
-    # Bank zero reserves its first 256 bytes for the bootstrap. Multi-bank
-    # payload copying will be added when the internal-RAM image exceeds 7936 B.
-    if payload_size > 0x1F00:
-        raise ValueError("payload exceeds the current single-bank cartridge loader")
+    # Bank zero reserves its first 256 bytes for the bootstrap. The RAM-resident
+    # loader continues at $8000 in each following Magic Desk bank.
+    if payload_size > MAX_PAYLOAD_SIZE:
+        raise ValueError(
+            f"payload exceeds the {MAX_PAYLOAD_SIZE}-byte cartridge capacity"
+        )
 
     values = {
         "PAYLOAD_ROM_ADDRESS": 0x8100,
@@ -61,4 +67,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

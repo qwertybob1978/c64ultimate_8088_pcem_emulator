@@ -12,6 +12,7 @@ MAGIC_DESK_TYPE = 19
 BANK_SIZE = 0x2000
 MINIMUM_BANKS = 4
 BOOTSTRAP_SIZE = 0x100
+MAX_PAYLOAD_SIZE = BANK_SIZE * MINIMUM_BANKS - BOOTSTRAP_SIZE
 AUTOSTART_SIGNATURE = bytes((0xC3, 0xC2, 0xCD, 0x38, 0x30))
 
 
@@ -38,12 +39,19 @@ def build(bootstrap_path: Path, payload_path: Path, output: Path) -> None:
     if len(raw_payload) < 3:
         raise ValueError("payload PRG is too short")
     payload = raw_payload[2:]
-    if BOOTSTRAP_SIZE + len(payload) > BANK_SIZE:
-        raise ValueError("payload exceeds bank zero; multi-bank loader not implemented")
+    if len(payload) > MAX_PAYLOAD_SIZE:
+        raise ValueError(f"payload exceeds {MAX_PAYLOAD_SIZE}-byte cartridge capacity")
 
     banks = [bytearray([0xFF]) * BANK_SIZE for _ in range(MINIMUM_BANKS)]
     banks[0][:BOOTSTRAP_SIZE] = bootstrap
-    banks[0][BOOTSTRAP_SIZE:BOOTSTRAP_SIZE + len(payload)] = payload
+    payload_offset = 0
+    first_size = min(len(payload), BANK_SIZE - BOOTSTRAP_SIZE)
+    banks[0][BOOTSTRAP_SIZE:BOOTSTRAP_SIZE + first_size] = payload[:first_size]
+    payload_offset = first_size
+    for bank in banks[1:]:
+        chunk = payload[payload_offset:payload_offset + BANK_SIZE]
+        bank[:len(chunk)] = chunk
+        payload_offset += len(chunk)
     image = make_header("C64 x86 8088")
     for bank_number, bank in enumerate(banks):
         image += make_chip(bank_number, bytes(bank))

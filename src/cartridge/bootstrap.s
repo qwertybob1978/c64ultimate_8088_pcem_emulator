@@ -6,9 +6,11 @@
 D016 = $D016
 MAGIC_DESK_BANK = $DE00
 
+BANK_NUMBER = $F8
+BYTES_LEFT  = $F9
 COPY_SOURCE = $FB
 COPY_DEST   = $FD
-TRAMPOLINE_RAM = $0200
+RAM_LOADER  = $0200
 
 .segment "ROM"
 
@@ -28,6 +30,22 @@ warm_start:
     jsr $FD15                           ; restore KERNAL vectors
     jsr $FF5B                           ; initialize screen
 
+    ; Bank switching replaces the complete $8000-$9FFF window, including this
+    ; bootstrap. Relocate the copier to RAM before selecting another bank.
+    ldy #$00
+@copy_loader:
+    lda ram_loader,y
+    sta RAM_LOADER,y
+    iny
+    cpy #ram_loader_end-ram_loader
+    bne @copy_loader
+    jmp RAM_LOADER
+
+; This block is position independent except for the translated final halt JMP.
+; Relative branches remain valid after the bytes are copied to RAM_LOADER.
+ram_loader:
+    lda #$00
+    sta BANK_NUMBER
     lda #<PAYLOAD_ROM_ADDRESS
     sta COPY_SOURCE
     lda #>PAYLOAD_ROM_ADDRESS
@@ -36,73 +54,75 @@ warm_start:
     sta COPY_DEST
     lda #>PAYLOAD_LOAD_ADDRESS
     sta COPY_DEST+1
+    lda #<PAYLOAD_SIZE
+    sta BYTES_LEFT
+    lda #>PAYLOAD_SIZE
+    sta BYTES_LEFT+1
 
-    ldx #>PAYLOAD_SIZE
-    beq @copy_tail
-@copy_page:
     ldy #$00
-@copy_page_byte:
+@copy_payload:
     lda (COPY_SOURCE),y
     sta (COPY_DEST),y
-    iny
-    bne @copy_page_byte
+    inc COPY_SOURCE
+    bne @source_advanced
     inc COPY_SOURCE+1
+@source_advanced:
+    inc COPY_DEST
+    bne @dest_advanced
     inc COPY_DEST+1
-    dex
-    bne @copy_page
+@dest_advanced:
+    ; $A000 is the end of each 8 KiB cartridge bank. Select the next bank and
+    ; continue at $8000 while the destination remains contiguous C64 RAM.
+    lda COPY_SOURCE
+    bne @source_ready
+    lda COPY_SOURCE+1
+    cmp #$A0
+    bne @source_ready
+    inc BANK_NUMBER
+    lda BANK_NUMBER
+    sta MAGIC_DESK_BANK
+    lda #$80
+    sta COPY_SOURCE+1
+@source_ready:
+    lda BYTES_LEFT
+    bne @decrement_low
+    dec BYTES_LEFT+1
+@decrement_low:
+    dec BYTES_LEFT
+    lda BYTES_LEFT
+    ora BYTES_LEFT+1
+    bne @copy_payload
 
-@copy_tail:
-    ldy #$00
-@copy_tail_byte:
-    cpy #<PAYLOAD_SIZE
-    beq @payload_copied
-    lda (COPY_SOURCE),y
-    sta (COPY_DEST),y
-    iny
-    bne @copy_tail_byte
-
-@payload_copied:
     ; ld65 BSS is not stored in the PRG. Clear it before entering assembly code
     ; so cache-valid flags and diagnostic state are deterministic.
     lda #<PAYLOAD_BSS_START
     sta COPY_DEST
     lda #>PAYLOAD_BSS_START
     sta COPY_DEST+1
-    lda #$00
-    ldx #>PAYLOAD_BSS_SIZE
-    beq @clear_tail
-@clear_page:
-    ldy #$00
-@clear_page_byte:
-    sta (COPY_DEST),y
-    iny
-    bne @clear_page_byte
-    inc COPY_DEST+1
-    dex
-    bne @clear_page
-
-@clear_tail:
-    ldy #$00
-@clear_tail_byte:
-    cpy #<PAYLOAD_BSS_SIZE
+    lda #<PAYLOAD_BSS_SIZE
+    sta BYTES_LEFT
+    lda #>PAYLOAD_BSS_SIZE
+    sta BYTES_LEFT+1
+    lda BYTES_LEFT
+    ora BYTES_LEFT+1
     beq @bss_cleared
+@clear_bss:
+    lda #$00
     sta (COPY_DEST),y
-    iny
-    bne @clear_tail_byte
+    inc COPY_DEST
+    bne @clear_dest_advanced
+    inc COPY_DEST+1
+@clear_dest_advanced:
+    lda BYTES_LEFT
+    bne @clear_decrement_low
+    dec BYTES_LEFT+1
+@clear_decrement_low:
+    dec BYTES_LEFT
+    lda BYTES_LEFT
+    ora BYTES_LEFT+1
+    bne @clear_bss
 
 @bss_cleared:
-    ; Disabling Magic Desk replaces ROM at $8000 immediately, so execute the
-    ; final write and jump from a short RAM trampoline.
-    ldy #$00
-@copy_trampoline:
-    lda trampoline,y
-    sta TRAMPOLINE_RAM,y
-    iny
-    cpy #trampoline_end-trampoline
-    bne @copy_trampoline
-    jmp TRAMPOLINE_RAM
-
-trampoline:
     lda #$80
     sta MAGIC_DESK_BANK                 ; bit 7 disables GAME/EXROM
     cli
@@ -111,7 +131,8 @@ trampoline:
     ; The diagnostic is also a normal PRG and therefore returns with RTS.
     ; A cartridge has no BASIC caller to return to, so keep its final screen
     ; visible instead of falling through an undefined reset stack frame.
-    jmp TRAMPOLINE_RAM + (@halt - trampoline)
-trampoline_end:
+    jmp RAM_LOADER + (@halt - ram_loader)
+ram_loader_end:
 
+.assert ram_loader_end-ram_loader <= $FF, error, "RAM cartridge loader is too large"
 .assert * <= PAYLOAD_ROM_ADDRESS, error, "cartridge bootstrap exceeds reserved space"
