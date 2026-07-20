@@ -9,15 +9,17 @@ No FPGAs. No external processors. Just pure 6502 assembly squeezing out x86 sema
 For an exact implementation checkpoint and step-by-step continuation handoff,
 see [`CONTINUATION.md`](CONTINUATION.md).
 
-The project is in Phase 0. The current target program validates the host
-features on which the simulator will depend:
+The project has entered the native BIOS integration phase. The current target
+program validates the host features and then runs the Generic XT reset vector:
 
 - software-controlled C64U turbo mode;
 - REU register presence;
 - a non-destructive 16 MiB REU capacity probe;
 - guarded C64-to-REU and REU-to-C64 block transfers;
 - the 8088 register block, PC/XT reset state, and 20-bit segmented addressing;
-- manifest-verified BIOS placement into a raw 1 MiB guest-memory image.
+- manifest-verified BIOS placement into REU guest memory;
+- a bounded native BIOS execution loop with C64 keyboard polling and CGA
+  refreshes.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the architecture and milestones.
 
@@ -78,10 +80,12 @@ The native cartridge includes a correctness-first CGA text renderer. It DMA
 reads each 160-byte row from guest physical `$B8000`, projects the left 40
 columns of the PC's 80x25 text page onto the C64's 40x25 screen, converts common
 ASCII characters to C64 screen codes, and approximates all 16 CGA foreground
-colors in color RAM. The cartridge diagnostic seeds and verifies a CGA banner,
-restores the guest row, and leaves the rendered banner visible. Live BIOS text
-will use this same renderer once native BIOS scheduling and CGA port state are
-wired in.
+colors in color RAM. The cartridge diagnostic first seeds and verifies a CGA
+banner, then clears guest memory, maps the verified Generic XT ROM at `$FE000`,
+and uses the same renderer while the native BIOS executes. A long warp-mode
+VICE run currently remains stable but does not yet reach the banner visibly;
+guest data reads still use correctness-first byte DMA and are the next
+performance bottleneck.
 
 ## Running the hardware diagnostic
 
@@ -135,6 +139,9 @@ are decoded with the correct DS/SS default segment. Data operands currently
 use correctness-first byte DMA; Phase 2 replaces this with a write-back page
 cache. Register and memory ModR/M forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
 `SUB`, `XOR`, and `CMP` share the same native flag engine as accumulator forms.
+The direct-offset `A0`-`A3` forms move AL or AX to and from a DS- or
+segment-override-relative 16-bit memory offset, covering the BIOS POST store
+that previously stopped the native run.
 `CMC` toggles CF without disturbing the remaining FLAGS state.
 Accumulator-immediate `TEST` (`A8`/`A9`) updates logical flags without changing
 AL or AX.

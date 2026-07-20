@@ -213,6 +213,11 @@ cpu8088_step:
     long_beq @lahf
     cmp #$9A                    ; CALL ptr16:16
     long_beq @call_far
+    cmp #$A0                    ; MOV AL/AX,moffs and MOV moffs,AL/AX
+    bcc @check_string_opcodes
+    cmp #$A4
+    long_bcc @mov_moffs
+@check_string_opcodes:
     cmp #$A4                    ; MOVSB/MOVSW
     long_beq @string_instruction
     cmp #$A5
@@ -2472,6 +2477,55 @@ cpu8088_step:
     long_bcs @memory_error
     sta cpu8088_state,x
     lda #$04
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@mov_moffs:
+    lda cpu8088_last_opcode
+    and #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta cpu8088_offset
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta cpu8088_offset+1
+    ldx cpu8088_segment_override
+    cpx #$FF
+    bne :+
+    ldx #CPU_DS
+:
+    lda cpu8088_state,x
+    sta cpu8088_segment
+    lda cpu8088_state+1,x
+    sta cpu8088_segment+1
+    jsr cpu8088_segment_offset_physical
+    lda cpu8088_last_opcode
+    and #$02
+    bne @mov_accumulator_to_moffs
+    jsr cpu8088_mem_read_u8
+    long_bcs @memory_error
+    sta cpu8088_state+CPU_AX
+    lda operand_width
+    beq @mov_moffs_done
+    jsr @string_next_address
+    jsr cpu8088_mem_read_u8
+    long_bcs @memory_error
+    sta cpu8088_state+CPU_AX+1
+    jmp @mov_moffs_done
+@mov_accumulator_to_moffs:
+    lda cpu8088_state+CPU_AX
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    lda operand_width
+    beq @mov_moffs_done
+    jsr @string_next_address
+    lda cpu8088_state+CPU_AX+1
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+@mov_moffs_done:
+    lda #$0A
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts

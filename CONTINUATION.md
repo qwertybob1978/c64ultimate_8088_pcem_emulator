@@ -17,8 +17,8 @@ Current branch and known-good commit:
 
 ```text
 branch: master
-commit: b00bfd5
-subject: feat(io): select XT CGA hardware
+commit before the current native-boot milestone: dc48342
+subject: feat(input): route C64 keyboard to XT
 ```
 
 The working tree was clean when this guide was created. Confirm before work:
@@ -35,6 +35,7 @@ and preserve them.
 Completed recent milestones, newest first:
 
 ```text
+dc48342 feat(input): route C64 keyboard to XT
 b00bfd5 feat(io): select XT CGA hardware
 9f18f05 feat(cpu): add decimal adjust
 f150476 feat(video): add status transitions
@@ -97,11 +98,15 @@ The native 6502 8088 core already has these major slices:
 - automated VICE 3.10 CRT smoke testing with a 16 MiB REU in warp mode.
 - a verified 40-column projection of the guest B8000 80x25 CGA text page;
 
-The current native CRT is still a diagnostic, not an XT boot UI. The desktop
-reference model is presently used to advance the real Generic XT BIOS and find
-the next missing CPU instruction.
+The native CRT now passes its diagnostics and enters a permanent real Generic
+XT BIOS execution loop. It clears conventional/CGA RAM, copies the locally
+verified 8 KiB ROM to REU physical FE000h, resets the CPU, polls the C64
+keyboard after bounded batches, and renders B8000 periodically. A
+500,000,000-cycle VICE warp run is stable and green after adding native
+`A0`-`A3` direct-offset MOV support, but the visible CGA page is still blank.
+The dominant bottleneck is one REU DMA transaction per guest data byte.
 
-## 4. Exact next task: native BIOS loop and IRQ scheduling
+## 4. Exact next task: accelerate native BIOS and add IRQ scheduling
 
 The XT PPI/DIP slice and C64 keyboard translation are complete. Port 62h now advertises color 80-column video,
 03BAh remains open bus, and 03DAh supplies display-enable plus vertical-retrace
@@ -128,11 +133,13 @@ B8000:          complete 80x25 space/attribute page plus BIOS banner
 
 The mapping in `src/host/keyboard.s` covers letters, digits, Enter, Backspace,
 Space, punctuation, and cursor keys and queues set-1 make codes on port 60h.
-The immediate task is to add a native BIOS execution loop that initializes the
-Generic XT ROM in REU, executes bounded batches, calls `host_keyboard_poll`,
-generates PIT IRQ0 and keyboard IRQ1 through an XT PIC slice, and calls
-`cga_render_text_40` periodically. Then implement DMA channel 2/FDC commands and
-attach the validated 360 KiB DOS image.
+The native BIOS loop and direct CGA refresh are now present. First add a
+256-byte guest data read cache (writes may remain write-through initially) so
+POST can visibly advance in VICE. Invalidate it during guest initialization and
+keep writes coherent with the direct REU CGA renderer. Then replace the
+provisional late vector-08 injection with an XT PIC/PIT slice, route keyboard
+IRQ1 through that PIC, and implement DMA channel 2/FDC commands for the
+validated 360 KiB DOS image.
 
 ## 5. How to trace the BIOS to the next blocker
 
@@ -310,11 +317,12 @@ git status --short
 | `src/memory/reu.s` | REU register programming and transfers |
 | `src/memory/guest_memory.s` | Guest physical memory access through the REU |
 | `src/memory/page_cache.s` | 256-byte C64-RAM instruction page cache |
+| `src/memory/guest_init.s` | Clears XT RAM and maps the local Generic XT BIOS at FE000h |
 | `src/host/hardware.inc` | C64 Ultimate turbo and REU hardware constants |
 | `src/host/turbo.s` | Turbo-mode setup |
 | `src/bus/io.s` | Current XT I/O dispatcher; open bus plus ports 80h/81h latches |
 | `src/video/cga.s` | REU-to-C64 CGA text renderer, color mapping, and native banner diagnostic |
-| `src/boot/hwtest.s` | Native startup and green/red diagnostic UI |
+| `src/boot/hwtest.s` | Native startup, diagnostics, BIOS scheduler, and failure UI |
 
 ### Cartridge
 

@@ -6,6 +6,8 @@
 .export reu_probe_16m
 .export reu_copy_to_reu
 .export reu_copy_from_reu
+.export reu_clear_guest_page
+.export reu_clear_conventional
 .exportzp reu_c64_addr
 .exportzp reu_ext_addr
 .exportzp reu_length
@@ -21,6 +23,7 @@ probe_saved_0:   .res 1
 probe_saved_8m:  .res 1
 probe_result:    .res 1
 transfer_command:.res 1
+reu_clear_byte:  .res 1
 
 .segment "CODE"
 
@@ -108,6 +111,45 @@ reu_copy:
     lda transfer_command
     sta REU_COMMAND
     plp
+    clc
+    rts
+
+; Clear one 64 KiB REU page. A selects address bits 16..23. Fixing the C64
+; source address makes the REU replicate one zero byte for the full transfer;
+; a zero transfer length is the controller's documented 65536-byte encoding.
+reu_clear_guest_page:
+    tax
+    lda #$00
+    sta reu_clear_byte
+    lda #<reu_clear_byte
+    sta REU_C64_ADDR_LO
+    lda #>reu_clear_byte
+    sta REU_C64_ADDR_HI
+    lda #$00
+    sta REU_REU_ADDR_LO
+    sta REU_REU_ADDR_MI
+    stx REU_REU_ADDR_HI
+    sta REU_LENGTH_LO
+    sta REU_LENGTH_HI
+    sta REU_IRQ_MASK
+    lda #$80                    ; hold the C64 address fixed
+    sta REU_ADDR_CONTROL
+    lda #REU_CMD_TO_REU
+    sta REU_COMMAND
+    lda #$00
+    sta REU_ADDR_CONTROL
+    clc
+    rts
+
+; Clear the XT's ten 64 KiB conventional-memory pages (00000h-9FFFFh).
+reu_clear_conventional:
+    ldx #$00
+@clear_page:
+    txa
+    jsr reu_clear_guest_page
+    inx
+    cpx #$0A
+    bne @clear_page
     clc
     rts
 

@@ -4,6 +4,8 @@
 .import turbo_enable_max
 .import turbo_restore
 .import host_keyboard_translate
+.import host_keyboard_poll
+.import guest_load_genxt
 .import reu_detect
 .import reu_probe_16m
 .import cpu8088_reset
@@ -11,6 +13,7 @@
 .importzp cpu8088_phys_addr
 .import cpu8088_state
 .import cpu8088_step
+.import cpu8088_last_opcode
 .import cpu8088_mul_u8
 .import cpu8088_mul_s8
 .import cpu8088_mul_u16
@@ -21,6 +24,7 @@
 .import io_read_u8
 .import io_write_u8
 .import cga_test_render
+.import cga_render_text_40
 .import cga_test_error
 .import reu_copy_to_reu
 .import reu_copy_from_reu
@@ -116,38 +120,143 @@ start:
     bcc @cga_fail
     lda #COLOR_GREEN
     sta BORDER_COLOR
-    jmp @done
+    jmp boot_guest
 @cga_fail:
     lda cga_test_error
     sta BORDER_COLOR
     lda #<msg_cga_fail
     ldx #>msg_cga_fail
     jsr print
-    jmp @done
+    jmp diagnostic_done
 @stepper_fail:
     lda #COLOR_PURPLE
     sta BORDER_COLOR
     lda #<msg_stepper_fail
     ldx #>msg_stepper_fail
     jsr print
-    jmp @done
+    jmp diagnostic_done
 @cpu_fail:
     lda #<msg_cpu_fail
     ldx #>msg_cpu_fail
     jsr print
-    jmp @done
+    jmp diagnostic_done
 @capacity_fail:
     lda #<msg_capacity_fail
     ldx #>msg_capacity_fail
     jsr print
-    jmp @done
+    jmp diagnostic_done
 @reu_fail:
     lda #<msg_reu_fail
     ldx #>msg_reu_fail
     jsr print
 
-@done:
+diagnostic_done:
     jsr turbo_restore
+    rts
+
+; Initialize the real Generic XT guest and run it indefinitely. Host services
+; are interleaved between bounded 8088 batches so C64 keyboard and screen I/O
+; remain responsive even in Ultimate turbo mode.
+boot_guest:
+    jsr guest_load_genxt
+    bcs @boot_failed
+    jsr cpu8088_fetch_cache_invalidate
+    jsr cpu8088_reset
+    lda #$00
+    sta boot_timer_low
+    sta boot_timer_high
+    sta boot_video_divider
+@boot_batch:
+    lda #$40
+    sta boot_steps_remaining
+@boot_step:
+    jsr cpu8088_step
+    cmp #CPU_STEP_OK
+    beq @boot_step_done
+    cmp #CPU_STEP_HALTED
+    beq @boot_step_done
+    sta boot_failure_status
+    jmp @boot_failed
+@boot_step_done:
+    dec boot_steps_remaining
+    bne @boot_step
+
+    jsr host_keyboard_poll
+    inc boot_video_divider
+    lda boot_video_divider
+    and #$0F
+    bne @boot_timer
+    jsr cga_render_text_40
+@boot_timer:
+    inc boot_timer_low
+    bne @boot_batch
+    inc boot_timer_high
+    lda boot_timer_high
+    cmp #$80                    ; defer IRQ0 until late POST/PIC initialization
+    bcc @boot_batch
+    lda #$00
+    sta boot_timer_high
+    lda #$08                    ; XT PIC IRQ0 vector
+    jsr cpu8088_request_irq
+    jmp @boot_batch
+@boot_failed:
+    jsr cga_render_text_40
+    lda cpu8088_last_opcode
+    pha
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    sta BORDER_COLOR
+    pla
+    and #$0F
+    sta $D021
+    jsr display_boot_failure
+    jmp diagnostic_done
+
+display_boot_failure:
+    lda #$02                    ; B
+    sta $0400
+    lda #$0F                    ; O
+    sta $0401
+    sta $0402
+    lda #$14                    ; T
+    sta $0403
+    lda #$20
+    sta $0404
+    lda boot_failure_status
+    ldx #$05
+    jsr display_hex_byte
+    lda #$20
+    sta $0407
+    lda cpu8088_last_opcode
+    ldx #$08
+    jsr display_hex_byte
+    rts
+
+display_hex_byte:
+    pha
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0400,x
+    inx
+    pla
+    and #$0F
+    jsr display_hex_nibble
+    sta $0400,x
+    rts
+display_hex_nibble:
+    cmp #$0A
+    bcc @hex_digit
+    sec
+    sbc #$09                    ; A-F use C64 screen codes 1-6
+    rts
+@hex_digit:
+    clc
+    adc #$30
     rts
 
 ; A/X point to a zero-terminated PETSCII-compatible string.
@@ -501,6 +610,11 @@ setup_stepper_save_transfer:
 stepper_saved: .res CPU_SMOKE_SAVE_SIZE
 stepper_result: .res 1
 stepper_steps_remaining: .res 1
+boot_steps_remaining: .res 1
+boot_timer_low: .res 1
+boot_timer_high: .res 1
+boot_video_divider: .res 1
+boot_failure_status: .res 1
 
 .segment "RODATA"
 msg_title:         .byte $0D, "C64 X86 PHASE 0", $0D, $00
