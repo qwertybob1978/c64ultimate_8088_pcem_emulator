@@ -14,6 +14,10 @@ Commodore 64 Ultimate (C64U), using:
 - selected IBM PC/XT hardware designs and implementation ideas from
   [PCem](https://github.com/sarah-walker-pcem/pcem/).
 
+The primary executable and release artifact must be a C64 cartridge image with
+the `.crt` extension. A `.prg` may remain available for diagnostics and
+developer tests, but is not the final user-facing executable.
+
 The first useful release should boot an XT-compatible BIOS and a DOS-compatible
 floppy image, provide readable text output, accept keyboard input, and run
 ordinary real-mode software. Exact IBM PC bus timing, copy-protection support,
@@ -80,6 +84,26 @@ mouse support, protected mode, 80286 instructions, or cycle-exact CGA effects.
   tooling, Git, and a desktop PCem build for differential testing.
 - VICE with REU enabled for functional automation. VICE is not a substitute
   for final turbo and REU performance tests on actual C64U hardware.
+
+### 3.3 Cartridge executable requirements
+
+- Produce a valid `.crt` image recognized by the C64U file browser and VICE.
+- Autostart into a small cartridge bootstrap without requiring a BASIC `RUN`
+  command.
+- Keep BIOS ROMs, disk images, and other non-redistributable guest assets out
+  of the `.crt`; load them separately into REU according to the manifest.
+- Copy the emulator's hot code, zero-page setup, mutable tables, and required
+  runtime data from cartridge ROM into internal C64 RAM before enabling turbo.
+- Avoid executing the interpreter directly from cartridge ROM during normal
+  operation because cartridge-bus accesses run through the slower external-bus
+  path under turbo.
+- Select and document a CRT hardware type with enough banked ROM capacity for
+  the eventual emulator. An EasyFlash-compatible layout is the initial
+  candidate, but Phase 0 must verify cartridge emulation, bank switching,
+  autostart, cartridge disable/unmap, and simultaneous 16 MiB REU access on the
+  supported C64U firmware matrix.
+- Preserve a minimal recovery/menu path for reset and clean disk-image export
+  even after the main cartridge mapping has been disabled.
 
 ## 4. ROM, disk, and asset requirements
 
@@ -308,6 +332,9 @@ post-8088 machines are out of scope.
   UCI file-to-REU loading.
 - Benchmark tight ALU/dispatch loops and REU transfers at 1, 48, and 64 MHz as
   applicable, with badlines on and off.
+- Prototype the selected `.crt` layout and prove that its bootstrap can copy a
+  payload to internal RAM, unmap the cartridge, enable turbo, and continue to
+  access the 16 MiB REU.
 - Decide page size, cache size, display mode, and realistic performance target
   from measured results.
 
@@ -369,8 +396,9 @@ without corrupting the base image.
 - Profile on every supported Ultimate model.
 - Specialize common opcodes/effective addresses, reduce cache misses, batch
   peripheral work, and add safe idle-loop acceleration.
-- Produce `.prg` and, only if useful, cartridge-package builds; external
-  cartridge-bus execution is likely slower under turbo and must be measured.
+- Produce the required autostart `.crt` release. Keep the `.prg` hardware test
+  as an optional developer artifact. The cartridge bootstrap must relocate hot
+  code to internal RAM before normal turbo execution.
 - Publish setup instructions, asset manifest examples, checksums, compatibility
   results, known limitations, and benchmark methodology.
 
@@ -406,11 +434,14 @@ acquisition/build instructions for non-redistributable inputs.
 | Disk image corruption | User data loss | Copy-on-write default, dirty sectors, explicit atomic export where host API permits |
 | ROM/font licensing errors | Releases cannot be distributed | No ROMs in repo, manifest hashes, open BIOS build, provenance audit |
 | Turbo behavior differs by board/firmware | Unstable performance | Runtime capability checks, supported-firmware matrix, hardware CI/manual test checklist |
+| Cartridge mapping conflicts with REU or turbo | Emulator cannot boot in its required package | Phase 0 `.crt` coexistence gate; use cartridge only as bootstrap/storage and execute hot code from internal RAM |
 
 ## 11. Definition of version 1.0
 
 Version 1.0 is complete when it:
 
+- ships an autostart `.crt` as its primary executable, validated on C64U and
+  VICE, with no proprietary guest ROM embedded;
 - runs on a documented C64U/U64 hardware and firmware matrix;
 - detects a 16 MiB REU and safely enables/restores turbo mode;
 - implements the documented 8088 instruction set well enough to pass the chosen
