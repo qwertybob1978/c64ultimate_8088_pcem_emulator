@@ -112,9 +112,9 @@ The native control-flow slice also supports register `INC`/`DEC`, register
 short conditional branches with REU-backed SS:SP stack accesses.
 Native prefix decoding applies ES/CS/SS/DS overrides to ModR/M operands and
 supports interruptible-instruction groundwork for `REP`/`REPNE`. Byte and word
-`MOVS`, `STOS`, and `LODS` execute directly against REU-backed guest memory,
-including direction-flag index updates and zero-count repetition. Native
-`CMPS`/`SCAS` and their repeat termination rules are the next CPU slice.
+`MOVS`, `CMPS`, `STOS`, `LODS`, and `SCAS` execute directly against REU-backed
+guest memory, including direction-flag index updates, zero-count repetition,
+and the ZF-controlled stopping rules for `REPE` and `REPNE` comparisons.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

@@ -4,10 +4,10 @@
     {
       "name": "native_smoke",
       "initial": { "CS": 0, "IP": 0 },
-      "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060001efbe8b1e0001c60602017a8a0e0201be0001bb1000c7400534128b50050150052b400533d239c2bc000250b800005be83500b978563d01007403bbffffc70600032211c70602034433be0003bf2003b90400f3a4be2003b90400f3acb90300bf3003b07af3aaf440c3",
+      "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060001efbe8b1e0001c60602017a8a0e0201be0001bb1000c7400534128b50050150052b400533d239c2bc000250b800005be85400b978563d01007403bbffffc70600032211c70602034433be0003bf2003b90400f3a4be2003b90400f3acb90300bf3003b07af3aac606220399be0003bf2003b90400f3a6c606300300b90300bf3003b07af2aef440c3",
       "preserveBytes": 820,
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 122, "CX": 0, "DX": 0, "BX": 60824, "SP": 512, "SI": 804, "DI": 819, "IP": 128, "FLAGS": 70 }
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 122, "CX": 1, "DX": 0, "BX": 60824, "SP": 512, "SI": 771, "DI": 818, "IP": 159, "FLAGS": 70 }
     },
     {
       "name": "flags_and_short_jump",

@@ -69,6 +69,7 @@ alu_destination_kind:.res 1
 alu_last_cycles:     .res 1
 alu_preserve_cf:     .res 1
 alu_saved_cf:        .res 1
+alu_string_compare:  .res 1
 condition_code:      .res 1
 stack_adjust:        .res 2
 string_value:        .res 2
@@ -142,6 +143,10 @@ cpu8088_step:
     long_beq @string_instruction
     cmp #$A5
     long_beq @string_instruction
+    cmp #$A6                    ; CMPSB/CMPSW
+    long_beq @string_instruction
+    cmp #$A7
+    long_beq @string_instruction
     cmp #$AA                    ; STOSB/STOSW
     long_beq @string_instruction
     cmp #$AB
@@ -149,6 +154,10 @@ cpu8088_step:
     cmp #$AC                    ; LODSB/LODSW
     long_beq @string_instruction
     cmp #$AD
+    long_beq @string_instruction
+    cmp #$AE                    ; SCASB/SCASW
+    long_beq @string_instruction
+    cmp #$AF
     long_beq @string_instruction
     cmp #$88                    ; MOV r/m,reg and MOV reg,r/m
     long_bcc @check_mov_imm8
@@ -241,9 +250,13 @@ cpu8088_step:
     lda cpu8088_last_opcode
     and #$FE
     cmp #$AA
-    beq @string_stos
+    long_beq @string_stos
     cmp #$AC
-    beq @string_lods
+    long_beq @string_lods
+    cmp #$A6
+    long_beq @string_cmps
+    cmp #$AE
+    long_beq @string_scas
 
     jsr @string_source_address
     jsr @string_read_value
@@ -278,6 +291,56 @@ cpu8088_step:
     sta cpu8088_state+CPU_AX+1
 :
     jsr @string_adjust_si
+    jmp @string_repeat
+
+@string_cmps:
+    jsr @string_source_address
+    jsr @string_read_value
+    long_bcs @memory_error
+    jsr @string_value_to_alu_left
+    jsr @string_destination_address
+    jsr @string_read_value
+    long_bcs @memory_error
+    jsr @string_value_to_alu_right
+    jsr @string_adjust_si
+    jsr @string_adjust_di
+    jmp @string_compare
+
+@string_scas:
+    lda cpu8088_state+CPU_AX
+    sta alu_left
+    lda cpu8088_state+CPU_AX+1
+    sta alu_left+1
+    jsr @string_destination_address
+    jsr @string_read_value
+    long_bcs @memory_error
+    jsr @string_value_to_alu_right
+    jsr @string_adjust_di
+
+@string_compare:
+    lda #$07                    ; CMP
+    sta alu_operation
+    lda string_width
+    sta operand_width
+    lda #$00
+    sta alu_preserve_cf
+    lda #$01
+    sta alu_string_compare
+    jmp @alu_execute
+
+@string_value_to_alu_left:
+    lda string_value
+    sta alu_left
+    lda string_value+1
+    sta alu_left+1
+    rts
+
+@string_value_to_alu_right:
+    lda string_value
+    sta alu_right
+    lda string_value+1
+    sta alu_right+1
+    rts
 
 @string_repeat:
     lda cpu8088_repeat_prefix
@@ -291,6 +354,32 @@ cpu8088_step:
     sta cpu8088_state+CPU_CX+1
     ora cpu8088_state+CPU_CX
     long_bne @string_loop
+    jmp @string_done
+
+@string_compare_repeat:
+    lda cpu8088_repeat_prefix
+    beq @string_done
+    sec
+    lda cpu8088_state+CPU_CX
+    sbc #$01
+    sta cpu8088_state+CPU_CX
+    lda cpu8088_state+CPU_CX+1
+    sbc #$00
+    sta cpu8088_state+CPU_CX+1
+    ora cpu8088_state+CPU_CX
+    beq @string_done
+    lda cpu8088_state+CPU_FLAGS
+    and #<X86_FLAG_ZF
+    sta alu_temp
+    ldx cpu8088_repeat_prefix
+    cpx #$F3
+    beq @string_repe
+    lda alu_temp
+    long_beq @string_loop       ; REPNE continues while unequal
+    jmp @string_done
+@string_repe:
+    lda alu_temp
+    long_bne @string_loop       ; REPE continues while equal
 @string_done:
     lda #$12
     sta cpu8088_last_cycles
@@ -395,6 +484,7 @@ cpu8088_step:
     lda #$00
     sta alu_destination_kind
     sta alu_preserve_cf
+    sta alu_string_compare
     sta destination_offset      ; AX
     lda #$04
     sta alu_last_cycles
@@ -428,6 +518,7 @@ cpu8088_step:
 @alu_modrm:
     lda #$00
     sta alu_preserve_cf
+    sta alu_string_compare
     lda cpu8088_last_opcode
     and #$01
     sta operand_width
@@ -766,6 +857,8 @@ cpu8088_step:
     ora alu_saved_cf
     sta cpu8088_state+CPU_FLAGS
 @alu_store_result:
+    lda alu_string_compare
+    long_bne @string_compare_repeat
     lda alu_operation
     cmp #$07                    ; CMP updates flags without storing
     beq @alu_accumulator_done
@@ -797,6 +890,9 @@ cpu8088_step:
     rts
 
 @inc_dec_reg16:
+    lda #$00
+    sta alu_string_compare
+    lda cpu8088_last_opcode
     and #$0F
     cmp #$08
     bcc @inc_reg16
