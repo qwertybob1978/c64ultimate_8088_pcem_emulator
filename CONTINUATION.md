@@ -17,8 +17,8 @@ Current branch and known-good commit:
 
 ```text
 branch: master
-commit: b628513
-subject: feat(cpu): add accumulator test
+commit: e26642e
+subject: feat(cpu): add group3 multiply
 ```
 
 The working tree was clean when this guide was created. Confirm before work:
@@ -35,6 +35,7 @@ and preserve them.
 Completed recent milestones, newest first:
 
 ```text
+e26642e feat(cpu): add group3 multiply
 b628513 feat(cpu): add accumulator test
 c783907 feat(cpu): add rotate family
 5f0de0f feat(cpu): add complement carry
@@ -45,7 +46,6 @@ ddd09f6 feat(cpu): add LES and LDS
 3778e51 feat(cpu): add group5 near control flow
 ff9baa0 docs: add continuation handoff
 a3f0b1e feat(cpu): add loop branch family
-b09704a feat(cpu): add CL-count shifts
 ```
 
 The end goal is not complete. Continue until the Generic XT BIOS displays via
@@ -101,28 +101,27 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: Group-3 TEST
+## 4. Exact next task: CGA/MDA status transitions
 
-Group-3 MUL/IMUL is complete. The Generic XT BIOS now executes 38,917
-successful instructions and stops on instruction number 38,918 (zero-based
-trace index 38917):
+Group-3 TEST is complete. The BIOS encounters no unsupported instruction in a
+500,000-step trace, but waits indefinitely for video status bit 0 to transition:
 
 ```text
-reported start: F000:E3DF (after ES prefix at E3DE)
-bytes:          26 F6 06 10 00 01
-meaning:        TEST byte ptr ES:[0010h],01h
-opcode family:  F6 /0, Group-3 immediate TEST
-AX:             0200
-ES:             B800
-FLAGS:          0046 before TEST
+loop:           F000:F44A through F44F
+bytes:          EC A8 01 75 FB
+meaning:        IN AL,DX / TEST AL,01h / JNZ F44A
+DX:             03BA (MDA status port)
+open-port read: FF
+hot-loop count: 153,618 iterations by step 500,000
 ```
 
-Extend Group 3 with `TEST` (`F6 /0` and `F7 /0`). Fetch the immediate after the
-ModR/M displacement, AND it with the byte/word register or memory operand,
-update logical flags, and never store the result. Cover the exact ES-prefixed
-BIOS memory form plus register and word forms. Regenerate, test, build, run VICE
-in warp mode, trace the next blocker, update this guide, and commit the
-milestone. B8000 remains all zero at this blocker.
+Implement deterministic display-status reads for MDA `03BAh` and CGA `03DAh`.
+The BIOS polling helpers require bit 0 to alternate between display-enable and
+blanking states; a read-count-based phase is sufficient initially and avoids
+depending on host timing. Preserve open-bus behavior on unrelated ports. Add
+desktop I/O vectors for both transitions plus native diagnostics, then trace
+until the BIOS selects an adapter or exposes the next device blocker. B8000 is
+still all zero before this device work.
 
 ## 5. How to trace the BIOS to the next blocker
 

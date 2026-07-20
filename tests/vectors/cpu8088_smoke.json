@@ -615,6 +615,26 @@
       "program": "f7ebf4",
       "statuses": ["ok", "halted"],
       "expected": { "AX": 65530, "BX": 3, "DX": 65535, "CS": 56064, "IP": 3, "FLAGS": 1670 }
+    },
+    {
+      "name": "group3_test_es_memory_matches_bios_probe",
+      "initial": { "CS": 56128, "IP": 0, "ES": 47104, "FLAGS": 70 },
+      "program": "26f606100001f4",
+      "memory": [
+        { "segment": 47104, "offset": 16, "bytes": "00" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "ES": 47104, "CS": 56128, "IP": 7, "FLAGS": 70 },
+      "expectedMemory": [
+        { "segment": 47104, "offset": 16, "bytes": "00" }
+      ]
+    },
+    {
+      "name": "group3_test_word_register_preserves_operand",
+      "initial": { "CS": 56192, "IP": 0, "AX": 61680, "FLAGS": 3799 },
+      "program": "f7c0000ff4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 61680, "CS": 56192, "IP": 5, "FLAGS": 1606 }
     }
   ]
 }

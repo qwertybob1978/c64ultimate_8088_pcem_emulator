@@ -167,6 +167,8 @@ The same Group-3 decoder implements byte/word `NOT` for register and memory
 operands without changing any FLAGS bits.
 Group-3 `MUL`/`IMUL` produces byte products in AX and word products in DX:AX,
 with CF/OF overflow behavior and deterministic undefined status flags.
+Group-3 `TEST` supports byte/word register and memory operands, including
+segment overrides, and updates logical flags without storing the AND result.
 `PUSHF`/`POPF` round-trip the 8088 FLAGS image through the REU-backed stack,
 while `SAHF`/`LAHF` transfer the five arithmetic status flags through AH.
 Immediate far `CALL`/`JMP` and `RETF`/`RETF imm16` now update CS:IP and the

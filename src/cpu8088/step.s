@@ -675,6 +675,8 @@ cpu8088_step:
     lsr a
     lsr a
     and #$07
+    cmp #$00
+    beq @group3_extension_ok
     cmp #$02
     beq @group3_extension_ok
     cmp #$04
@@ -717,6 +719,7 @@ cpu8088_step:
     sta relative_high
 @group3_execute:
     lda source_offset
+    long_beq @group3_test
     cmp #$02
     long_beq @group3_not
     cmp #$06
@@ -800,6 +803,36 @@ cpu8088_step:
 :
     sta alu_last_cycles
     jmp @alu_flags
+
+@group3_test:
+    lda immediate_low
+    sta alu_left
+    lda relative_high
+    sta alu_left+1
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta alu_right
+    lda #$00
+    sta alu_right+1
+    lda operand_width
+    beq @group3_test_have_immediate
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta alu_right+1
+@group3_test_have_immediate:
+    lda #$00
+    sta alu_string_compare
+    lda #$01
+    sta alu_test_only
+    lda #$04
+    sta alu_operation
+    lda #$05
+    ldx alu_destination_kind
+    beq :+
+    lda #$0B
+:
+    sta alu_last_cycles
+    jmp @alu_execute
 
 @group3_not:
     lda immediate_low

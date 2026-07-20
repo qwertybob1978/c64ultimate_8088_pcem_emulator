@@ -559,7 +559,11 @@ class Reference8088:
             width = 16 if opcode & 1 else 8
             operand, extension = self.decode_modrm(width)
             operand_value = self.read_operand(operand)
-            if extension == 2:
+            if extension == 0:
+                immediate = self.fetch_u16() if width == 16 else self.fetch_u8()
+                self.alu("and", operand_value, immediate, width)
+                cycles = 5 if operand["kind"] == "register" else 11
+            elif extension == 2:
                 self.write_operand(operand, ~operand_value & ((1 << width) - 1))
                 cycles = 3 if operand["kind"] == "register" else 16
             elif extension in (4, 5):
