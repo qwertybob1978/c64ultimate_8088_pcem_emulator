@@ -165,16 +165,16 @@ test_cpu_stepper:
     sta cpu8088_state+CPU_CS
     sta cpu8088_state+CPU_CS+1
 
+    lda #CPU_SMOKE_STEP_COUNT
+    sta stepper_steps_remaining
+@step_next:
     jsr cpu8088_step
+    dec stepper_steps_remaining
+    beq @step_last
     cmp #CPU_STEP_OK
     bne @restore
-    jsr cpu8088_step
-    cmp #CPU_STEP_OK
-    bne @restore
-    jsr cpu8088_step
-    cmp #CPU_STEP_OK
-    bne @restore
-    jsr cpu8088_step
+    jmp @step_next
+@step_last:
     cmp #CPU_STEP_HALTED
     bne @restore
 
@@ -224,6 +224,7 @@ setup_stepper_transfer:
 .segment "BSS"
 stepper_saved: .res 8
 stepper_result: .res 1
+stepper_steps_remaining: .res 1
 
 .segment "RODATA"
 msg_title:         .byte $0D, "C64 X86 PHASE 0", $0D, $00

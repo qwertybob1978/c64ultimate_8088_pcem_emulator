@@ -98,11 +98,12 @@ ignored evidence files are `build/vice-smoke.log` and
 
 ## Current 8088 execution subset
 
-The native stepper currently implements `NOP`, `HLT`, `MOV r16,imm16`, short
-and near relative `JMP`, and `CLC`/`STC`/`CLI`/`STI`/`CLD`/`STD`. Other opcodes
-return an explicit unsupported-instruction status. Instruction fetch uses one
-256-byte C64-RAM page backed by REU DMA; the byte-at-a-time fetch remains only
-as a bootstrap diagnostic path.
+The native stepper currently implements `NOP`, `HLT`, byte/word immediate
+register `MOV`, register-direct ModR/M `MOV`, short and near relative `JMP`, and
+`CLC`/`STC`/`CLI`/`STI`/`CLD`/`STD`. Memory ModR/M forms still return an
+explicit unsupported-instruction status until the guest data cache lands.
+Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
+byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 
 The canonical register layout, flag masks, and implemented opcode metadata are
 in `config/cpu8088.json`. Regenerate the assembly contract and native smoke

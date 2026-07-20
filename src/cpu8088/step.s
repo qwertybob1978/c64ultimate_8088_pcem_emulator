@@ -29,10 +29,20 @@
 :
 .endmacro
 
+.macro long_bne target
+    beq :+
+    jmp target
+:
+.endmacro
+
 .segment "BSS"
 cpu8088_last_opcode: .res 1
 immediate_low:       .res 1
 relative_high:       .res 1
+modrm_byte:          .res 1
+operand_width:       .res 1
+source_offset:       .res 1
+destination_offset:  .res 1
 
 .segment "CODE"
 
@@ -52,6 +62,16 @@ cpu8088_step:
 
     cmp #$90                    ; NOP
     long_beq @nop
+    cmp #$88                    ; MOV r/m,reg and MOV reg,r/m
+    long_bcc @check_mov_imm8
+    cmp #$8C
+    long_bcc @mov_modrm
+@check_mov_imm8:
+    cmp #$B0                    ; MOV r8, imm8
+    long_bcc @check_other_opcodes
+    cmp #$B8
+    long_bcc @mov_r8_imm8
+@check_other_opcodes:
     cmp #$F4                    ; HLT
     long_beq @hlt
     cmp #$EB                    ; JMP rel8
@@ -70,6 +90,10 @@ cpu8088_step:
     long_beq @cld
     cmp #$FD                    ; STD
     long_beq @std
+    cmp #$C6                    ; MOV r/m8, imm8 (/0, register form)
+    long_beq @mov_rm_imm
+    cmp #$C7                    ; MOV r/m16, imm16 (/0, register form)
+    long_beq @mov_rm_imm
 
     cmp #$B8                    ; MOV r16, imm16
     long_bcc @invalid
@@ -90,6 +114,116 @@ cpu8088_step:
     lda #$04
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
+    rts
+
+@mov_r8_imm8:
+    sec
+    sbc #$B0
+    jsr @byte_register_offset
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta cpu8088_state,x
+    lda #$04
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+; The first native ModR/M slice handles register-to-register MOV. Memory
+; effective addresses are added with the guest data cache in the next slice.
+@mov_modrm:
+    and #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    and #$C0
+    cmp #$C0
+    long_bne @invalid
+
+    lda modrm_byte
+    and #$07
+    jsr @register_offset
+    stx destination_offset
+    lda modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    jsr @register_offset
+    stx source_offset
+
+    lda cpu8088_last_opcode
+    and #$02
+    beq @copy_register
+    ldx source_offset
+    ldy destination_offset
+    stx destination_offset
+    sty source_offset
+@copy_register:
+    ldy source_offset
+    ldx destination_offset
+    lda cpu8088_state,y
+    sta cpu8088_state,x
+    lda operand_width
+    beq @mov_modrm_done
+    iny
+    inx
+    lda cpu8088_state,y
+    sta cpu8088_state,x
+@mov_modrm_done:
+    lda #$02
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@mov_rm_imm:
+    and #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    and #$F8                    ; require mod=3 and opcode extension /0
+    cmp #$C0
+    long_bne @invalid
+    lda modrm_byte
+    and #$07
+    jsr @register_offset
+    stx destination_offset
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    ldx destination_offset
+    sta cpu8088_state,x
+    lda operand_width
+    beq @mov_rm_imm_done
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    ldx destination_offset
+    sta cpu8088_state+1,x
+@mov_rm_imm_done:
+    lda #$04
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+; Convert a ModR/M register index in A to a byte offset in cpu8088_state.
+@register_offset:
+    ldx operand_width
+    beq @byte_register_offset
+    asl a
+    tax
+    rts
+@byte_register_offset:
+    cmp #$04
+    bcc @low_byte_register
+    sec
+    sbc #$04
+    asl a
+    tax
+    inx
+    rts
+@low_byte_register:
+    asl a
+    tax
     rts
 
 @nop:
