@@ -6,6 +6,7 @@
 .importzp reu_c64_addr
 .importzp reu_ext_addr
 .importzp reu_length
+.import cpu8088_mem_cache_invalidate
 
 .export guest_load_genxt
 
@@ -15,6 +16,7 @@
 ; BIOS ROM at physical FE000h. The ROM is a local build input and is ignored by
 ; Git; tools/verify_roms.py validates its pinned hash before release builds.
 guest_load_genxt:
+    jsr cpu8088_mem_cache_invalidate
     jsr reu_clear_conventional
     bcs @failed
     lda #$0B                    ; clear B0000-BFFFF, including CGA B8000

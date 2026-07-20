@@ -5,6 +5,7 @@
 .importzp reu_c64_addr
 .importzp reu_ext_addr
 .importzp reu_length
+.import cpu8088_mem_cache_flush
 
 .export cga_render_text_40
 .export cga_test_render
@@ -38,6 +39,10 @@ cga_test_error:  .res 1
 ; Project the left 40 columns of the 80x25 CGA text page at physical B8000h
 ; onto the C64's 40x25 text screen. Each CGA row is fetched in one REU DMA.
 cga_render_text_40:
+    jsr cpu8088_mem_cache_flush
+    bcc :+
+    rts
+:
     lda #$00
     sta BACKGROUND_COLOR
     lda #<C64_SCREEN

@@ -4,6 +4,7 @@
 .import cpu8088_state
 .importzp cpu8088_phys_addr
 .import reu_copy_from_reu
+.import cpu8088_mem_cache_flush
 .importzp reu_c64_addr
 .importzp reu_ext_addr
 .importzp reu_length
@@ -13,6 +14,7 @@
 .export cpu8088_fetch_u8
 .export cpu8088_fetch_cache_invalidate
 .export cpu8088_fetch_cache_misses
+.export cpu8088_fetch_cache_write_u8
 
 .segment "BSS"
 fetch_page:                 .res 256
@@ -43,6 +45,8 @@ cpu8088_fetch_u8:
     beq @read_cached
 
 @refill:
+    jsr cpu8088_mem_cache_flush
+    bcs @failed
     lda #<fetch_page
     sta reu_c64_addr
     lda #>fetch_page
@@ -83,3 +87,22 @@ cpu8088_fetch_u8:
 @failed:
     rts
 
+; Keep an already-cached instruction page coherent with guest stores. A is the
+; new byte and cpu8088_phys_addr identifies its physical destination.
+cpu8088_fetch_cache_write_u8:
+    pha
+    lda fetch_page_valid
+    beq @not_cached
+    lda cpu8088_phys_addr+1
+    cmp fetch_page_tag_mid
+    bne @not_cached
+    lda cpu8088_phys_addr+2
+    cmp fetch_page_tag_high
+    bne @not_cached
+    ldy cpu8088_phys_addr
+    pla
+    sta fetch_page,y
+    rts
+@not_cached:
+    pla
+    rts

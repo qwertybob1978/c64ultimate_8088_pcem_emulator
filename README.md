@@ -82,10 +82,11 @@ columns of the PC's 80x25 text page onto the C64's 40x25 screen, converts common
 ASCII characters to C64 screen codes, and approximates all 16 CGA foreground
 colors in color RAM. The cartridge diagnostic first seeds and verifies a CGA
 banner, then clears guest memory, maps the verified Generic XT ROM at `$FE000`,
-and uses the same renderer while the native BIOS executes. A long warp-mode
-VICE run currently remains stable but does not yet reach the banner visibly;
-guest data reads still use correctness-first byte DMA and are the next
-performance bottleneck.
+and uses the same renderer while the native BIOS executes. The guest data path
+uses a coherent 256-byte write-back cache and flushes before direct CGA DMA.
+A 500-million-cycle warp-mode VICE run visibly reaches the real BIOS banner
+and its `System error #00, Continue?` prompt. PIC/PIT and floppy hardware remain
+the next POST blockers.
 
 ## Running the hardware diagnostic
 
@@ -135,9 +136,10 @@ register `MOV`, register and REU-memory ModR/M `MOV`, short and near relative `J
 the byte/word accumulator-immediate forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
 `SUB`, `XOR`, and `CMP`, including 8088 condition flags. It also supports
 `CLC`/`STC`/`CLI`/`STI`/`CLD`/`STD`. All 8088 ModR/M effective-address forms
-are decoded with the correct DS/SS default segment. Data operands currently
-use correctness-first byte DMA; Phase 2 replaces this with a write-back page
-cache. Register and memory ModR/M forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
+are decoded with the correct DS/SS default segment. Data operands use a
+256-byte write-back page cache with instruction-cache coherence and explicit
+flushing for direct REU clients. Register and memory ModR/M forms of `ADD`,
+`OR`, `ADC`, `SBB`, `AND`,
 `SUB`, `XOR`, and `CMP` share the same native flag engine as accumulator forms.
 The direct-offset `A0`-`A3` forms move AL or AX to and from a DS- or
 segment-override-relative 16-bit memory offset, covering the BIOS POST store

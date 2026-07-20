@@ -103,10 +103,18 @@ XT BIOS execution loop. It clears conventional/CGA RAM, copies the locally
 verified 8 KiB ROM to REU physical FE000h, resets the CPU, polls the C64
 keyboard after bounded batches, and renders B8000 periodically. A
 500,000,000-cycle VICE warp run is stable and green after adding native
-`A0`-`A3` direct-offset MOV support, but the visible CGA page is still blank.
-The dominant bottleneck is one REU DMA transaction per guest data byte.
+`A0`-`A3` direct-offset MOV support and a 256-byte write-back guest data cache.
+The cache is coherent with the instruction page and flushes before CGA DMA.
+The visible page now contains real BIOS output:
 
-## 4. Exact next task: accelerate native BIOS and add IRQ scheduling
+```text
+SYSTEM ERROR #00, CONTINUE? GENERIC TURBO ...
+```
+
+This is the first native BIOS/CGA checkpoint. Device initialization and the
+keyboard response to the prompt are the next blockers.
+
+## 4. Exact next task: PIC/PIT and POST keyboard response
 
 The XT PPI/DIP slice and C64 keyboard translation are complete. Port 62h now advertises color 80-column video,
 03BAh remains open bus, and 03DAh supplies display-enable plus vertical-retrace
@@ -133,13 +141,12 @@ B8000:          complete 80x25 space/attribute page plus BIOS banner
 
 The mapping in `src/host/keyboard.s` covers letters, digits, Enter, Backspace,
 Space, punctuation, and cursor keys and queues set-1 make codes on port 60h.
-The native BIOS loop and direct CGA refresh are now present. First add a
-256-byte guest data read cache (writes may remain write-through initially) so
-POST can visibly advance in VICE. Invalidate it during guest initialization and
-keep writes coherent with the direct REU CGA renderer. Then replace the
-provisional late vector-08 injection with an XT PIC/PIT slice, route keyboard
-IRQ1 through that PIC, and implement DMA channel 2/FDC commands for the
-validated 360 KiB DOS image.
+The native BIOS loop, cached memory, and direct CGA refresh are present. Replace
+the provisional late vector-08 injection with an XT PIC/PIT slice and route
+keyboard IRQ1 through that PIC. Extend C64 keyboard translation with the eight
+PETSCII function-key codes so the BIOS `Continue?` prompt can receive F1 when
+needed. Then implement DMA channel 2/FDC commands for the validated 360 KiB DOS
+image.
 
 ## 5. How to trace the BIOS to the next blocker
 
