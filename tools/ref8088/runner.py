@@ -494,45 +494,50 @@ class Reference8088:
         elif handler == "group3":
             width = 16 if opcode & 1 else 8
             operand, extension = self.decode_modrm(width)
-            divisor_raw = self.read_operand(operand)
-            if extension not in (6, 7):
+            operand_value = self.read_operand(operand)
+            if extension == 2:
+                self.write_operand(operand, ~operand_value & ((1 << width) - 1))
+                cycles = 3 if operand["kind"] == "register" else 16
+            elif extension not in (6, 7):
                 self.last_cycles = 0
                 return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
-            signed = extension == 7
-            if width == 8:
-                dividend_raw = self.registers["AX"]
-                quotient_bits = 8
             else:
-                dividend_raw = (self.registers["DX"] << 16) | self.registers["AX"]
-                quotient_bits = 16
-            if signed:
-                dividend_sign = 1 << (width * 2 - 1)
-                divisor_sign = 1 << (width - 1)
-                dividend = dividend_raw - (dividend_sign << 1) if dividend_raw & dividend_sign else dividend_raw
-                divisor = divisor_raw - (divisor_sign << 1) if divisor_raw & divisor_sign else divisor_raw
-            else:
-                dividend = dividend_raw
-                divisor = divisor_raw
-            divide_error = divisor == 0
-            if not divide_error:
-                magnitude = abs(dividend) // abs(divisor)
-                quotient = -magnitude if (dividend < 0) != (divisor < 0) else magnitude
-                remainder = dividend - quotient * divisor
-                if signed:
-                    minimum = -(1 << (quotient_bits - 1))
-                    maximum = (1 << (quotient_bits - 1)) - 1
+                divisor_raw = operand_value
+                signed = extension == 7
+                if width == 8:
+                    dividend_raw = self.registers["AX"]
+                    quotient_bits = 8
                 else:
-                    minimum = 0
-                    maximum = (1 << quotient_bits) - 1
-                divide_error = not minimum <= quotient <= maximum
-            if divide_error:
-                self.interrupt(0)
-            elif width == 8:
-                self.registers["AX"] = ((remainder & 0xFF) << 8) | (quotient & 0xFF)
-            else:
-                self.registers["AX"] = quotient & 0xFFFF
-                self.registers["DX"] = remainder & 0xFFFF
-            cycles = 80 if width == 8 else 144
+                    dividend_raw = (self.registers["DX"] << 16) | self.registers["AX"]
+                    quotient_bits = 16
+                if signed:
+                    dividend_sign = 1 << (width * 2 - 1)
+                    divisor_sign = 1 << (width - 1)
+                    dividend = dividend_raw - (dividend_sign << 1) if dividend_raw & dividend_sign else dividend_raw
+                    divisor = divisor_raw - (divisor_sign << 1) if divisor_raw & divisor_sign else divisor_raw
+                else:
+                    dividend = dividend_raw
+                    divisor = divisor_raw
+                divide_error = divisor == 0
+                if not divide_error:
+                    magnitude = abs(dividend) // abs(divisor)
+                    quotient = -magnitude if (dividend < 0) != (divisor < 0) else magnitude
+                    remainder = dividend - quotient * divisor
+                    if signed:
+                        minimum = -(1 << (quotient_bits - 1))
+                        maximum = (1 << (quotient_bits - 1)) - 1
+                    else:
+                        minimum = 0
+                        maximum = (1 << quotient_bits) - 1
+                    divide_error = not minimum <= quotient <= maximum
+                if divide_error:
+                    self.interrupt(0)
+                elif width == 8:
+                    self.registers["AX"] = ((remainder & 0xFF) << 8) | (quotient & 0xFF)
+                else:
+                    self.registers["AX"] = quotient & 0xFFFF
+                    self.registers["DX"] = remainder & 0xFFFF
+                cycles = 80 if width == 8 else 144
         elif handler == "shift_one":
             width = 16 if opcode & 1 else 8
             destination, extension = self.decode_modrm(width)

@@ -318,6 +318,26 @@
       "expectedMemory": [
         { "segment": 4096, "offset": 4660, "bytes": "02" }
       ]
+    },
+    {
+      "name": "group3_not_word_preserves_flags",
+      "initial": { "CS": 49664, "IP": 0, "AX": 21845, "FLAGS": 2263 },
+      "program": "f7d0f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 43690, "CS": 49664, "IP": 3, "FLAGS": 2263 }
+    },
+    {
+      "name": "group3_not_byte_memory",
+      "initial": { "CS": 49920, "IP": 0, "DS": 8192, "FLAGS": 71 },
+      "program": "f6163412f4",
+      "memory": [
+        { "segment": 8192, "offset": 4660, "bytes": "a5" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "CS": 49920, "IP": 5, "FLAGS": 71 },
+      "expectedMemory": [
+        { "segment": 8192, "offset": 4660, "bytes": "5a" }
+      ]
     }
   ]
 }

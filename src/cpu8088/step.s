@@ -234,9 +234,9 @@ cpu8088_step:
 @check_other_opcodes:
     cmp #$F4                    ; HLT
     long_beq @hlt
-    cmp #$F6                    ; DIV/IDIV group 3 byte
+    cmp #$F6                    ; NOT/DIV/IDIV group 3 byte
     long_beq @group3_divide
-    cmp #$F7                    ; DIV/IDIV group 3 word
+    cmp #$F7                    ; NOT/DIV/IDIV group 3 word
     long_beq @group3_divide
     cmp #$EB                    ; JMP rel8
     long_beq @jmp_rel8
@@ -626,15 +626,20 @@ cpu8088_step:
     lsr a
     lsr a
     and #$07
+    cmp #$02
+    beq @group3_extension_ok
     cmp #$06
     long_bcc @invalid
-    sta source_offset           ; group extension: 6=DIV, 7=IDIV
+@group3_extension_ok:
+    sta source_offset           ; group extension: 2=NOT, 6=DIV, 7=IDIV
     lda modrm_byte
     jsr cpu8088_decode_ea
     cmp #$FE
     long_beq @memory_error
     cmp #$01
     beq @group3_register
+    lda #$01
+    sta alu_destination_kind
     jsr cpu8088_mem_read_u8
     long_bcs @memory_error
     sta immediate_low
@@ -648,8 +653,11 @@ cpu8088_step:
     sta relative_high
     jmp @group3_execute
 @group3_register:
+    lda #$00
+    sta alu_destination_kind
     lda cpu8088_ea_rm_index
     jsr @register_offset
+    stx destination_offset
     lda cpu8088_state,x
     sta immediate_low
     lda #$00
@@ -659,6 +667,9 @@ cpu8088_step:
     lda cpu8088_state+1,x
     sta relative_high
 @group3_execute:
+    lda source_offset
+    cmp #$02
+    beq @group3_not
     lda operand_width
     bne @group3_word
     lda immediate_low
@@ -690,6 +701,47 @@ cpu8088_step:
     ldx operand_width
     beq :+
     lda #$90
+:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@group3_not:
+    lda immediate_low
+    eor #$FF
+    sta immediate_low
+    lda operand_width
+    beq @group3_not_store
+    lda relative_high
+    eor #$FF
+    sta relative_high
+@group3_not_store:
+    lda alu_destination_kind
+    bne @group3_not_memory
+    ldx destination_offset
+    lda immediate_low
+    sta cpu8088_state,x
+    lda operand_width
+    beq @group3_not_done
+    lda relative_high
+    sta cpu8088_state+1,x
+    jmp @group3_not_done
+@group3_not_memory:
+    jsr cpu8088_ea_recompute
+    lda immediate_low
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    lda operand_width
+    beq @group3_not_done
+    jsr cpu8088_ea_next_byte
+    lda relative_high
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+@group3_not_done:
+    lda #$03
+    ldx alu_destination_kind
+    beq :+
+    lda #$10
 :
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK

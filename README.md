@@ -125,6 +125,8 @@ guest once delivery becomes legal. A separate NMI latch bypasses IF/shadow.
 Native `DIV`/`IDIV` handlers cover byte and word register or memory divisors.
 They use bounded binary long division and enter interrupt 0 without modifying
 the dividend on a zero divisor or a quotient that cannot fit its destination.
+The same Group-3 decoder implements byte/word `NOT` for register and memory
+operands without changing any FLAGS bits.
 `PUSHF`/`POPF` round-trip the 8088 FLAGS image through the REU-backed stack,
 while `SAHF`/`LAHF` transfer the five arithmetic status flags through AH.
 Immediate far `CALL`/`JMP` and `RETF`/`RETF imm16` now update CS:IP and the
