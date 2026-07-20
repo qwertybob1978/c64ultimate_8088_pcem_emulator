@@ -13,6 +13,7 @@
 .import cpu8088_request_irq
 .import cpu8088_fetch_cache_invalidate
 .import io_debug_latch
+.import cga_test_render
 .import reu_copy_to_reu
 .import reu_copy_from_reu
 .importzp reu_c64_addr
@@ -90,8 +91,15 @@ start:
     lda #<msg_stepper_ok
     ldx #>msg_stepper_ok
     jsr print
+    jsr cga_test_render
+    bcc @cga_fail
     lda #COLOR_GREEN
     sta BORDER_COLOR
+    jmp @done
+@cga_fail:
+    lda #<msg_cga_fail
+    ldx #>msg_cga_fail
+    jsr print
     jmp @done
 @stepper_fail:
     lda #<msg_stepper_fail
@@ -333,3 +341,4 @@ msg_cpu_ok:        .byte "8088 RESET VECTOR: OK", $0D, $00
 msg_cpu_fail:      .byte "8088 RESET VECTOR: FAILED", $0D, $00
 msg_stepper_ok:    .byte "8088 FETCH/STEP: OK", $0D, $00
 msg_stepper_fail:  .byte "8088 FETCH/STEP: FAILED", $0D, $00
+msg_cga_fail:      .byte "CGA TEXT RENDER: FAILED", $0D, $00

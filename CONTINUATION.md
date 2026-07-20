@@ -95,6 +95,7 @@ The native 6502 8088 core already has these major slices:
 - byte/word ModR/M XCHG;
 - a four-bank 32 KiB Magic Desk CRT with a RAM-resident multi-bank loader;
 - automated VICE 3.10 CRT smoke testing with a 16 MiB REU in warp mode.
+- a verified 40-column projection of the guest B8000 80x25 CGA text page;
 
 The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
@@ -297,6 +298,7 @@ git status --short
 | `src/host/hardware.inc` | C64 Ultimate turbo and REU hardware constants |
 | `src/host/turbo.s` | Turbo-mode setup |
 | `src/bus/io.s` | Current XT I/O dispatcher; open bus plus ports 80h/81h latches |
+| `src/video/cga.s` | REU-to-C64 CGA text renderer, color mapping, and native banner diagnostic |
 | `src/boot/hwtest.s` | Native startup and green/red diagnostic UI |
 
 ### Cartridge

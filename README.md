@@ -68,6 +68,17 @@ warp mode enabled:
 
 Use `.\start_vice.ps1 -SkipBuild` when `build/c64x86.crt` is already current.
 
+### Current CGA text output
+
+The native cartridge includes a correctness-first CGA text renderer. It DMA
+reads each 160-byte row from guest physical `$B8000`, projects the left 40
+columns of the PC's 80x25 text page onto the C64's 40x25 screen, converts common
+ASCII characters to C64 screen codes, and approximates all 16 CGA foreground
+colors in color RAM. The cartridge diagnostic seeds and verifies a CGA banner,
+restores the guest row, and leaves the rendered banner visible. Live BIOS text
+will use this same renderer once native BIOS scheduling and CGA port state are
+wired in.
+
 ## Running the hardware diagnostic
 
 1. Configure a 16 MiB REU in the Ultimate settings.

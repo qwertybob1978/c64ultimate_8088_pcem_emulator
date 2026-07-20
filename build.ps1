@@ -34,6 +34,7 @@ $objects = @(
     @{ Source = "src/cpu8088/interrupts.s"; Object = "cpu8088/interrupts.o" },
     @{ Source = "src/cpu8088/divide.s"; Object = "cpu8088/divide.o" },
     @{ Source = "src/bus/io.s"; Object = "bus/io.o" },
+    @{ Source = "src/video/cga.s"; Object = "video/cga.o" },
     @{ Source = "src/memory/guest_memory.s"; Object = "memory/guest_memory.o" },
     @{ Source = "src/cpu8088/step.s"; Object = "cpu8088/step.o" }
 )
