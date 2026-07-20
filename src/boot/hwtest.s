@@ -10,6 +10,7 @@
 .importzp cpu8088_phys_addr
 .import cpu8088_state
 .import cpu8088_step
+.import cpu8088_request_irq
 .import cpu8088_fetch_cache_invalidate
 .import reu_copy_to_reu
 .import reu_copy_from_reu
@@ -167,6 +168,8 @@ test_cpu_stepper:
 :
     jsr cpu8088_fetch_cache_invalidate
     jsr cpu8088_reset
+    lda #CPU_SMOKE_PENDING_IRQ
+    jsr cpu8088_request_irq
     lda #$00
     sta cpu8088_state+CPU_CS
     sta cpu8088_state+CPU_CS+1

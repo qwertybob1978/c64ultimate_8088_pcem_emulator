@@ -118,6 +118,9 @@ and the ZF-controlled stopping rules for `REPE` and `REPNE` comparisons.
 Real-mode software interrupt entry and return are native as well: `INT3`,
 `INT imm8`, taken `INTO`, and `IRET` use the REU-backed IVT and SS:SP stack,
 preserve the 8088 interrupt frame layout, and clear TF/IF on entry.
+An asynchronous IRQ latch holds a PIC-supplied vector while IF is clear,
+honors the one-instruction interrupt shadow after `STI`, and wakes a halted
+guest once delivery becomes legal. A separate NMI latch bypasses IF/shadow.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

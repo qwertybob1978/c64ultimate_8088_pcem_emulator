@@ -9,6 +9,10 @@
 .export cpu8088_segment_override
 .export cpu8088_repeat_prefix
 
+.import cpu8088_irq_pending
+.import cpu8088_nmi_pending
+.import cpu8088_interrupt_shadow
+
 .segment "BSS"
 cpu8088_state: .res CPU_STATE_SIZE
 cpu8088_halted: .res 1
@@ -25,6 +29,9 @@ cpu8088_reset:
     lda #$00
     sta cpu8088_halted
     sta cpu8088_last_cycles
+    sta cpu8088_irq_pending
+    sta cpu8088_nmi_pending
+    sta cpu8088_interrupt_shadow
     ldx #CPU_STATE_SIZE-1
 @clear:
     sta cpu8088_state,x

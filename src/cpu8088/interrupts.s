@@ -3,6 +3,7 @@
 .include "cpu8088/state.inc"
 
 .import cpu8088_state
+.import cpu8088_halted
 .import cpu8088_push_u16
 .import cpu8088_pop_u16
 .import cpu8088_segment_offset_physical
@@ -12,14 +13,75 @@
 
 .export cpu8088_interrupt
 .export cpu8088_iret
+.export cpu8088_request_irq
+.export cpu8088_request_nmi
+.export cpu8088_service_pending_interrupt
+.export cpu8088_irq_vector
+.export cpu8088_irq_pending
+.export cpu8088_nmi_pending
+.export cpu8088_interrupt_shadow
 
 .segment "BSS"
 interrupt_vector: .res 1
 interrupt_ip:     .res 2
 interrupt_cs:     .res 2
 interrupt_flags:  .res 2
+cpu8088_irq_vector:       .res 1
+cpu8088_irq_pending:      .res 1
+cpu8088_nmi_pending:      .res 1
+cpu8088_interrupt_shadow: .res 1
 
 .segment "CODE"
+
+cpu8088_request_irq:
+    sta cpu8088_irq_vector
+    lda #$01
+    sta cpu8088_irq_pending
+    rts
+
+cpu8088_request_nmi:
+    lda #$01
+    sta cpu8088_nmi_pending
+    rts
+
+; Poll at an instruction boundary. Carry means memory failure; otherwise A is
+; zero when nothing was delivered and one when interrupt entry completed.
+cpu8088_service_pending_interrupt:
+    lda cpu8088_nmi_pending
+    beq @check_shadow
+    lda #$00
+    sta cpu8088_nmi_pending
+    lda #$02
+    bne @service
+@check_shadow:
+    lda cpu8088_interrupt_shadow
+    beq @check_irq
+    dec cpu8088_interrupt_shadow
+    lda #$00
+    clc
+    rts
+@check_irq:
+    lda cpu8088_irq_pending
+    beq @none
+    lda cpu8088_state+CPU_FLAGS+1
+    and #$02
+    beq @none
+    lda #$00
+    sta cpu8088_irq_pending
+    lda cpu8088_irq_vector
+@service:
+    jsr cpu8088_interrupt
+    bcs @service_failed
+    lda #$00
+    sta cpu8088_halted
+    lda #$01
+    clc
+@service_failed:
+    rts
+@none:
+    lda #$00
+    clc
+    rts
 
 ; Enter an 8088 real-mode interrupt. A is the vector number. The return frame
 ; is FLAGS, CS, IP in push order, leaving IP at SS:SP. Carry reports REU error.

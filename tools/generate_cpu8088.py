@@ -57,6 +57,7 @@ def render_smoke(vectors: dict) -> str:
         f"CPU_SMOKE_PROGRAM_SIZE = {len(program)}",
         f"CPU_SMOKE_SAVE_SIZE = {vector.get('preserveBytes', len(program))}",
         f"CPU_SMOKE_STEP_COUNT = {len(vector['statuses'])}",
+        f"CPU_SMOKE_PENDING_IRQ = ${vector.get('pendingIrq', 0):02X}",
         f"CPU_SMOKE_EXPECTED_AX = ${expected['AX']:04X}",
         f"CPU_SMOKE_EXPECTED_CX = ${expected.get('CX', 0):04X}",
         f"CPU_SMOKE_EXPECTED_DX = ${expected.get('DX', 0):04X}",

@@ -26,6 +26,9 @@ class Reference8088:
         self.halted = False
         self.last_cycles = 0
         self.memory_writes = []
+        self.pending_irq = None
+        self.pending_nmi = False
+        self.interrupt_shadow = 0
         self.opcodes = {}
         for entry in spec["opcodes"]:
             for opcode in range(entry["first"], entry["last"] + 1):
@@ -38,6 +41,9 @@ class Reference8088:
         self.registers["FLAGS"] = self.flags["RESERVED"]
         self.halted = False
         self.last_cycles = 0
+        self.pending_irq = None
+        self.pending_nmi = False
+        self.interrupt_shadow = 0
 
     def physical(self, segment: int, offset: int) -> int:
         return ((segment << 4) + offset) & 0xFFFFF
@@ -219,6 +225,26 @@ class Reference8088:
         before_ip = self.registers["IP"]
         physical = self.physical(self.registers["CS"], before_ip)
         self.memory_writes = []
+        if self.pending_nmi:
+            self.pending_nmi = False
+            self.halted = False
+            self.interrupt(2)
+            self.last_cycles = 50
+            return self.trace(before_ip, physical, None, "NMI", 0)
+        shadowed = self.interrupt_shadow > 0
+        if shadowed:
+            self.interrupt_shadow -= 1
+        if (
+            self.pending_irq is not None
+            and not shadowed
+            and self.registers["FLAGS"] & self.flags["IF"]
+        ):
+            vector = self.pending_irq
+            self.pending_irq = None
+            self.halted = False
+            self.interrupt(vector)
+            self.last_cycles = 50
+            return self.trace(before_ip, physical, None, "IRQ", 0)
         if self.halted:
             return self.trace(before_ip, physical, None, "HLT", 1)
 
@@ -375,6 +401,8 @@ class Reference8088:
         elif handler in ("clear_cf", "set_cf", "clear_if", "set_if", "clear_df", "set_df"):
             action, flag = handler.split("_")
             self.set_flag(flag.upper(), action == "set")
+            if handler == "set_if":
+                self.interrupt_shadow = 1
         else:
             raise ValueError(f"reference handler is not implemented: {handler}")
 
@@ -408,6 +436,10 @@ def run_vector(spec: dict, vector: dict) -> dict:
         for index, value in enumerate(data):
             address = cpu.physical(block["segment"], (block["offset"] + index) & 0xFFFF)
             cpu.memory[address] = value
+    if "pendingIrq" in vector:
+        cpu.pending_irq = vector["pendingIrq"] & 0xFF
+    if vector.get("pendingNmi"):
+        cpu.pending_nmi = True
 
     step_count = vector.get("maxSteps", len(vector["statuses"]))
     trace = [cpu.step() for _ in range(step_count)]

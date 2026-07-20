@@ -18,6 +18,8 @@
 .import cpu8088_pop_u16
 .import cpu8088_interrupt
 .import cpu8088_iret
+.import cpu8088_service_pending_interrupt
+.import cpu8088_interrupt_shadow
 .import cpu8088_segment_override
 .import cpu8088_repeat_prefix
 .import cpu8088_segment_offset_physical
@@ -84,9 +86,19 @@ string_source_segment:.res 1
 ; immediate-register instructions needed by the native smoke test. Unsupported
 ; opcodes return CPU_STEP_INVALID without pretending to execute them.
 cpu8088_step:
+    jsr cpu8088_service_pending_interrupt
+    long_bcs @memory_error
+    cmp #$01
+    beq @pending_interrupt_done
     lda cpu8088_halted
     beq @begin
     lda #CPU_STEP_HALTED
+    rts
+
+@pending_interrupt_done:
+    lda #$32
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
     rts
 
 @begin:
@@ -1335,6 +1347,8 @@ cpu8088_step:
     sta cpu8088_state+CPU_FLAGS+1
     jmp @flag_done
 @sti:
+    lda #$01
+    sta cpu8088_interrupt_shadow
     lda cpu8088_state+CPU_FLAGS+1
     ora #X86_FLAG_IF_HI
     sta cpu8088_state+CPU_FLAGS+1

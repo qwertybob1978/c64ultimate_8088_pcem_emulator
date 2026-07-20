@@ -74,6 +74,20 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
 
     flag_mask = sum(spec["flags"][name] for name in ("CF", "PF", "AF", "ZF", "SF", "TF", "IF", "DF", "OF"))
     for index, reference_trace in enumerate(expected["trace"]):
+        if reference_trace["mnemonic"] in ("IRQ", "NMI"):
+            interrupt_number = 2 if reference_trace["mnemonic"] == "NMI" else vector["pendingIrq"]
+            software_interrupt(oracle, interrupt_number, None)
+            for name in REGISTER_ORDER:
+                actual = oracle.reg_read(REGISTER_IDS[name]) & 0xFFFF
+                wanted = reference_trace["after"][name]
+                if name == "FLAGS":
+                    actual &= flag_mask
+                    wanted &= flag_mask
+                if actual != wanted:
+                    raise AssertionError(
+                        f"{vector['name']} step {index}: Unicorn {name}={actual:#06x}, reference={wanted:#06x}"
+                    )
+            continue
         cs = oracle.reg_read(UC_X86_REG_CS)
         ip = oracle.reg_read(UC_X86_REG_IP)
         begin = address_cpu.physical(cs, ip)
