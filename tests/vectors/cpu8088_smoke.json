@@ -59,6 +59,23 @@
       "program": "b0ff040114001c02240f0c8034ff3c70f4",
       "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
       "expected": { "AX": 112, "IP": 17, "FLAGS": 70 }
+    },
+    {
+      "name": "stack_call_and_return",
+      "initial": { "CS": 24576, "IP": 0, "SS": 8192, "SP": 256 },
+      "program": "b8341250b800005be80400b97856f440c3",
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 1, "BX": 4660, "CX": 22136, "SP": 256, "IP": 15, "FLAGS": 2 },
+      "expectedMemory": [
+        { "segment": 8192, "offset": 254, "bytes": "0b00" }
+      ]
+    },
+    {
+      "name": "conditional_branches",
+      "initial": { "CS": 28672, "IP": 0 },
+      "program": "b800003d00007403b8ffff40487500f4",
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 0, "IP": 16, "FLAGS": 70 }
     }
   ]
 }

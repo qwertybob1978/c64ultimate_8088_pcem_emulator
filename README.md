@@ -141,6 +141,11 @@ Unicorn comparison covers architectural state and memory effects. Instruction
 cycle metadata remains an 8088-specific contract informed by PCem's
 `src/cpu/808x.c`, because Unicorn does not model 8088 bus timing.
 
+The desktop oracle additionally covers 16-bit register `INC`/`DEC`,
+`PUSH`/`POP`, near relative `CALL`, near `RET`, and the complete `Jcc` condition
+decoder. These handlers are validated in the reference model before entering
+the size-constrained native assembly dispatch.
+
 ## PCem reference checkout
 
 PCem is reference material and is not linked into the target program. Fetch the

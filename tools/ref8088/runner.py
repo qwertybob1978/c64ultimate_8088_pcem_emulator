@@ -175,6 +175,28 @@ class Reference8088:
         self.update_result_flags(result, width)
         return result
 
+    def push_u16(self, value: int) -> None:
+        self.registers["SP"] = (self.registers["SP"] - 2) & 0xFFFF
+        self.write_memory(self.registers["SS"], self.registers["SP"], 16, value)
+
+    def pop_u16(self) -> int:
+        value = self.read_memory(self.registers["SS"], self.registers["SP"], 16)
+        self.registers["SP"] = (self.registers["SP"] + 2) & 0xFFFF
+        return value
+
+    def condition(self, code: int) -> bool:
+        flags = self.registers["FLAGS"]
+        cf = bool(flags & self.flags["CF"])
+        pf = bool(flags & self.flags["PF"])
+        zf = bool(flags & self.flags["ZF"])
+        sf = bool(flags & self.flags["SF"])
+        of = bool(flags & self.flags["OF"])
+        conditions = (
+            of, not of, cf, not cf, zf, not zf, cf or zf, not cf and not zf,
+            sf, not sf, pf, not pf, sf != of, sf == of, zf or sf != of, not zf and sf == of,
+        )
+        return conditions[code]
+
     def set_flag(self, name: str, enabled: bool) -> None:
         mask = self.flags[name]
         if enabled:
@@ -198,6 +220,7 @@ class Reference8088:
 
         handler = metadata["handler"]
         status = 0
+        cycles = metadata["cycles"]
         if handler == "nop":
             pass
         elif handler == "hlt":
@@ -207,6 +230,16 @@ class Reference8088:
             self.set_register(opcode - 0xB0, 8, self.fetch_u8())
         elif handler == "mov_r16_imm16":
             self.set_register(opcode - 0xB8, 16, self.fetch_u16())
+        elif handler in ("inc_reg16", "dec_reg16"):
+            index = opcode & 7
+            carry = bool(self.registers["FLAGS"] & self.flags["CF"])
+            operation = "add" if handler == "inc_reg16" else "sub"
+            self.set_register(index, 16, self.alu(operation, self.get_register(index, 16), 1, 16))
+            self.set_flag("CF", carry)
+        elif handler == "push_reg16":
+            self.push_u16(self.get_register(opcode & 7, 16))
+        elif handler == "pop_reg16":
+            self.set_register(opcode & 7, 16, self.pop_u16())
         elif handler == "mov_modrm":
             width = 16 if opcode & 1 else 8
             rm_operand, reg_index = self.decode_modrm(width)
@@ -258,13 +291,30 @@ class Reference8088:
             if displacement & 0x8000:
                 displacement -= 0x10000
             self.registers["IP"] = (self.registers["IP"] + displacement) & 0xFFFF
+        elif handler == "jcc_rel8":
+            displacement = self.fetch_u8()
+            if displacement & 0x80:
+                displacement -= 0x100
+            if self.condition(opcode & 0x0F):
+                self.registers["IP"] = (self.registers["IP"] + displacement) & 0xFFFF
+                cycles = 16
+        elif handler == "call_rel16":
+            displacement = self.fetch_u16()
+            if displacement & 0x8000:
+                displacement -= 0x10000
+            self.push_u16(self.registers["IP"])
+            self.registers["IP"] = (self.registers["IP"] + displacement) & 0xFFFF
+        elif handler in ("ret_near", "ret_near_imm"):
+            stack_adjust = self.fetch_u16() if handler == "ret_near_imm" else 0
+            self.registers["IP"] = self.pop_u16()
+            self.registers["SP"] = (self.registers["SP"] + stack_adjust) & 0xFFFF
         elif handler in ("clear_cf", "set_cf", "clear_if", "set_if", "clear_df", "set_df"):
             action, flag = handler.split("_")
             self.set_flag(flag.upper(), action == "set")
         else:
             raise ValueError(f"reference handler is not implemented: {handler}")
 
-        self.last_cycles = metadata["cycles"]
+        self.last_cycles = cycles
         return self.trace(before_ip, physical, opcode, metadata["mnemonic"], status)
 
     def trace(self, before_ip: int, physical: int, opcode: int | None, mnemonic: str, status: int) -> dict:
