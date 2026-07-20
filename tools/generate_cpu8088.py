@@ -58,6 +58,7 @@ def render_smoke(vectors: dict) -> str:
         f"CPU_SMOKE_STEP_COUNT = {len(vector['statuses'])}",
         f"CPU_SMOKE_EXPECTED_AX = ${expected['AX']:04X}",
         f"CPU_SMOKE_EXPECTED_BX = ${expected['BX']:04X}",
+        f"CPU_SMOKE_EXPECTED_FLAGS = ${expected['FLAGS']:04X}",
         "cpu_smoke_program:",
         f"    .byte {byte_list}",
         "",

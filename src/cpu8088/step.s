@@ -43,6 +43,12 @@ modrm_byte:          .res 1
 operand_width:       .res 1
 source_offset:       .res 1
 destination_offset:  .res 1
+alu_operation:       .res 1
+alu_left:            .res 2
+alu_right:           .res 2
+alu_result:          .res 2
+alu_carry:           .res 1
+alu_temp:            .res 1
 
 .segment "CODE"
 
@@ -59,6 +65,11 @@ cpu8088_step:
     jsr cpu8088_fetch_u8
     long_bcs @memory_error
     sta cpu8088_last_opcode
+
+    and #$C6                    ; AL/AX immediate ALU forms: xx00010w
+    cmp #$04
+    long_beq @alu_accumulator_immediate
+    lda cpu8088_last_opcode
 
     cmp #$90                    ; NOP
     long_beq @nop
@@ -111,6 +122,252 @@ cpu8088_step:
     sta cpu8088_state+1,x
     lda immediate_low
     sta cpu8088_state,x
+    lda #$04
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@alu_accumulator_immediate:
+    lda cpu8088_last_opcode
+    and #$01
+    sta operand_width
+    lda cpu8088_last_opcode
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    sta alu_operation
+
+    lda cpu8088_state+CPU_AX
+    sta alu_left
+    lda cpu8088_state+CPU_AX+1
+    sta alu_left+1
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta alu_right
+    lda #$00
+    sta alu_right+1
+    lda operand_width
+    beq @alu_execute
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta alu_right+1
+
+@alu_execute:
+    lda #$00
+    sta alu_result+1
+    lda alu_operation
+    cmp #$01
+    long_beq @alu_or
+    cmp #$04
+    long_beq @alu_and
+    cmp #$06
+    long_beq @alu_xor
+    cmp #$00
+    long_beq @alu_add_no_carry
+    cmp #$02
+    long_beq @alu_add_with_carry
+    cmp #$03
+    long_beq @alu_sub_with_borrow
+    jmp @alu_sub_no_borrow      ; SUB and CMP
+
+@alu_add_no_carry:
+    clc
+    jmp @alu_add
+@alu_add_with_carry:
+    lda cpu8088_state+CPU_FLAGS
+    lsr a
+@alu_add:
+    lda alu_left
+    adc alu_right
+    sta alu_result
+    lda operand_width
+    beq @alu_save_add_carry
+    lda alu_left+1
+    adc alu_right+1
+    sta alu_result+1
+@alu_save_add_carry:
+    lda #$00
+    adc #$00
+    sta alu_carry
+    jmp @alu_flags
+
+@alu_sub_no_borrow:
+    sec
+    jmp @alu_subtract
+@alu_sub_with_borrow:
+    lda cpu8088_state+CPU_FLAGS
+    and #X86_FLAG_CF
+    beq @alu_sub_no_borrow
+    clc                         ; x86 CF=1 means subtract one more
+@alu_subtract:
+    lda alu_left
+    sbc alu_right
+    sta alu_result
+    lda operand_width
+    beq @alu_save_sub_carry
+    lda alu_left+1
+    sbc alu_right+1
+    sta alu_result+1
+@alu_save_sub_carry:
+    lda #$00
+    adc #$00                    ; 1 means no borrow
+    eor #$01
+    sta alu_carry
+    jmp @alu_flags
+
+@alu_or:
+    lda alu_left
+    ora alu_right
+    sta alu_result
+    lda operand_width
+    beq @alu_logical
+    lda alu_left+1
+    ora alu_right+1
+    sta alu_result+1
+    jmp @alu_logical
+@alu_and:
+    lda alu_left
+    and alu_right
+    sta alu_result
+    lda operand_width
+    beq @alu_logical
+    lda alu_left+1
+    and alu_right+1
+    sta alu_result+1
+    jmp @alu_logical
+@alu_xor:
+    lda alu_left
+    eor alu_right
+    sta alu_result
+    lda operand_width
+    beq @alu_logical
+    lda alu_left+1
+    eor alu_right+1
+    sta alu_result+1
+@alu_logical:
+    lda #$00
+    sta alu_carry
+
+@alu_flags:
+    ; Preserve reserved/undefined low bits and control flags, then rebuild
+    ; CF/PF/AF/ZF/SF/OF from the result.
+    lda cpu8088_state+CPU_FLAGS
+    and #$2A
+    sta cpu8088_state+CPU_FLAGS
+    lda cpu8088_state+CPU_FLAGS+1
+    and #$F7
+    sta cpu8088_state+CPU_FLAGS+1
+
+    lda alu_carry
+    beq @alu_no_cf
+    lda cpu8088_state+CPU_FLAGS
+    ora #X86_FLAG_CF
+    sta cpu8088_state+CPU_FLAGS
+@alu_no_cf:
+    lda alu_result
+    ora alu_result+1
+    bne @alu_not_zero
+    lda cpu8088_state+CPU_FLAGS
+    ora #<X86_FLAG_ZF
+    sta cpu8088_state+CPU_FLAGS
+@alu_not_zero:
+    lda operand_width
+    beq @alu_byte_sign
+    lda alu_result+1
+    jmp @alu_test_sign
+@alu_byte_sign:
+    lda alu_result
+@alu_test_sign:
+    bpl @alu_no_sign
+    lda cpu8088_state+CPU_FLAGS
+    ora #<X86_FLAG_SF
+    sta cpu8088_state+CPU_FLAGS
+@alu_no_sign:
+    lda alu_result
+    ldx #$08
+    ldy #$00
+@alu_parity_loop:
+    lsr a
+    bcc @alu_parity_next
+    iny
+@alu_parity_next:
+    dex
+    bne @alu_parity_loop
+    tya
+    and #$01
+    bne @alu_odd_parity
+    lda cpu8088_state+CPU_FLAGS
+    ora #<X86_FLAG_PF
+    sta cpu8088_state+CPU_FLAGS
+@alu_odd_parity:
+
+    lda alu_operation
+    cmp #$01
+    beq @alu_flags_done         ; AF is undefined for logical operations
+    cmp #$04
+    beq @alu_flags_done
+    cmp #$06
+    beq @alu_flags_done
+    lda alu_left
+    eor alu_right
+    eor alu_result
+    and #$10
+    beq @alu_no_aux_carry
+    lda cpu8088_state+CPU_FLAGS
+    ora #<X86_FLAG_AF
+    sta cpu8088_state+CPU_FLAGS
+@alu_no_aux_carry:
+
+    lda operand_width
+    beq @alu_overflow_byte
+    lda alu_left+1
+    sta alu_temp
+    lda alu_right+1
+    ldx alu_result+1
+    jmp @alu_overflow_values
+@alu_overflow_byte:
+    lda alu_left
+    sta alu_temp
+    lda alu_right
+    ldx alu_result
+@alu_overflow_values:
+    ; A=right sign byte, X=result sign byte, alu_temp=left sign byte.
+    eor alu_temp
+    sta destination_offset
+    txa
+    eor alu_temp
+    sta source_offset
+    lda alu_operation
+    cmp #$00
+    beq @alu_add_overflow
+    cmp #$02
+    beq @alu_add_overflow
+    lda destination_offset
+    and source_offset
+    jmp @alu_test_overflow
+@alu_add_overflow:
+    lda destination_offset
+    eor #$FF
+    and source_offset
+@alu_test_overflow:
+    and #$80
+    beq @alu_flags_done
+    lda cpu8088_state+CPU_FLAGS+1
+    ora #>X86_FLAG_OF
+    sta cpu8088_state+CPU_FLAGS+1
+
+@alu_flags_done:
+    lda alu_operation
+    cmp #$07                    ; CMP updates flags without storing
+    beq @alu_accumulator_done
+    lda alu_result
+    sta cpu8088_state+CPU_AX
+    lda operand_width
+    beq @alu_accumulator_done
+    lda alu_result+1
+    sta cpu8088_state+CPU_AX+1
+@alu_accumulator_done:
     lda #$04
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK

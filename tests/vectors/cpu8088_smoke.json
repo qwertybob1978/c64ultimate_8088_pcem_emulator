@@ -4,9 +4,9 @@
     {
       "name": "native_smoke",
       "initial": { "CS": 0, "IP": 0 },
-      "program": "b034b412bb785688e18ad990f4",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 4660, "CX": 18, "BX": 22034, "IP": 13, "FLAGS": 2 }
+      "program": "b034b412bb785688e18ad904cc14002d01003d001290f4",
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 4608, "CX": 18, "BX": 22034, "IP": 23, "FLAGS": 70 }
     },
     {
       "name": "flags_and_short_jump",

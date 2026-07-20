@@ -190,6 +190,12 @@ test_cpu_stepper:
     lda cpu8088_state+CPU_BX+1
     cmp #>CPU_SMOKE_EXPECTED_BX
     bne @restore
+    lda cpu8088_state+CPU_FLAGS
+    cmp #<CPU_SMOKE_EXPECTED_FLAGS
+    bne @restore
+    lda cpu8088_state+CPU_FLAGS+1
+    cmp #>CPU_SMOKE_EXPECTED_FLAGS
+    bne @restore
     lda #$01
     sta stepper_result
 
