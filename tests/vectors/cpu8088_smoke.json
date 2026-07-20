@@ -508,6 +508,13 @@
       "expectedMemory": [
         { "segment": 12288, "offset": 4660, "bytes": "feca" }
       ]
+    },
+    {
+      "name": "complement_carry_twice_preserves_other_flags",
+      "initial": { "CS": 55552, "IP": 0, "FLAGS": 2247 },
+      "program": "f5f5f4",
+      "statuses": ["ok", "ok", "halted"],
+      "expected": { "CS": 55552, "IP": 3, "FLAGS": 2247 }
     }
   ]
 }

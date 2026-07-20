@@ -236,6 +236,8 @@ cpu8088_step:
 @check_other_opcodes:
     cmp #$F4                    ; HLT
     long_beq @hlt
+    cmp #$F5                    ; CMC
+    long_beq @cmc
     cmp #$F6                    ; NOT/DIV/IDIV group 3 byte
     long_beq @group3_divide
     cmp #$F7                    ; NOT/DIV/IDIV group 3 word
@@ -2428,6 +2430,11 @@ cpu8088_step:
 @clc:
     lda cpu8088_state+CPU_FLAGS
     and #($FF-X86_FLAG_CF)
+    sta cpu8088_state+CPU_FLAGS
+    jmp @flag_done
+@cmc:
+    lda cpu8088_state+CPU_FLAGS
+    eor #X86_FLAG_CF
     sta cpu8088_state+CPU_FLAGS
     jmp @flag_done
 @stc:

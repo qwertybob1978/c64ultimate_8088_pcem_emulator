@@ -101,25 +101,28 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: complement carry flag
+## 4. Exact next task: rotate through CL count
 
-ModR/M XCHG is complete. The Generic XT BIOS now executes 26,010 successful
-instructions and stops on instruction number 26,011 (zero-based trace index
-26010):
+CMC is complete. The Generic XT BIOS now executes 37,566 successful
+instructions and stops on instruction number 37,567 (zero-based trace index
+37566):
 
 ```text
-reported start: F000:F6F4
-bytes:          F5
-meaning:        CMC
-opcode family:  F5, complement carry flag
-FLAGS before:   arithmetic result from CMP AL,imm8
+reported start: F000:E338
+bytes:          D2 C8
+meaning:        ROR AL,CL
+opcode family:  D2 /1, rotate right byte by CL
+AX:             0006
+CL:             03
 ```
 
-Implement `CMC` in the desktop reference and native core by toggling only CF.
-All other FLAGS bits must remain unchanged. Add vectors with CF initially clear
-and set, update opcode metadata and README, regenerate, run all tests, build the
-CRT, run VICE in warp mode, trace the next blocker, update this guide, and
-commit the milestone.
+Extend the existing D0-D3 shift engine with the rotate extensions needed by the
+8088: ROL `/0`, ROR `/1`, RCL `/2`, and RCR `/3`. Preserve SF/ZF/PF/AF because
+rotates only define CF and, for a count of one, OF. Count zero must preserve all
+flags and the operand. Original 8088 CL counts are not masked. Add byte/word,
+register/memory, count-one, count-many, and count-zero differential vectors.
+Regenerate, test, build, run VICE in warp mode, trace the next blocker, update
+this guide, and commit the milestone.
 
 ## 5. How to trace the BIOS to the next blocker
 

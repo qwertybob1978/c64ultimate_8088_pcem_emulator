@@ -102,6 +102,7 @@
     { "first": 236, "last": 237, "mnemonic": "IN acc,DX", "handler": "in_dx", "length": 1, "cycles": 8 },
     { "first": 238, "last": 239, "mnemonic": "OUT DX,acc", "handler": "out_dx", "length": 1, "cycles": 8 },
     { "first": 244, "last": 244, "mnemonic": "HLT", "handler": "hlt", "length": 1, "cycles": 2 },
+    { "first": 245, "last": 245, "mnemonic": "CMC", "handler": "complement_cf", "length": 1, "cycles": 2 },
     { "first": 246, "last": 247, "mnemonic": "GRP3", "handler": "group3", "length": 2, "cycles": 80 },
     { "first": 248, "last": 248, "mnemonic": "CLC", "handler": "clear_cf", "length": 1, "cycles": 2 },
     { "first": 249, "last": 249, "mnemonic": "STC", "handler": "set_cf", "length": 1, "cycles": 2 },

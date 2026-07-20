@@ -639,6 +639,8 @@ class Reference8088:
                 self.update_result_flags(value, width)
                 self.write_operand(destination, value)
             cycles = metadata["cycles"] if opcode < 0xD2 else 8 + 4 * count
+        elif handler == "complement_cf":
+            self.set_flag("CF", not bool(self.registers["FLAGS"] & self.flags["CF"]))
         elif handler in ("clear_cf", "set_cf", "clear_if", "set_if", "clear_df", "set_df"):
             action, flag = handler.split("_")
             self.set_flag(flag.upper(), action == "set")
