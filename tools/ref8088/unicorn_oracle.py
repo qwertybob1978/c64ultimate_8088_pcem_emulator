@@ -81,12 +81,17 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
         for entry in vector.get("ports", [])
     }
     oracle_io = []
+    video_status_phase = {0x3BA: 0, 0x3DA: 0}
 
     def port_in(_uc: Uc, port: int, size: int, _user_data: object) -> int:
         value = 0
         for index in range(size):
             byte_port = (port + index) & 0xFFFF
-            byte = oracle_ports.get(byte_port, 0xFF)
+            if byte_port in video_status_phase and byte_port not in oracle_ports:
+                byte = video_status_phase[byte_port]
+                video_status_phase[byte_port] ^= 1
+            else:
+                byte = oracle_ports.get(byte_port, 0xFF)
             oracle_io.append({"direction": "in", "port": byte_port, "value": byte})
             value |= byte << (index * 8)
         return value

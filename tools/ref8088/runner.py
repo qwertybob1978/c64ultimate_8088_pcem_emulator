@@ -29,6 +29,7 @@ class Reference8088:
         self.pending_irq = None
         self.pending_nmi = False
         self.interrupt_shadow = 0
+        self.video_status_phase = {0x3BA: 0, 0x3DA: 0}
         self.last_interrupt_return_ip = None
         self.ports = {}
         self.io_events = []
@@ -48,6 +49,7 @@ class Reference8088:
         self.pending_irq = None
         self.pending_nmi = False
         self.interrupt_shadow = 0
+        self.video_status_phase = {0x3BA: 0, 0x3DA: 0}
 
     def physical(self, segment: int, offset: int) -> int:
         return ((segment << 4) + offset) & 0xFFFFF
@@ -94,7 +96,11 @@ class Reference8088:
 
     def read_port_u8(self, port: int) -> int:
         port &= 0xFFFF
-        value = self.ports.get(port, 0xFF)
+        if port in self.video_status_phase and port not in self.ports:
+            value = self.video_status_phase[port]
+            self.video_status_phase[port] ^= 1
+        else:
+            value = self.ports.get(port, 0xFF)
         self.io_events.append({"direction": "in", "port": port, "value": value})
         return value
 

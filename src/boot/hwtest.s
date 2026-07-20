@@ -17,6 +17,7 @@
 .import cpu8088_request_irq
 .import cpu8088_fetch_cache_invalidate
 .import io_debug_latch
+.import io_read_u8
 .import cga_test_render
 .import reu_copy_to_reu
 .import reu_copy_from_reu
@@ -101,6 +102,8 @@ start:
     jsr test_cpu_stepper
     bcc @stepper_fail
     jsr test_cpu_multiply
+    bcc @stepper_fail
+    jsr test_video_status
     bcc @stepper_fail
     lda #<msg_stepper_ok
     ldx #>msg_stepper_ok
@@ -385,6 +388,33 @@ test_cpu_multiply:
     sec
     rts
 @multiply_failed:
+    clc
+    rts
+
+test_video_status:
+    lda #$BA
+    ldx #$03
+    jsr io_read_u8
+    and #$01
+    bne @video_status_failed
+    lda #$BA
+    ldx #$03
+    jsr io_read_u8
+    and #$01
+    beq @video_status_failed
+    lda #$DA
+    ldx #$03
+    jsr io_read_u8
+    and #$01
+    bne @video_status_failed
+    lda #$DA
+    ldx #$03
+    jsr io_read_u8
+    and #$01
+    beq @video_status_failed
+    sec
+    rts
+@video_status_failed:
     clc
     rts
 

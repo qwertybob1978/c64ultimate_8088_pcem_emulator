@@ -7,6 +7,7 @@
 .segment "BSS"
 io_debug_latch: .res 2
 io_write_value: .res 1
+io_video_status: .res 2
 
 .segment "CODE"
 
@@ -15,6 +16,8 @@ io_write_value: .res 1
 ; Ports $80/$81 are deterministic POST/debug latches used by diagnostics now
 ; and become the first motherboard trace sink in Phase 3.
 io_read_u8:
+    cpx #$03
+    beq @video_port
     cpx #$00
     bne @open_bus
     cmp #$80
@@ -29,6 +32,21 @@ io_read_u8:
     rts
 @debug_high:
     lda io_debug_latch+1
+    rts
+@video_port:
+    cmp #$BA
+    beq @mda_status
+    cmp #$DA
+    bne @open_bus
+    ldx #$01
+    bne @toggle_video_status
+@mda_status:
+    ldx #$00
+@toggle_video_status:
+    lda io_video_status,x
+    eor #$01
+    sta io_video_status,x
+    eor #$01                    ; return the phase before this read
     rts
 
 io_write_u8:

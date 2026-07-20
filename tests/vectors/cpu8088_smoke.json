@@ -635,6 +635,19 @@
       "program": "f7c0000ff4",
       "statuses": ["ok", "halted"],
       "expected": { "AX": 61680, "CS": 56192, "IP": 5, "FLAGS": 1606 }
+    },
+    {
+      "name": "video_status_ports_toggle_display_enable",
+      "initial": { "CS": 56256, "IP": 0, "FLAGS": 2 },
+      "program": "baba03ececbada03ececf4",
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 1, "DX": 986, "CS": 56256, "IP": 11, "FLAGS": 2 },
+      "expectedIo": [
+        { "direction": "in", "port": 954, "value": 0 },
+        { "direction": "in", "port": 954, "value": 1 },
+        { "direction": "in", "port": 986, "value": 0 },
+        { "direction": "in", "port": 986, "value": 1 }
+      ]
     }
   ]
 }

@@ -17,8 +17,8 @@ Current branch and known-good commit:
 
 ```text
 branch: master
-commit: e26642e
-subject: feat(cpu): add group3 multiply
+commit: f1c8cac
+subject: feat(cpu): add group3 test
 ```
 
 The working tree was clean when this guide was created. Confirm before work:
@@ -35,6 +35,7 @@ and preserve them.
 Completed recent milestones, newest first:
 
 ```text
+f1c8cac feat(cpu): add group3 test
 e26642e feat(cpu): add group3 multiply
 b628513 feat(cpu): add accumulator test
 c783907 feat(cpu): add rotate family
@@ -45,7 +46,6 @@ c783907 feat(cpu): add rotate family
 ddd09f6 feat(cpu): add LES and LDS
 3778e51 feat(cpu): add group5 near control flow
 ff9baa0 docs: add continuation handoff
-a3f0b1e feat(cpu): add loop branch family
 ```
 
 The end goal is not complete. Continue until the Generic XT BIOS displays via
@@ -101,27 +101,27 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: CGA/MDA status transitions
+## 4. Exact next task: DAA
 
-Group-3 TEST is complete. The BIOS encounters no unsupported instruction in a
-500,000-step trace, but waits indefinitely for video status bit 0 to transition:
+Deterministic MDA/CGA status transitions are complete and break the BIOS video
+polling loop. The BIOS now executes 87,742 successful instructions and stops on
+instruction number 87,743 (zero-based trace index 87742):
 
 ```text
-loop:           F000:F44A through F44F
-bytes:          EC A8 01 75 FB
-meaning:        IN AL,DX / TEST AL,01h / JNZ F44A
-DX:             03BA (MDA status port)
-open-port read: FF
-hot-loop count: 153,618 iterations by step 500,000
+reported start: F000:E298
+bytes:          27
+meaning:        DAA
+opcode family:  27, decimal adjust AL after addition
+AX:             0203
+FLAGS:          0206 before DAA
 ```
 
-Implement deterministic display-status reads for MDA `03BAh` and CGA `03DAh`.
-The BIOS polling helpers require bit 0 to alternate between display-enable and
-blanking states; a read-count-based phase is sufficient initially and avoids
-depending on host timing. Preserve open-bus behavior on unrelated ports. Add
-desktop I/O vectors for both transitions plus native diagnostics, then trace
-until the BIOS selects an adapter or exposes the next device blocker. B8000 is
-still all zero before this device work.
+Implement 8088 `DAA`: use the incoming AF/CF and original AL to apply the 06h
+and 60h corrections, update AF/CF plus SF/ZF/PF from adjusted AL, and choose a
+deterministic convention for undefined OF that matches the project reference
+and differential oracle. Cover no-adjust, low-digit, carry, and combined cases.
+Regenerate, test, build, run VICE in warp mode, trace the next blocker, update
+this guide, and commit the milestone. B8000 is still all zero at this blocker.
 
 ## 5. How to trace the BIOS to the next blocker
 
