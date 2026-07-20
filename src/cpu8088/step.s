@@ -20,6 +20,10 @@
 .import cpu8088_iret
 .import cpu8088_service_pending_interrupt
 .import cpu8088_interrupt_shadow
+.import cpu8088_div_u8
+.import cpu8088_div_s8
+.import cpu8088_div_u16
+.import cpu8088_div_s16
 .import cpu8088_segment_override
 .import cpu8088_repeat_prefix
 .import cpu8088_segment_offset_physical
@@ -185,6 +189,10 @@ cpu8088_step:
 @check_other_opcodes:
     cmp #$F4                    ; HLT
     long_beq @hlt
+    cmp #$F6                    ; DIV/IDIV group 3 byte
+    long_beq @group3_divide
+    cmp #$F7                    ; DIV/IDIV group 3 word
+    long_beq @group3_divide
     cmp #$EB                    ; JMP rel8
     long_beq @jmp_rel8
     cmp #$E9                    ; JMP rel16
@@ -536,6 +544,85 @@ cpu8088_step:
     sta alu_right+1
 
     jmp @alu_execute
+
+@group3_divide:
+    and #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    cmp #$06
+    long_bcc @invalid
+    sta source_offset           ; group extension: 6=DIV, 7=IDIV
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @group3_register
+    jsr cpu8088_mem_read_u8
+    long_bcs @memory_error
+    sta immediate_low
+    lda #$00
+    sta relative_high
+    lda operand_width
+    beq @group3_execute
+    jsr cpu8088_ea_next_byte
+    jsr cpu8088_mem_read_u8
+    long_bcs @memory_error
+    sta relative_high
+    jmp @group3_execute
+@group3_register:
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    lda cpu8088_state,x
+    sta immediate_low
+    lda #$00
+    sta relative_high
+    lda operand_width
+    beq @group3_execute
+    lda cpu8088_state+1,x
+    sta relative_high
+@group3_execute:
+    lda operand_width
+    bne @group3_word
+    lda immediate_low
+    ldx source_offset
+    cpx #$07
+    beq @group3_signed_byte
+    jsr cpu8088_div_u8
+    jmp @group3_result
+@group3_signed_byte:
+    jsr cpu8088_div_s8
+    jmp @group3_result
+@group3_word:
+    lda immediate_low
+    ldx relative_high
+    ldy source_offset
+    cpy #$07
+    beq @group3_signed_word
+    jsr cpu8088_div_u16
+    jmp @group3_result
+@group3_signed_word:
+    jsr cpu8088_div_s16
+@group3_result:
+    bcc @group3_success
+    lda #$00
+    jsr cpu8088_interrupt
+    long_bcs @memory_error
+@group3_success:
+    lda #$50
+    ldx operand_width
+    beq :+
+    lda #$90
+:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
 
 @alu_modrm:
     lda #$00

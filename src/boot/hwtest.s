@@ -260,7 +260,7 @@ setup_stepper_transfer:
     sta reu_ext_addr
     sta reu_ext_addr+1
     sta reu_ext_addr+2
-    lda #CPU_SMOKE_PROGRAM_SIZE
+    lda #<CPU_SMOKE_PROGRAM_SIZE
     sta reu_length
     lda #>CPU_SMOKE_PROGRAM_SIZE
     sta reu_length+1

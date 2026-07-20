@@ -121,6 +121,9 @@ preserve the 8088 interrupt frame layout, and clear TF/IF on entry.
 An asynchronous IRQ latch holds a PIC-supplied vector while IF is clear,
 honors the one-instruction interrupt shadow after `STI`, and wakes a halted
 guest once delivery becomes legal. A separate NMI latch bypasses IF/shadow.
+Native `DIV`/`IDIV` handlers cover byte and word register or memory divisors.
+They use bounded binary long division and enter interrupt 0 without modifying
+the dividend on a zero divisor or a quotient that cannot fit its destination.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 
