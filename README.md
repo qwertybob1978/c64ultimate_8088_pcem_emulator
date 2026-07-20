@@ -115,6 +115,9 @@ supports interruptible-instruction groundwork for `REP`/`REPNE`. Byte and word
 `MOVS`, `CMPS`, `STOS`, `LODS`, and `SCAS` execute directly against REU-backed
 guest memory, including direction-flag index updates, zero-count repetition,
 and the ZF-controlled stopping rules for `REPE` and `REPNE` comparisons.
+Real-mode software interrupt entry and return are native as well: `INT3`,
+`INT imm8`, taken `INTO`, and `IRET` use the REU-backed IVT and SS:SP stack,
+preserve the 8088 interrupt frame layout, and clear TF/IF on entry.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

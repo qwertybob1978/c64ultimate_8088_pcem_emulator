@@ -16,6 +16,8 @@
 .import cpu8088_mem_write_u8
 .import cpu8088_push_u16
 .import cpu8088_pop_u16
+.import cpu8088_interrupt
+.import cpu8088_iret
 .import cpu8088_segment_override
 .import cpu8088_repeat_prefix
 .import cpu8088_segment_offset_physical
@@ -197,6 +199,14 @@ cpu8088_step:
     long_beq @ret_near_imm
     cmp #$C3                    ; RET
     long_beq @ret_near
+    cmp #$CC                    ; INT3
+    long_beq @int3
+    cmp #$CD                    ; INT imm8
+    long_beq @int_imm8
+    cmp #$CE                    ; INTO
+    long_beq @into
+    cmp #$CF                    ; IRET
+    long_beq @iret
 
     cmp #$B8                    ; MOV r16, imm16
     long_bcc @invalid
@@ -991,6 +1001,42 @@ cpu8088_step:
     long_bcs @memory_error
     sta stack_adjust+1
     jmp @ret_pop
+
+@int3:
+    lda #$03
+    bne @interrupt_vector
+@int_imm8:
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+@interrupt_vector:
+    jsr cpu8088_interrupt
+    long_bcs @memory_error
+    lda #$47
+    ldx cpu8088_last_opcode
+    cpx #$CC
+    bne @interrupt_done
+    lda #$48
+    bne @interrupt_done
+@into:
+    lda cpu8088_state+CPU_FLAGS+1
+    and #>X86_FLAG_OF
+    beq @into_not_taken
+    lda #$04
+    jsr cpu8088_interrupt
+    long_bcs @memory_error
+    lda #$49
+    bne @interrupt_done
+@into_not_taken:
+    lda #$04
+    bne @interrupt_done
+@iret:
+    jsr cpu8088_iret
+    long_bcs @memory_error
+    lda #$2C
+@interrupt_done:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
 @ret_near:
     lda #$00
     sta stack_adjust
