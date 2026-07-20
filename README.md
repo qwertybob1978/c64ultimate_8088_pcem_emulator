@@ -99,11 +99,13 @@ ignored evidence files are `build/vice-smoke.log` and
 ## Current 8088 execution subset
 
 The native stepper currently implements `NOP`, `HLT`, byte/word immediate
-register `MOV`, register-direct ModR/M `MOV`, short and near relative `JMP`, and
+register `MOV`, register and REU-memory ModR/M `MOV`, short and near relative `JMP`, and
 the byte/word accumulator-immediate forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
 `SUB`, `XOR`, and `CMP`, including 8088 condition flags. It also supports
-`CLC`/`STC`/`CLI`/`STI`/`CLD`/`STD`. Memory ModR/M forms still return an
-explicit unsupported-instruction status until the guest data cache lands.
+`CLC`/`STC`/`CLI`/`STI`/`CLD`/`STD`. All 8088 ModR/M effective-address forms
+are decoded with the correct DS/SS default segment. Data operands currently
+use correctness-first byte DMA; Phase 2 replaces this with a write-back page
+cache. ModR/M ALU forms remain the next native decoder slice.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

@@ -19,6 +19,8 @@
 
 .include "cpu8088/state.inc"
 .include "cpu8088/core.inc"
+.segment "RODATA"
+.include "cpu8088/smoke_vector.inc"
 
 CHROUT = $FFD2
 BORDER_COLOR = $D020
@@ -143,22 +145,26 @@ test_cpu_reset:
     clc
     rts
 
-; Save eight guest bytes at physical zero, run a four-instruction program from
-; that location, then restore the original bytes and invalidate the cache.
+; Save the generated guest-test span at physical zero, run its instructions,
+; then restore every byte it may touch and invalidate the fetch cache.
 test_cpu_stepper:
     lda #$00
     sta stepper_result
     lda #<stepper_saved
     ldx #>stepper_saved
-    jsr setup_stepper_transfer
+    jsr setup_stepper_save_transfer
     jsr reu_copy_from_reu
-    bcs @restore_done
+    bcc :+
+    jmp @restore_done
+:
 
     lda #<cpu_smoke_program
     ldx #>cpu_smoke_program
     jsr setup_stepper_transfer
     jsr reu_copy_to_reu
-    bcs @restore
+    bcc :+
+    jmp @restore
+:
     jsr cpu8088_fetch_cache_invalidate
     jsr cpu8088_reset
     lda #$00
@@ -184,6 +190,18 @@ test_cpu_stepper:
     lda cpu8088_state+CPU_AX+1
     cmp #>CPU_SMOKE_EXPECTED_AX
     bne @restore
+    lda cpu8088_state+CPU_CX
+    cmp #<CPU_SMOKE_EXPECTED_CX
+    bne @restore
+    lda cpu8088_state+CPU_CX+1
+    cmp #>CPU_SMOKE_EXPECTED_CX
+    bne @restore
+    lda cpu8088_state+CPU_DX
+    cmp #<CPU_SMOKE_EXPECTED_DX
+    bne @restore
+    lda cpu8088_state+CPU_DX+1
+    cmp #>CPU_SMOKE_EXPECTED_DX
+    bne @restore
     lda cpu8088_state+CPU_BX
     cmp #<CPU_SMOKE_EXPECTED_BX
     bne @restore
@@ -202,7 +220,7 @@ test_cpu_stepper:
 @restore:
     lda #<stepper_saved
     ldx #>stepper_saved
-    jsr setup_stepper_transfer
+    jsr setup_stepper_save_transfer
     jsr reu_copy_to_reu
     jsr cpu8088_fetch_cache_invalidate
 @restore_done:
@@ -223,12 +241,25 @@ setup_stepper_transfer:
     sta reu_ext_addr+2
     lda #CPU_SMOKE_PROGRAM_SIZE
     sta reu_length
+    lda #>CPU_SMOKE_PROGRAM_SIZE
+    sta reu_length+1
+    rts
+
+setup_stepper_save_transfer:
+    sta reu_c64_addr
+    stx reu_c64_addr+1
     lda #$00
+    sta reu_ext_addr
+    sta reu_ext_addr+1
+    sta reu_ext_addr+2
+    lda #<CPU_SMOKE_SAVE_SIZE
+    sta reu_length
+    lda #>CPU_SMOKE_SAVE_SIZE
     sta reu_length+1
     rts
 
 .segment "BSS"
-stepper_saved: .res 8
+stepper_saved: .res CPU_SMOKE_SAVE_SIZE
 stepper_result: .res 1
 stepper_steps_remaining: .res 1
 
@@ -244,4 +275,3 @@ msg_cpu_ok:        .byte "8088 RESET VECTOR: OK", $0D, $00
 msg_cpu_fail:      .byte "8088 RESET VECTOR: FAILED", $0D, $00
 msg_stepper_ok:    .byte "8088 FETCH/STEP: OK", $0D, $00
 msg_stepper_fail:  .byte "8088 FETCH/STEP: FAILED", $0D, $00
-.include "cpu8088/smoke_vector.inc"

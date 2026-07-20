@@ -9,11 +9,16 @@
 .importzp reu_length
 
 .export cpu8088_cs_ip_physical
+.export cpu8088_segment_offset_physical
 .export cpu8088_fetch_u8_slow
 .exportzp cpu8088_phys_addr
+.exportzp cpu8088_segment
+.exportzp cpu8088_offset
 
 .segment "ZEROPAGE"
 cpu8088_phys_addr: .res 3
+cpu8088_segment:   .res 2
+cpu8088_offset:    .res 2
 
 .segment "BSS"
 fetch_byte: .res 1
@@ -25,19 +30,30 @@ fetch_byte: .res 1
 ; helpers because it will become part of the instruction-page cache refill.
 cpu8088_cs_ip_physical:
     lda cpu8088_state+CPU_CS
+    sta cpu8088_segment
+    lda cpu8088_state+CPU_CS+1
+    sta cpu8088_segment+1
+    lda cpu8088_state+CPU_IP
+    sta cpu8088_offset
+    lda cpu8088_state+CPU_IP+1
+    sta cpu8088_offset+1
+
+; Calculate ((cpu8088_segment << 4) + cpu8088_offset) & $FFFFF.
+cpu8088_segment_offset_physical:
+    lda cpu8088_segment
     asl a
     asl a
     asl a
     asl a
     sta cpu8088_phys_addr
 
-    lda cpu8088_state+CPU_CS
+    lda cpu8088_segment
     lsr a
     lsr a
     lsr a
     lsr a
     sta cpu8088_phys_addr+1
-    lda cpu8088_state+CPU_CS+1
+    lda cpu8088_segment+1
     asl a
     asl a
     asl a
@@ -45,7 +61,7 @@ cpu8088_cs_ip_physical:
     ora cpu8088_phys_addr+1
     sta cpu8088_phys_addr+1
 
-    lda cpu8088_state+CPU_CS+1
+    lda cpu8088_segment+1
     lsr a
     lsr a
     lsr a
@@ -54,10 +70,10 @@ cpu8088_cs_ip_physical:
 
     clc
     lda cpu8088_phys_addr
-    adc cpu8088_state+CPU_IP
+    adc cpu8088_offset
     sta cpu8088_phys_addr
     lda cpu8088_phys_addr+1
-    adc cpu8088_state+CPU_IP+1
+    adc cpu8088_offset+1
     sta cpu8088_phys_addr+1
     lda cpu8088_phys_addr+2
     adc #$00
@@ -96,4 +112,3 @@ cpu8088_fetch_u8_slow:
     clc
 @failed:
     rts
-

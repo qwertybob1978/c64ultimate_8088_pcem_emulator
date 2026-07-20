@@ -7,6 +7,12 @@
 .import cpu8088_halted
 .import cpu8088_last_cycles
 .import cpu8088_fetch_u8
+.import cpu8088_decode_ea
+.import cpu8088_ea_next_byte
+.import cpu8088_ea_recompute
+.import cpu8088_ea_rm_index
+.import cpu8088_mem_read_u8
+.import cpu8088_mem_write_u8
 
 .export cpu8088_step
 .export cpu8088_last_opcode
@@ -385,22 +391,12 @@ cpu8088_step:
     lda #CPU_STEP_OK
     rts
 
-; The first native ModR/M slice handles register-to-register MOV. Memory
-; effective addresses are added with the guest data cache in the next slice.
 @mov_modrm:
     and #$01
     sta operand_width
     jsr cpu8088_fetch_u8
     long_bcs @memory_error
     sta modrm_byte
-    and #$C0
-    cmp #$C0
-    long_bne @invalid
-
-    lda modrm_byte
-    and #$07
-    jsr @register_offset
-    stx destination_offset
     lda modrm_byte
     lsr a
     lsr a
@@ -409,6 +405,54 @@ cpu8088_step:
     jsr @register_offset
     stx source_offset
 
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @mov_modrm_register
+
+    lda cpu8088_last_opcode
+    and #$02
+    bne @mov_memory_to_register
+    ldx source_offset
+    lda cpu8088_state,x
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    lda operand_width
+    beq @mov_modrm_memory_done
+    jsr cpu8088_ea_next_byte
+    ldx source_offset
+    lda cpu8088_state+1,x
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    jmp @mov_modrm_memory_done
+
+@mov_memory_to_register:
+    jsr cpu8088_mem_read_u8
+    long_bcs @memory_error
+    sta immediate_low
+    lda operand_width
+    beq @store_memory_register_byte
+    jsr cpu8088_ea_next_byte
+    jsr cpu8088_mem_read_u8
+    long_bcs @memory_error
+    ldx source_offset
+    sta cpu8088_state+1,x
+@store_memory_register_byte:
+    ldx source_offset
+    lda immediate_low
+    sta cpu8088_state,x
+@mov_modrm_memory_done:
+    lda #$08
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@mov_modrm_register:
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    stx destination_offset
     lda cpu8088_last_opcode
     and #$02
     beq @copy_register
@@ -439,23 +483,50 @@ cpu8088_step:
     jsr cpu8088_fetch_u8
     long_bcs @memory_error
     sta modrm_byte
-    and #$F8                    ; require mod=3 and opcode extension /0
-    cmp #$C0
+    and #$38                    ; require opcode extension /0
+    cmp #$00
     long_bne @invalid
     lda modrm_byte
-    and #$07
-    jsr @register_offset
-    stx destination_offset
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    sta destination_offset      ; EA_MEMORY or EA_REGISTER
     jsr cpu8088_fetch_u8
     long_bcs @memory_error
+    sta immediate_low
+    lda operand_width
+    beq @mov_rm_imm_value_ready
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta relative_high
+@mov_rm_imm_value_ready:
+    lda destination_offset
+    beq @mov_rm_imm_memory
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    stx destination_offset
+    lda immediate_low
     ldx destination_offset
     sta cpu8088_state,x
     lda operand_width
     beq @mov_rm_imm_done
-    jsr cpu8088_fetch_u8
-    long_bcs @memory_error
+    lda relative_high
     ldx destination_offset
     sta cpu8088_state+1,x
+    jmp @mov_rm_imm_done
+@mov_rm_imm_memory:
+    ; Immediate fetches use cpu8088_phys_addr too, so restore the decoded
+    ; effective address before touching guest data.
+    jsr cpu8088_ea_recompute
+    lda immediate_low
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    lda operand_width
+    beq @mov_rm_imm_done
+    jsr cpu8088_ea_next_byte
+    lda relative_high
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
 @mov_rm_imm_done:
     lda #$04
     sta cpu8088_last_cycles

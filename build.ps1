@@ -29,6 +29,8 @@ $objects = @(
     @{ Source = "src/memory/page_cache.s"; Object = "memory/page_cache.o" },
     @{ Source = "src/cpu8088/state.s"; Object = "cpu8088/state.o" },
     @{ Source = "src/cpu8088/address.s"; Object = "cpu8088/address.o" },
+    @{ Source = "src/cpu8088/modrm.s"; Object = "cpu8088/modrm.o" },
+    @{ Source = "src/memory/guest_memory.s"; Object = "memory/guest_memory.o" },
     @{ Source = "src/cpu8088/step.s"; Object = "cpu8088/step.o" }
 )
 
