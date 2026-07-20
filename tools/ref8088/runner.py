@@ -287,6 +287,14 @@ class Reference8088:
             self.push_u16(self.get_register(opcode & 7, 16))
         elif handler == "pop_reg16":
             self.set_register(opcode & 7, 16, self.pop_u16())
+        elif handler == "segment_stack":
+            segment_name = ("ES", "CS", "SS", "DS")[(opcode & 0x18) >> 3]
+            if opcode & 1:
+                self.registers[segment_name] = self.pop_u16()
+                if segment_name == "SS":
+                    self.interrupt_shadow = 1
+            else:
+                self.push_u16(self.registers[segment_name])
         elif handler == "pushf":
             self.push_u16(self.registers["FLAGS"] | 0xF000)
         elif handler == "popf":
@@ -304,6 +312,18 @@ class Reference8088:
             reg_operand = {"kind": "register", "index": reg_index, "width": width}
             destination, source = (reg_operand, rm_operand) if opcode & 2 else (rm_operand, reg_operand)
             self.write_operand(destination, self.read_operand(source))
+        elif handler == "mov_segment":
+            rm_operand, segment_index = self.decode_modrm(16)
+            if segment_index > 3 or (opcode == 0x8E and segment_index == 1):
+                self.last_cycles = 0
+                return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
+            segment_name = ("ES", "CS", "SS", "DS")[segment_index]
+            if opcode == 0x8C:
+                self.write_operand(rm_operand, self.registers[segment_name])
+            else:
+                self.registers[segment_name] = self.read_operand(rm_operand)
+                if segment_name == "SS":
+                    self.interrupt_shadow = 1
         elif handler == "mov_rm_imm":
             width = 16 if opcode & 1 else 8
             destination, extension = self.decode_modrm(width)

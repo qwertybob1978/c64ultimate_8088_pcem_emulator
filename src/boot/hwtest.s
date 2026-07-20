@@ -28,6 +28,12 @@ BORDER_COLOR = $D020
 COLOR_RED = $02
 COLOR_GREEN = $05
 
+.macro long_bne target
+    beq :+
+    jmp target
+:
+.endmacro
+
 .segment "LOADADDR"
     .word $0801
 
@@ -181,30 +187,30 @@ test_cpu_stepper:
     dec stepper_steps_remaining
     beq @step_last
     cmp #CPU_STEP_OK
-    bne @restore
+    long_bne @restore
     jmp @step_next
 @step_last:
     cmp #CPU_STEP_HALTED
-    bne @restore
+    long_bne @restore
 
     lda cpu8088_state+CPU_AX
     cmp #<CPU_SMOKE_EXPECTED_AX
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_AX+1
     cmp #>CPU_SMOKE_EXPECTED_AX
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_CX
     cmp #<CPU_SMOKE_EXPECTED_CX
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_CX+1
     cmp #>CPU_SMOKE_EXPECTED_CX
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_DX
     cmp #<CPU_SMOKE_EXPECTED_DX
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_DX+1
     cmp #>CPU_SMOKE_EXPECTED_DX
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_BX
     cmp #<CPU_SMOKE_EXPECTED_BX
     bne @restore
@@ -228,6 +234,30 @@ test_cpu_stepper:
     bne @restore
     lda cpu8088_state+CPU_DI+1
     cmp #>CPU_SMOKE_EXPECTED_DI
+    bne @restore
+    lda cpu8088_state+CPU_ES
+    cmp #<CPU_SMOKE_EXPECTED_ES
+    bne @restore
+    lda cpu8088_state+CPU_ES+1
+    cmp #>CPU_SMOKE_EXPECTED_ES
+    bne @restore
+    lda cpu8088_state+CPU_CS
+    cmp #<CPU_SMOKE_EXPECTED_CS
+    bne @restore
+    lda cpu8088_state+CPU_CS+1
+    cmp #>CPU_SMOKE_EXPECTED_CS
+    bne @restore
+    lda cpu8088_state+CPU_SS
+    cmp #<CPU_SMOKE_EXPECTED_SS
+    bne @restore
+    lda cpu8088_state+CPU_SS+1
+    cmp #>CPU_SMOKE_EXPECTED_SS
+    bne @restore
+    lda cpu8088_state+CPU_DS
+    cmp #<CPU_SMOKE_EXPECTED_DS
+    bne @restore
+    lda cpu8088_state+CPU_DS+1
+    cmp #>CPU_SMOKE_EXPECTED_DS
     bne @restore
     lda cpu8088_state+CPU_FLAGS
     cmp #<CPU_SMOKE_EXPECTED_FLAGS

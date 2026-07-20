@@ -4,11 +4,11 @@
     {
       "name": "native_smoke",
       "initial": { "CS": 0, "IP": 0 },
-      "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060005efbe8b1e0005c60602057a8a0e0205be0005bb1000c7400534128b50050150052b400533d239c2bc000250b800005be80a01b978563d01007403bbffffc70600032211c70602034433be0003bf2003b90400f3a4be2003b90400f3acb90300bf3003b07af3aac606220399be0003bf2003b90400f3a6c606300300b90300bf3003b07af2aec70600028003c70602020000c7068003b834c706820312cfcd80c70604028403c70606020000c7068403ba78c706860356cffb90b83412bb3400f6f33d59207401ffb8d4febbf900f6fb3d2afa7401ffb80000ba0100bb0001f7f33d00017401ff09d27401ffb8d4febaffffbbf9fff7fb8bf08bfa3d2a007401ff8bc23dfaff7401ffc70600009003c70602000000c706900341cfb83412bb0100f6f3b4d59e9cfaf89d9fc706000643cb9a00006000ea54010000fff440c3",
+      "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060005efbe8b1e0005c60602057a8a0e0205be0005bb1000c7400534128b50050150052b400533d239c2bc000250b800005be82801b978563d01007403bbffffc70600032211c70602034433be0003bf2003b90400f3a4be2003b90400f3acb90300bf3003b07af3aac606220399be0003bf2003b90400f3a6c606300300b90300bf3003b07af2aec70600028003c70602020000c7068003b834c706820312cfcd80c70604028403c70606020000c7068403ba78c706860356cffb90b83412bb3400f6f33d59207401ffb8d4febbf900f6fb3d2afa7401ffb80000ba0100bb0001f7f33d00017401ff09d27401ffb8d4febaffffbbf9fff7fb8bf08bfa3d2a007401ff8bc23dfaff7401ffc70600009003c70602000000c706900341cfb83412bb0100f6f3b4d59e9cfaf89d9fc706000643cb9a00006000ea54010000ffb834128ed81e33c0078cc03d34127401ff0e583d00007401ffb834128ed0f440c3",
       "preserveBytes": 1538,
       "pendingIrq": 129,
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 55092, "CX": 2, "DX": 65530, "BX": 2, "SP": 512, "SI": 42, "DI": 65530, "IP": 341, "FLAGS": 515 }
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 4660, "CX": 2, "DX": 65530, "BX": 2, "SP": 512, "SI": 42, "DI": 65530, "ES": 4660, "CS": 0, "SS": 4660, "DS": 4660, "IP": 371, "FLAGS": 582 }
     },
     {
       "name": "flags_and_short_jump",
@@ -252,6 +252,13 @@
       ],
       "statuses": ["ok", "halted"],
       "expected": { "SP": 262, "CS": 24576, "IP": 4, "FLAGS": 2 }
+    },
+    {
+      "name": "segment_register_setup",
+      "initial": { "CS": 32768, "IP": 0, "SS": 4096, "SP": 256, "FLAGS": 2 },
+      "program": "b834128ed81e33c0078cc00e5b8ed0f4",
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 4660, "BX": 32768, "SP": 256, "ES": 4660, "CS": 32768, "SS": 4660, "DS": 4660, "IP": 16, "FLAGS": 70 }
     }
   ]
 }

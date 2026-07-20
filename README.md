@@ -129,6 +129,9 @@ while `SAHF`/`LAHF` transfer the five arithmetic status flags through AH.
 Immediate far `CALL`/`JMP` and `RETF`/`RETF imm16` now update CS:IP and the
 far return frame natively, including instruction-cache page changes. This
 includes the `EA` reset-stub jump used by XT-compatible BIOS ROMs.
+Segment setup now includes `MOV` between ES/SS/DS and register or memory
+operands plus `PUSH`/`POP` for the 8088 segment registers. Loading SS arms the
+same one-instruction interrupt shadow used by the boundary IRQ logic.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

@@ -151,6 +151,21 @@ cpu8088_step:
     cmp #$80
     long_bcc @jcc_rel8
 @check_regular_dispatch:
+    cmp #$06
+    long_beq @segment_stack
+    cmp #$07
+    long_beq @segment_stack
+    cmp #$0E
+    long_beq @segment_stack
+    cmp #$16
+    long_beq @segment_stack
+    cmp #$17
+    long_beq @segment_stack
+    cmp #$1E
+    long_beq @segment_stack
+    cmp #$1F
+    long_beq @segment_stack
+    lda cpu8088_last_opcode
     and #$C4                    ; core ALU ModR/M forms: 00ooo0dw
     cmp #$00
     long_beq @alu_modrm
@@ -192,6 +207,10 @@ cpu8088_step:
     long_bcc @check_mov_imm8
     cmp #$8C
     long_bcc @mov_modrm
+    cmp #$8C                    ; MOV r/m16,Sreg
+    long_beq @mov_segment
+    cmp #$8E                    ; MOV Sreg,r/m16
+    long_beq @mov_segment
 @check_mov_imm8:
     cmp #$B0                    ; MOV r8, imm8
     long_bcc @check_other_opcodes
@@ -1086,6 +1105,50 @@ cpu8088_step:
     lda #CPU_STEP_OK
     rts
 
+@segment_stack:
+    lda cpu8088_last_opcode
+    and #$18
+    lsr a
+    lsr a
+    clc
+    adc #CPU_ES
+    tax
+    lda cpu8088_last_opcode
+    and #$01
+    bne @segment_pop
+    lda cpu8088_state,x
+    pha
+    lda cpu8088_state+1,x
+    tax
+    pla
+    jsr cpu8088_push_u16
+    long_bcs @memory_error
+    lda #$0E
+    bne @segment_stack_done
+@segment_pop:
+    txa
+    pha
+    jsr cpu8088_pop_u16
+    long_bcs @memory_error
+    sta immediate_low
+    stx relative_high
+    pla
+    tax
+    lda immediate_low
+    sta cpu8088_state,x
+    lda relative_high
+    sta cpu8088_state+1,x
+    cpx #CPU_SS
+    bne :+
+    lda #$01
+    sta cpu8088_interrupt_shadow
+:
+    lda #$0C
+@segment_stack_done:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
 @pushf:
     lda cpu8088_state+CPU_FLAGS
     ldx cpu8088_state+CPU_FLAGS+1
@@ -1426,6 +1489,89 @@ cpu8088_step:
     lda cpu8088_state,y
     sta cpu8088_state,x
 @mov_modrm_done:
+    lda #$02
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@mov_segment:
+    lda #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    cmp #$04
+    long_bcs @invalid
+    cmp #$01
+    bne @segment_index_ready
+    lda cpu8088_last_opcode
+    cmp #$8E
+    long_beq @invalid           ; MOV CS,r/m16 is not encodable
+    lda #$01
+@segment_index_ready:
+    asl a
+    clc
+    adc #CPU_ES
+    sta source_offset
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @mov_segment_register
+    lda cpu8088_last_opcode
+    cmp #$8E
+    beq @load_segment_memory
+    ldx source_offset
+    lda cpu8088_state,x
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    jsr cpu8088_ea_next_byte
+    ldx source_offset
+    lda cpu8088_state+1,x
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    jmp @mov_segment_done
+@load_segment_memory:
+    jsr cpu8088_mem_read_u8
+    long_bcs @memory_error
+    sta immediate_low
+    jsr cpu8088_ea_next_byte
+    jsr cpu8088_mem_read_u8
+    long_bcs @memory_error
+    ldx source_offset
+    sta cpu8088_state+1,x
+    lda immediate_low
+    sta cpu8088_state,x
+    jmp @mov_segment_shadow
+@mov_segment_register:
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    ldy source_offset
+    lda cpu8088_last_opcode
+    cmp #$8E
+    beq @load_segment_register
+    lda cpu8088_state,y
+    sta cpu8088_state,x
+    lda cpu8088_state+1,y
+    sta cpu8088_state+1,x
+    jmp @mov_segment_done
+@load_segment_register:
+    lda cpu8088_state,x
+    sta cpu8088_state,y
+    lda cpu8088_state+1,x
+    sta cpu8088_state+1,y
+@mov_segment_shadow:
+    ldx source_offset
+    cpx #CPU_SS
+    bne @mov_segment_done
+    lda #$01
+    sta cpu8088_interrupt_shadow
+@mov_segment_done:
     lda #$02
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
