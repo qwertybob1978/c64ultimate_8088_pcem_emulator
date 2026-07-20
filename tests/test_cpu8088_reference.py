@@ -55,6 +55,63 @@ class Cpu8088ReferenceTests(unittest.TestCase):
         self.assertEqual(first_results[0]["trace"][0]["physical"], 0)
         self.assertEqual(first_results[0]["trace"][-1]["status"], "halted")
 
+    @unittest.skipUnless((ROOT / ".cache/python/unicorn").exists(), "project-local Unicorn is not installed")
+    def test_vectors_match_unicorn_x86_16(self):
+        sys.path.insert(0, str(ROOT / ".cache/python"))
+        path = ROOT / "tools/ref8088/unicorn_oracle.py"
+        spec = importlib.util.spec_from_file_location("unicorn_oracle", path)
+        oracle = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(oracle)
+        for vector in self.suite["vectors"]:
+            oracle.run_unicorn(self.spec, vector)
+
+    @unittest.skipUnless((ROOT / ".cache/python/unicorn").exists(), "project-local Unicorn is not installed")
+    def test_all_8088_modrm_memory_address_forms_match_unicorn(self):
+        sys.path.insert(0, str(ROOT / ".cache/python"))
+        path = ROOT / "tools/ref8088/unicorn_oracle.py"
+        spec = importlib.util.spec_from_file_location("unicorn_oracle_all_ea", path)
+        oracle = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(oracle)
+        initial = {
+            "CS": 0x3000, "IP": 0x0100, "DS": 0x1000, "SS": 0x2000,
+            "BX": 0x0100, "BP": 0x0200, "SI": 0x0010, "DI": 0x0020,
+        }
+        bases = (
+            ("BX", "SI"), ("BX", "DI"), ("BP", "SI"), ("BP", "DI"),
+            ("SI",), ("DI",), ("BP",), ("BX",),
+        )
+        for mod in range(3):
+            for rm in range(8):
+                instruction = bytearray((0x8B, (mod << 6) | rm))
+                bp_based = rm in (2, 3, 6)
+                if mod == 0 and rm == 6:
+                    offset = 0x3456
+                    instruction.extend(offset.to_bytes(2, "little"))
+                    bp_based = False
+                else:
+                    offset = sum(initial[name] for name in bases[rm]) & 0xFFFF
+                    if mod == 1:
+                        instruction.append(0xF8)
+                        offset = (offset - 8) & 0xFFFF
+                    elif mod == 2:
+                        instruction.extend((0x1234).to_bytes(2, "little"))
+                        offset = (offset + 0x1234) & 0xFFFF
+                instruction.append(0xF4)
+                segment = initial["SS" if bp_based else "DS"]
+                vector = {
+                    "name": f"modrm_mod{mod}_rm{rm}",
+                    "initial": initial,
+                    "program": instruction.hex(),
+                    "memory": [{"segment": segment, "offset": offset, "bytes": "5aa5"}],
+                    "statuses": ["ok", "halted"],
+                    "expected": {
+                        "AX": 0xA55A,
+                        "IP": (initial["IP"] + len(instruction)) & 0xFFFF,
+                        "FLAGS": 2,
+                    },
+                }
+                oracle.run_unicorn(self.spec, vector)
+
 
 if __name__ == "__main__":
     unittest.main()

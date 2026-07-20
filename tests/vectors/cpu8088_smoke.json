@@ -22,6 +22,42 @@
       "maxSteps": 4,
       "statuses": ["ok", "ok", "ok", "ok"],
       "expected": { "IP": 512, "FLAGS": 2 }
+    },
+    {
+      "name": "register_moves",
+      "initial": { "CS": 12288, "IP": 0 },
+      "program": "b034b45688e18ad9c7c27856c6c6aaf4",
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 22068, "CX": 86, "BX": 86, "DX": 43640, "IP": 16, "FLAGS": 2 }
+    },
+    {
+      "name": "modrm_memory_and_moffs",
+      "initial": { "CS": 12288, "IP": 256, "DS": 4096, "SS": 8192, "BX": 16, "SI": 4, "BP": 32 },
+      "program": "b834128940058b5efec60634127fa03412a34012f4",
+      "memory": [
+        { "segment": 8192, "offset": 30, "bytes": "cdab" }
+      ],
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 4735, "BX": 43981, "IP": 277, "FLAGS": 2 },
+      "expectedMemory": [
+        { "segment": 4096, "offset": 25, "bytes": "3412" },
+        { "segment": 4096, "offset": 4660, "bytes": "7f" },
+        { "segment": 4096, "offset": 4672, "bytes": "7f12" }
+      ]
+    },
+    {
+      "name": "word_alu_flags",
+      "initial": { "CS": 16384, "IP": 0 },
+      "program": "b8ff7fbb010001d829d839c0f4",
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 32767, "BX": 1, "IP": 13, "FLAGS": 70 }
+    },
+    {
+      "name": "byte_alu_carry_and_logic",
+      "initial": { "CS": 20480, "IP": 0 },
+      "program": "b0ff040114001c02240f0c8034ff3c70f4",
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 112, "IP": 17, "FLAGS": 70 }
     }
   ]
 }

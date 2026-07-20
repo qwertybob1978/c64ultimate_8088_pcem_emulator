@@ -123,6 +123,18 @@ The same `native_smoke` vector generates the byte stream and expected register
 values consumed by the cartridge diagnostic, preventing the desktop and native
 tests from silently drifting apart.
 
+For independent semantic comparison, install the pinned Unicorn x86 engine
+into the ignored project cache and run the differential oracle:
+
+```powershell
+./tools/bootstrap_test_deps.ps1
+python ./tools/ref8088/unicorn_oracle.py ./tests/vectors/cpu8088_smoke.json
+```
+
+Unicorn comparison covers architectural state and memory effects. Instruction
+cycle metadata remains an 8088-specific contract informed by PCem's
+`src/cpu/808x.c`, because Unicorn does not model 8088 bus timing.
+
 ## PCem reference checkout
 
 PCem is reference material and is not linked into the target program. Fetch the
