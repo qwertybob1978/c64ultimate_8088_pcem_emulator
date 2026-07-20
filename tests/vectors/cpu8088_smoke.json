@@ -338,6 +338,26 @@
       "expectedMemory": [
         { "segment": 8192, "offset": 4660, "bytes": "5a" }
       ]
+    },
+    {
+      "name": "group4_inc_byte_overflow_preserves_carry",
+      "initial": { "CS": 50176, "IP": 0, "AX": 4735, "FLAGS": 3 },
+      "program": "fec0f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 4736, "CS": 50176, "IP": 3, "FLAGS": 2195 }
+    },
+    {
+      "name": "group4_dec_byte_memory_preserves_carry",
+      "initial": { "CS": 50432, "IP": 0, "DS": 12288, "FLAGS": 2 },
+      "program": "fe0e3412f4",
+      "memory": [
+        { "segment": 12288, "offset": 4660, "bytes": "00" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "CS": 50432, "IP": 5, "FLAGS": 150 },
+      "expectedMemory": [
+        { "segment": 12288, "offset": 4660, "bytes": "ff" }
+      ]
     }
   ]
 }

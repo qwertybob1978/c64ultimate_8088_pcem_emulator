@@ -111,6 +111,8 @@ cache. Register and memory ModR/M forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
 The native control-flow slice also supports register `INC`/`DEC`, register
 `PUSH`/`POP`, near relative `CALL`, near `RET`/`RET imm16`, and all sixteen
 short conditional branches with REU-backed SS:SP stack accesses.
+Group-4 `INC`/`DEC` extends the same carry-preserving flag behavior to byte
+register and REU-memory operands.
 Native prefix decoding applies ES/CS/SS/DS overrides to ModR/M operands and
 supports interruptible-instruction groundwork for `REP`/`REPNE`. Byte and word
 `MOVS`, `CMPS`, `STOS`, `LODS`, and `SCAS` execute directly against REU-backed

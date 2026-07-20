@@ -274,6 +274,8 @@ cpu8088_step:
     long_beq @cld
     cmp #$FD                    ; STD
     long_beq @std
+    cmp #$FE                    ; INC/DEC r/m8 group 4
+    long_beq @group4_inc_dec
     cmp #$C6                    ; MOV r/m8, imm8 (/0, register form)
     long_beq @mov_rm_imm
     cmp #$C7                    ; MOV r/m16, imm16 (/0, register form)
@@ -1296,6 +1298,61 @@ cpu8088_step:
     sta alu_right+1
     lda #$03
     sta alu_last_cycles
+    jmp @alu_execute
+
+@group4_inc_dec:
+    lda #$00
+    sta operand_width
+    sta alu_string_compare
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    cmp #$02
+    long_bcs @invalid
+    cmp #$00
+    beq @group4_inc
+    lda #$05                    ; SUB
+    bne @group4_operation
+@group4_inc:
+    lda #$00                    ; ADD
+@group4_operation:
+    sta alu_operation
+    lda #$01
+    sta alu_preserve_cf
+    lda cpu8088_state+CPU_FLAGS
+    and #X86_FLAG_CF
+    sta alu_saved_cf
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @group4_register
+    lda #$01
+    sta alu_destination_kind
+    jsr @read_ea_to_left
+    long_bcs @memory_error
+    lda #$0F
+    sta alu_last_cycles
+    jmp @group4_execute
+@group4_register:
+    lda #$00
+    sta alu_destination_kind
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    stx destination_offset
+    jsr @read_register_to_left
+    lda #$03
+    sta alu_last_cycles
+@group4_execute:
+    lda #$01
+    sta alu_right
+    lda #$00
+    sta alu_right+1
     jmp @alu_execute
 
 @push_pop_reg16:

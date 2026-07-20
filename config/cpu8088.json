@@ -105,6 +105,7 @@
     { "first": 250, "last": 250, "mnemonic": "CLI", "handler": "clear_if", "length": 1, "cycles": 2 },
     { "first": 251, "last": 251, "mnemonic": "STI", "handler": "set_if", "length": 1, "cycles": 2 },
     { "first": 252, "last": 252, "mnemonic": "CLD", "handler": "clear_df", "length": 1, "cycles": 2 },
-    { "first": 253, "last": 253, "mnemonic": "STD", "handler": "set_df", "length": 1, "cycles": 2 }
+    { "first": 253, "last": 253, "mnemonic": "STD", "handler": "set_df", "length": 1, "cycles": 2 },
+    { "first": 254, "last": 254, "mnemonic": "INC/DEC r/m8", "handler": "group4", "length": 2, "cycles": 3 }
   ]
 }

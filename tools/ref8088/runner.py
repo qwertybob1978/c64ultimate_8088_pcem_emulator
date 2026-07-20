@@ -298,6 +298,17 @@ class Reference8088:
             operation = "add" if handler == "inc_reg16" else "sub"
             self.set_register(index, 16, self.alu(operation, self.get_register(index, 16), 1, 16))
             self.set_flag("CF", carry)
+        elif handler == "group4":
+            operand, extension = self.decode_modrm(8)
+            if extension not in (0, 1):
+                self.last_cycles = 0
+                return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
+            carry = bool(self.registers["FLAGS"] & self.flags["CF"])
+            operation = "add" if extension == 0 else "sub"
+            result = self.alu(operation, self.read_operand(operand), 1, 8)
+            self.write_operand(operand, result)
+            self.set_flag("CF", carry)
+            cycles = 3 if operand["kind"] == "register" else 15
         elif handler == "push_reg16":
             self.push_u16(self.get_register(opcode & 7, 16))
         elif handler == "pop_reg16":
