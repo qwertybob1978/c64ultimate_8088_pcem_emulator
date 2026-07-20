@@ -1,6 +1,10 @@
 # C64 x86
 
-Native Intel 8088 / IBM PC-XT simulation for the Commodore 64 Ultimate.
+An experimental **Intel 8088 emulator** running natively on [Commodore 64 Ultimate](<https://c64ultimate.com/> - <https://www.commodore.net>) hardware in Turbo Mode — because why not?
+
+This project is a retro-computing experiment inspired by the spirit of pushing vintage machines beyond their intended boundaries. It simulates an Intel 8088 CPU (the heart of the original IBM PC) directly on a MOS 6502-based platform, targeting boot of MS-DOS through the C64U's REU memory expansion.
+
+No FPGAs. No external processors. Just pure 6502 assembly squeezing out x86 semantics one cycle at a time.
 
 For an exact implementation checkpoint and step-by-step continuation handoff,
 see [`CONTINUATION.md`](CONTINUATION.md).

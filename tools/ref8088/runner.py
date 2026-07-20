@@ -605,17 +605,28 @@ class Reference8088:
         elif handler == "shift":
             width = 16 if opcode & 1 else 8
             destination, extension = self.decode_modrm(width)
-            if extension not in (4, 5, 6, 7):
-                self.last_cycles = 0
-                return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
             value = self.read_operand(destination)
             mask = (1 << width) - 1
             count = 1 if opcode < 0xD2 else self.get_register(1, 8)
             if count:
                 initial = value
-                carry = False
+                carry = bool(self.registers["FLAGS"] & self.flags["CF"])
                 for _ in range(count):
-                    if extension in (4, 6):
+                    if extension == 0:
+                        carry = bool(value & (1 << (width - 1)))
+                        value = ((value << 1) | int(carry)) & mask
+                    elif extension == 1:
+                        carry = bool(value & 1)
+                        value = (value >> 1) | (int(carry) << (width - 1))
+                    elif extension == 2:
+                        input_carry = carry
+                        carry = bool(value & (1 << (width - 1)))
+                        value = ((value << 1) | int(input_carry)) & mask
+                    elif extension == 3:
+                        input_carry = carry
+                        carry = bool(value & 1)
+                        value = (value >> 1) | (int(input_carry) << (width - 1))
+                    elif extension in (4, 6):
                         carry = bool(value & (1 << (width - 1)))
                         value = (value << 1) & mask
                     else:
@@ -624,7 +635,11 @@ class Reference8088:
                         value >>= 1
                         if extension == 7:
                             value |= sign
-                if extension in (4, 6):
+                if extension in (0, 2):
+                    overflow = bool(value & (1 << (width - 1))) != carry
+                elif extension in (1, 3):
+                    overflow = bool(value & (1 << (width - 1))) != bool(value & (1 << (width - 2)))
+                elif extension in (4, 6):
                     first_result = (initial << 1) & mask
                     overflow = bool(first_result & (1 << (width - 1))) != bool(initial & (1 << (width - 1)))
                 elif extension == 5:
@@ -635,8 +650,9 @@ class Reference8088:
                     overflow = False
                 self.set_flag("CF", carry)
                 self.set_flag("OF", overflow)
-                self.set_flag("AF", False)
-                self.update_result_flags(value, width)
+                if extension >= 4:
+                    self.set_flag("AF", False)
+                    self.update_result_flags(value, width)
                 self.write_operand(destination, value)
             cycles = metadata["cycles"] if opcode < 0xD2 else 8 + 4 * count
         elif handler == "complement_cf":

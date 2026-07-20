@@ -394,6 +394,54 @@
       "expected": { "AX": 4660, "CX": 0, "CS": 51456, "IP": 3, "FLAGS": 2631 }
     },
     {
+      "name": "ror_al_cl_matches_bios_video_helper",
+      "initial": { "CS": 51584, "IP": 0, "AX": 6, "CX": 3, "FLAGS": 8775 },
+      "program": "d2c8f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 192, "CX": 3, "CS": 51584, "IP": 3, "FLAGS": 8775 }
+    },
+    {
+      "name": "rol_byte_sets_carry_and_overflow_only",
+      "initial": { "CS": 51648, "IP": 0, "AX": 129, "FLAGS": 214 },
+      "program": "d0c0f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 3, "CS": 51648, "IP": 3, "FLAGS": 2263 }
+    },
+    {
+      "name": "ror_word_sets_carry_and_overflow_only",
+      "initial": { "CS": 51776, "IP": 0, "BX": 1, "FLAGS": 214 },
+      "program": "d1cbf4",
+      "statuses": ["ok", "halted"],
+      "expected": { "BX": 32768, "CS": 51776, "IP": 3, "FLAGS": 2263 }
+    },
+    {
+      "name": "rcl_word_uses_input_carry",
+      "initial": { "CS": 51840, "IP": 0, "AX": 32768, "FLAGS": 215 },
+      "program": "d1d0f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 1, "CS": 51840, "IP": 3, "FLAGS": 2263 }
+    },
+    {
+      "name": "rcr_byte_memory_uses_input_carry",
+      "initial": { "CS": 51904, "IP": 0, "DS": 20480, "FLAGS": 215 },
+      "program": "d01e3412f4",
+      "memory": [
+        { "segment": 20480, "offset": 4660, "bytes": "02" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "CS": 51904, "IP": 5, "FLAGS": 2262 },
+      "expectedMemory": [
+        { "segment": 20480, "offset": 4660, "bytes": "81" }
+      ]
+    },
+    {
+      "name": "zero_count_rotate_preserves_operand_and_flags",
+      "initial": { "CS": 51936, "IP": 0, "DX": 42330, "CX": 0, "FLAGS": 2775 },
+      "program": "d3caf4",
+      "statuses": ["ok", "halted"],
+      "expected": { "CX": 0, "DX": 42330, "CS": 51936, "IP": 3, "FLAGS": 2775 }
+    },
+    {
       "name": "loop_decrements_cx_until_zero",
       "initial": { "CS": 51712, "IP": 0, "FLAGS": 135 },
       "program": "b90300e2fef4",

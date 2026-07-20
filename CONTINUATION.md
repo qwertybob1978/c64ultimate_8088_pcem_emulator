@@ -17,8 +17,8 @@ Current branch and known-good commit:
 
 ```text
 branch: master
-commit: a3f0b1ed0ec2dc43859de912dc954670f2c1eb3f
-subject: feat(cpu): add loop branch family
+commit: 5f0de0f
+subject: feat(cpu): add complement carry
 ```
 
 The working tree was clean when this guide was created. Confirm before work:
@@ -35,18 +35,18 @@ and preserve them.
 Completed recent milestones, newest first:
 
 ```text
+5f0de0f feat(cpu): add complement carry
+7c4d2f9 feat(video): render CGA text on C64
+407f11a feat(dev): add visible VICE launcher
+8cac29d feat(cpu): add ModR/M exchange
+ddd09f6 feat(cpu): add LES and LDS
+3778e51 feat(cpu): add group5 near control flow
+ff9baa0 docs: add continuation handoff
 a3f0b1e feat(cpu): add loop branch family
 b09704a feat(cpu): add CL-count shifts
 575caef test(media): validate DOS boot disk
 a9d4b5f feat(cpu): add single-bit right shifts
 b5304e1 feat(cpu): add group4 byte inc dec
-b9f228c feat(cpu): add group3 bitwise not
-2a736ee feat(cpu): add single-bit left shifts
-0a48b09 feat(cart): load payload across banks
-d17bbb1 feat(io): add 8088 port dispatch
-521f27b feat(cpu): add immediate ALU group
-4a43d72 feat(cpu): add segment register setup
-6031b67 feat(cpu): add far control flow
 ```
 
 The end goal is not complete. Continue until the Generic XT BIOS displays via
@@ -88,7 +88,7 @@ The native 6502 8088 core already has these major slices:
 - PUSHF/POPF/SAHF/LAHF;
 - immediate and DX-addressed byte/word IN/OUT dispatch;
 - Group-3 NOT, Group-4 byte INC/DEC, and register word INC/DEC;
-- single-bit and CL-count SHL/SAL/SHR/SAR for registers and memory;
+- single-bit and unmasked CL-count rotates and shifts for registers and memory;
 - LOOPNE, LOOPE, LOOP, and JCXZ;
 - Group-5 near indirect CALL/JMP with general ModR/M segment overrides;
 - LES/LDS memory far-pointer loads;
@@ -101,28 +101,28 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: rotate through CL count
+## 4. Exact next task: accumulator TEST
 
-CMC is complete. The Generic XT BIOS now executes 37,566 successful
-instructions and stops on instruction number 37,567 (zero-based trace index
-37566):
+The D0-D3 rotate family is complete. The Generic XT BIOS now executes 37,595
+successful instructions and stops on instruction number 37,596 (zero-based
+trace index 37595):
 
 ```text
-reported start: F000:E338
-bytes:          D2 C8
-meaning:        ROR AL,CL
-opcode family:  D2 /1, rotate right byte by CL
-AX:             0006
-CL:             03
+reported start: F000:E373
+bytes:          A8 0F
+meaning:        TEST AL,0Fh
+opcode family:  A8, accumulator immediate TEST
+AX:             00FF
+FLAGS:          0046 before TEST
 ```
 
-Extend the existing D0-D3 shift engine with the rotate extensions needed by the
-8088: ROL `/0`, ROR `/1`, RCL `/2`, and RCR `/3`. Preserve SF/ZF/PF/AF because
-rotates only define CF and, for a count of one, OF. Count zero must preserve all
-flags and the operand. Original 8088 CL counts are not masked. Add byte/word,
-register/memory, count-one, count-many, and count-zero differential vectors.
-Regenerate, test, build, run VICE in warp mode, trace the next blocker, update
-this guide, and commit the milestone.
+Implement `A8` (`TEST AL,imm8`) and `A9` (`TEST AX,imm16`) through the existing
+logical-AND flag path without storing the result. TEST clears CF and OF, updates
+SF/ZF/PF, and follows the project's established logical-operation AF convention.
+Add byte/word vectors, including a case proving AL/AX is unchanged. Regenerate,
+test, build, run VICE in warp mode, trace the next blocker, update this guide,
+and commit the milestone. The BIOS CGA page at B8000 is still all zero at this
+point, so it remains in adapter initialization/probing rather than text output.
 
 ## 5. How to trace the BIOS to the next blocker
 

@@ -93,6 +93,7 @@ shift_pending:       .res 1
 shift_overflow:      .res 1
 shift_count:         .res 1
 shift_first:         .res 1
+rotate_input_carry:  .res 1
 
 .segment "CODE"
 
@@ -821,6 +822,8 @@ cpu8088_step:
     jmp @alu_execute
 
 @shift_one:
+    lda #$00
+    sta alu_string_compare
     lda cpu8088_last_opcode
     and #$01
     sta operand_width
@@ -835,6 +838,9 @@ cpu8088_step:
     lda #$00
     sta shift_overflow
     sta shift_first
+    lda cpu8088_state+CPU_FLAGS
+    and #X86_FLAG_CF
+    sta rotate_input_carry
     lda shift_count
     cmp #$01
     bne :+
@@ -849,8 +855,6 @@ cpu8088_step:
     lsr a
     and #$07
     sta source_offset
-    cmp #$04
-    long_bcc @invalid
 @shift_decode:
     lda modrm_byte
     jsr cpu8088_decode_ea
@@ -878,6 +882,8 @@ cpu8088_step:
     lda shift_count
     long_beq @shift_noop
     lda source_offset
+    cmp #$04
+    long_bcc @rotate_execute
     cmp #$05
     beq @shift_right
     cmp #$07
@@ -967,6 +973,9 @@ cpu8088_step:
     sta alu_left+1
     jmp @shift_execute
 @shift_flags:
+    lda source_offset
+    cmp #$04
+    long_bcc @rotate_flags
     lda #$01
     sta shift_pending
     lda #$04                    ; logical flag path; result already computed
@@ -974,6 +983,176 @@ cpu8088_step:
     lda #$00
     sta alu_preserve_cf
     jmp @alu_flags
+
+@rotate_execute:
+    lda source_offset
+    cmp #$02
+    bcc @rotate_plain
+    jmp @rotate_through_carry
+
+@rotate_plain:
+    cmp #$01
+    beq @rotate_right_plain
+    lda #$00
+    sta alu_result+1
+    lda alu_left
+    asl a
+    sta alu_result
+    lda operand_width
+    beq :+
+    lda alu_left+1
+    rol a
+    sta alu_result+1
+:
+    lda #$00
+    adc #$00
+    sta alu_carry
+    bne :+
+    jmp @rotate_left_overflow
+:
+    lda alu_result
+    ora #$01
+    sta alu_result
+    jmp @rotate_left_overflow
+
+@rotate_right_plain:
+    lda alu_left
+    and #$01
+    sta alu_carry
+    lda operand_width
+    beq @rotate_right_plain_byte
+    lda alu_left+1
+    lsr a
+    sta alu_result+1
+    lda alu_left
+    ror a
+    sta alu_result
+    lda alu_carry
+    bne :+
+    jmp @rotate_right_overflow
+:
+    lda alu_result+1
+    ora #$80
+    sta alu_result+1
+    jmp @rotate_right_overflow
+@rotate_right_plain_byte:
+    lda alu_left
+    lsr a
+    sta alu_result
+    lda #$00
+    sta alu_result+1
+    lda alu_carry
+    bne :+
+    jmp @rotate_right_overflow
+:
+    lda alu_result
+    ora #$80
+    sta alu_result
+    jmp @rotate_right_overflow
+
+@rotate_through_carry:
+    lda source_offset
+    cmp #$03
+    beq @rotate_right_carry
+    lda #$00
+    sta alu_result+1
+    lda alu_left
+    asl a
+    sta alu_result
+    lda operand_width
+    beq :+
+    lda alu_left+1
+    rol a
+    sta alu_result+1
+:
+    lda #$00
+    adc #$00
+    sta alu_carry
+    lda rotate_input_carry
+    beq @rotate_left_overflow
+    lda alu_result
+    ora #$01
+    sta alu_result
+    jmp @rotate_left_overflow
+
+@rotate_right_carry:
+    lda alu_left
+    and #$01
+    sta alu_carry
+    lda operand_width
+    beq @rotate_right_carry_byte
+    lda alu_left+1
+    lsr a
+    sta alu_result+1
+    lda alu_left
+    ror a
+    sta alu_result
+    lda rotate_input_carry
+    beq @rotate_right_overflow
+    lda alu_result+1
+    ora #$80
+    sta alu_result+1
+    jmp @rotate_right_overflow
+@rotate_right_carry_byte:
+    lda alu_left
+    lsr a
+    sta alu_result
+    lda #$00
+    sta alu_result+1
+    lda rotate_input_carry
+    beq @rotate_right_overflow
+    lda alu_result
+    ora #$80
+    sta alu_result
+    jmp @rotate_right_overflow
+
+@rotate_left_overflow:
+    lda operand_width
+    beq :+
+    lda alu_result+1
+    jmp :++
+:
+    lda alu_result
+:
+    and #$80
+    beq :+
+    lda #$01
+:
+    eor alu_carry
+    jsr @shift_record_overflow
+    jmp @rotate_finish
+
+@rotate_right_overflow:
+    lda operand_width
+    beq :+
+    lda alu_result+1
+    jmp :++
+:
+    lda alu_result
+:
+    sta alu_temp
+    asl a
+    eor alu_temp
+    and #$80
+    jsr @shift_record_overflow
+@rotate_finish:
+    lda alu_carry
+    sta rotate_input_carry
+    jmp @shift_finish
+
+@rotate_flags:
+    lda cpu8088_state+CPU_FLAGS
+    and #$FE
+    ora alu_carry
+    sta cpu8088_state+CPU_FLAGS
+    lda cpu8088_state+CPU_FLAGS+1
+    and #$F7
+    ldx shift_overflow
+    beq :+
+    ora #>X86_FLAG_OF
+:
+    sta cpu8088_state+CPU_FLAGS+1
+    jmp @alu_store_result
 
 @shift_record_overflow:
     ldx shift_first
