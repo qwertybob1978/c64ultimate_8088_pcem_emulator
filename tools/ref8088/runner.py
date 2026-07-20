@@ -533,6 +533,21 @@ class Reference8088:
                 self.registers["AX"] = quotient & 0xFFFF
                 self.registers["DX"] = remainder & 0xFFFF
             cycles = 80 if width == 8 else 144
+        elif handler == "shift_one":
+            width = 16 if opcode & 1 else 8
+            destination, extension = self.decode_modrm(width)
+            if extension not in (4, 6):
+                self.last_cycles = 0
+                return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
+            value = self.read_operand(destination)
+            mask = (1 << width) - 1
+            carry = bool(value & (1 << (width - 1)))
+            result = (value << 1) & mask
+            self.set_flag("CF", carry)
+            self.set_flag("OF", bool(result & (1 << (width - 1))) != carry)
+            self.set_flag("AF", False)
+            self.update_result_flags(result, width)
+            self.write_operand(destination, result)
         elif handler in ("clear_cf", "set_cf", "clear_if", "set_if", "clear_df", "set_df"):
             action, flag = handler.split("_")
             self.set_flag(flag.upper(), action == "set")

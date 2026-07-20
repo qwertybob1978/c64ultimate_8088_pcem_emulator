@@ -89,6 +89,8 @@ far_target:          .res 4
 io_port:             .res 2
 io_value:            .res 1
 io_cycles:           .res 1
+shift_pending:       .res 1
+shift_overflow:      .res 1
 
 .segment "CODE"
 
@@ -112,6 +114,8 @@ cpu8088_step:
     rts
 
 @begin:
+    lda #$00
+    sta shift_pending
     lda #$FF
     sta cpu8088_segment_override
     lda #$00
@@ -290,6 +294,10 @@ cpu8088_step:
     long_beq @into
     cmp #$CF                    ; IRET
     long_beq @iret
+    cmp #$D0                    ; SHL/SAL r/m8,1
+    long_beq @shift_one
+    cmp #$D1                    ; SHL/SAL r/m16,1
+    long_beq @shift_one
 
     cmp #$B8                    ; MOV r16, imm16
     long_bcc @invalid
@@ -732,6 +740,80 @@ cpu8088_step:
     jsr @read_register_to_right
     jmp @alu_execute
 
+@shift_one:
+    lda cpu8088_last_opcode
+    and #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    cmp #$04
+    beq @shift_decode
+    cmp #$06
+    long_bne @invalid
+@shift_decode:
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @shift_register
+    lda #$01
+    sta alu_destination_kind
+    jsr @read_ea_to_left
+    long_bcs @memory_error
+    lda #$0F
+    sta alu_last_cycles
+    jmp @shift_execute
+@shift_register:
+    lda #$00
+    sta alu_destination_kind
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    stx destination_offset
+    jsr @read_register_to_left
+    lda #$02
+    sta alu_last_cycles
+@shift_execute:
+    lda #$00
+    sta alu_result+1
+    lda alu_left
+    asl a
+    sta alu_result
+    lda operand_width
+    beq @shift_save_carry
+    lda alu_left+1
+    rol a
+    sta alu_result+1
+@shift_save_carry:
+    lda #$00
+    adc #$00
+    sta alu_carry
+    lda operand_width
+    beq @shift_byte_sign
+    lda alu_result+1
+    jmp @shift_test_sign
+@shift_byte_sign:
+    lda alu_result
+@shift_test_sign:
+    and #$80
+    beq :+
+    lda #$01
+:
+    eor alu_carry
+    sta shift_overflow
+    lda #$01
+    sta shift_pending
+    lda #$04                    ; logical flag path; result already computed
+    sta alu_operation
+    lda #$00
+    sta alu_preserve_cf
+    jmp @alu_flags
+
 @alu_rm_immediate:
     lda #$00
     sta alu_preserve_cf
@@ -1082,6 +1164,14 @@ cpu8088_step:
     sta cpu8088_state+CPU_FLAGS+1
 
 @alu_flags_done:
+    lda shift_pending
+    beq @alu_preserve_carry
+    lda shift_overflow
+    beq @alu_preserve_carry
+    lda cpu8088_state+CPU_FLAGS+1
+    ora #>X86_FLAG_OF
+    sta cpu8088_state+CPU_FLAGS+1
+@alu_preserve_carry:
     lda alu_preserve_cf
     beq @alu_store_result
     lda cpu8088_state+CPU_FLAGS

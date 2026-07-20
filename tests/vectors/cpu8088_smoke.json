@@ -4,11 +4,11 @@
     {
       "name": "native_smoke",
       "initial": { "CS": 0, "IP": 0 },
-      "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060005efbe8b1e0005c60602057a8a0e0205be0005bb1000c7400534128b50050150052b400533d239c2bc000250b800005be85c01b978563d01007403bbffffc70600032211c70602034433be0003bf2003b90400f3a4be2003b90400f3acb90300bf3003b07af3aac606220399be0003bf2003b90400f3a6c606300300b90300bf3003b07af2aec70600028003c70602020000c7068003b834c706820312cfcd80c70604028403c70606020000c7068403ba78c706860356cffb90b83412bb3400f6f33d59207401ffb8d4febbf900f6fb3d2afa7401ffb80000ba0100bb0001f7f33d00017401ff09d27401ffb8d4febaffffbbf9fff7fb8bf08bfa3d2a007401ff8bc23dfaff7401ffc70600009003c70602000000c706900341cfb83412bb0100f6f3b4d59e9cfaf89d9fc706000643cb9a00006000ea54010000ffb834128ed81e33c0078cc03d34127401ff0e583d00007401ffb834128ed083c30383fb057401ff81eb010080c3fc83fb007401ffb05ae680b000e4803c5a7401ffba8000b83412efb80000ed3d34127401fff440c3",
+      "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060005efbe8b1e0005c60602057a8a0e0205be0005bb1000c7400534128b50050150052b400533d239c2bc000250b800005be86d01b978563d01007403bbffffc70600032211c70602034433be0003bf2003b90400f3a4be2003b90400f3acb90300bf3003b07af3aac606220399be0003bf2003b90400f3a6c606300300b90300bf3003b07af2aec70600028003c70602020000c7068003b834c706820312cfcd80c70604028403c70606020000c7068403ba78c706860356cffb90b83412bb3400f6f33d59207401ffb8d4febbf900f6fb3d2afa7401ffb80000ba0100bb0001f7f33d00017401ff09d27401ffb8d4febaffffbbf9fff7fb8bf08bfa3d2a007401ff8bc23dfaff7401ffc70600009003c70602000000c706900341cfb83412bb0100f6f3b4d59e9cfaf89d9fc706000643cb9a00006000ea54010000ffb834128ed81e33c0078cc03d34127401ff0e583d00007401ffb834128ed083c30383fb057401ff81eb010080c3fc83fb007401ffb05ae680b000e4803c5a7401ffba8000b83412efb80000ed3d34127401ffb80140d1e07001ff7301ff3d02807401fff440c3",
       "preserveBytes": 1538,
       "pendingIrq": 129,
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 4660, "CX": 2, "DX": 128, "BX": 0, "SP": 512, "SI": 42, "DI": 65530, "ES": 4660, "CS": 0, "SS": 4660, "DS": 4660, "IP": 423, "FLAGS": 582 },
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 32770, "CX": 2, "DX": 128, "BX": 0, "SP": 512, "SI": 42, "DI": 65530, "ES": 4660, "CS": 0, "SS": 4660, "DS": 4660, "IP": 440, "FLAGS": 582 },
       "expectedPorts": [
         { "port": 128, "value": 52 },
         { "port": 129, "value": 18 }
@@ -297,6 +297,26 @@
         { "direction": "out", "port": 129, "value": 18 },
         { "direction": "in", "port": 128, "value": 52 },
         { "direction": "in", "port": 129, "value": 18 }
+      ]
+    },
+    {
+      "name": "single_bit_shift_left_flags",
+      "initial": { "CS": 49152, "IP": 0, "AX": 16385, "FLAGS": 2 },
+      "program": "d1e0f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 32770, "CS": 49152, "IP": 3, "FLAGS": 2178 }
+    },
+    {
+      "name": "single_bit_shift_left_memory",
+      "initial": { "CS": 49408, "IP": 0, "DS": 4096, "FLAGS": 2 },
+      "program": "d0263412f4",
+      "memory": [
+        { "segment": 4096, "offset": 4660, "bytes": "81" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "CS": 49408, "IP": 5, "FLAGS": 2051 },
+      "expectedMemory": [
+        { "segment": 4096, "offset": 4660, "bytes": "02" }
       ]
     }
   ]

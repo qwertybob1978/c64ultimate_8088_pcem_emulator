@@ -135,6 +135,8 @@ operands plus `PUSH`/`POP` for the 8088 segment registers. Loading SS arms the
 same one-instruction interrupt shadow used by the boundary IRQ logic.
 Group-1 immediate arithmetic (`80`–`83`) supports byte/word register and
 memory destinations, including sign extension for the compact `83` encoding.
+Single-bit `SHL`/`SAL` (`D0`/`D1`, ModR/M extensions 4 and 6) supports byte and
+word register or memory destinations with 8088 CF, OF, SF, ZF, and PF results.
 All immediate- and DX-addressed `IN`/`OUT` forms execute natively as 8088 byte
 bus transfers. The initial XT I/O dispatcher returns `$FF` for open ports and
 provides `$80`/`$81` POST/debug latches with deterministic desktop traces.
