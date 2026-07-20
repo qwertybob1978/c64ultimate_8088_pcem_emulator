@@ -552,15 +552,23 @@ class Reference8088:
         elif handler == "shift_one":
             width = 16 if opcode & 1 else 8
             destination, extension = self.decode_modrm(width)
-            if extension not in (4, 6):
+            if extension not in (4, 5, 6, 7):
                 self.last_cycles = 0
                 return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
             value = self.read_operand(destination)
             mask = (1 << width) - 1
-            carry = bool(value & (1 << (width - 1)))
-            result = (value << 1) & mask
+            if extension in (4, 6):
+                carry = bool(value & (1 << (width - 1)))
+                result = (value << 1) & mask
+                overflow = bool(result & (1 << (width - 1))) != carry
+            else:
+                carry = bool(value & 1)
+                result = value >> 1
+                if extension == 7 and value & (1 << (width - 1)):
+                    result |= 1 << (width - 1)
+                overflow = bool(value & (1 << (width - 1))) if extension == 5 else False
             self.set_flag("CF", carry)
-            self.set_flag("OF", bool(result & (1 << (width - 1))) != carry)
+            self.set_flag("OF", overflow)
             self.set_flag("AF", False)
             self.update_result_flags(result, width)
             self.write_operand(destination, result)

@@ -296,9 +296,9 @@ cpu8088_step:
     long_beq @into
     cmp #$CF                    ; IRET
     long_beq @iret
-    cmp #$D0                    ; SHL/SAL r/m8,1
+    cmp #$D0                    ; SHL/SAL/SHR/SAR r/m8,1
     long_beq @shift_one
-    cmp #$D1                    ; SHL/SAL r/m16,1
+    cmp #$D1                    ; SHL/SAL/SHR/SAR r/m16,1
     long_beq @shift_one
 
     cmp #$B8                    ; MOV r16, imm16
@@ -805,10 +805,9 @@ cpu8088_step:
     lsr a
     lsr a
     and #$07
+    sta source_offset
     cmp #$04
-    beq @shift_decode
-    cmp #$06
-    long_bne @invalid
+    long_bcc @invalid
 @shift_decode:
     lda modrm_byte
     jsr cpu8088_decode_ea
@@ -833,6 +832,11 @@ cpu8088_step:
     lda #$02
     sta alu_last_cycles
 @shift_execute:
+    lda source_offset
+    cmp #$05
+    beq @shift_right
+    cmp #$07
+    beq @shift_right
     lda #$00
     sta alu_result+1
     lda alu_left
@@ -860,6 +864,56 @@ cpu8088_step:
 :
     eor alu_carry
     sta shift_overflow
+    jmp @shift_finish
+
+@shift_right:
+    lda alu_left
+    and #$01
+    sta alu_carry
+    lda operand_width
+    beq @shift_right_byte
+    lda alu_left+1
+    lsr a
+    sta alu_result+1
+    lda alu_left
+    ror a
+    sta alu_result
+    lda source_offset
+    cmp #$07
+    beq @shift_right_arithmetic_word
+    lda alu_left+1
+    jmp @shift_right_overflow
+@shift_right_arithmetic_word:
+    lda alu_left+1
+    and #$80
+    ora alu_result+1
+    sta alu_result+1
+    lda #$00
+    beq @shift_right_overflow
+@shift_right_byte:
+    lda alu_left
+    lsr a
+    sta alu_result
+    lda #$00
+    sta alu_result+1
+    lda source_offset
+    cmp #$07
+    beq @shift_right_arithmetic_byte
+    lda alu_left
+    jmp @shift_right_overflow
+@shift_right_arithmetic_byte:
+    lda alu_left
+    and #$80
+    ora alu_result
+    sta alu_result
+    lda #$00
+@shift_right_overflow:
+    and #$80
+    beq :+
+    lda #$01
+:
+    sta shift_overflow
+@shift_finish:
     lda #$01
     sta shift_pending
     lda #$04                    ; logical flag path; result already computed

@@ -358,6 +358,26 @@
       "expectedMemory": [
         { "segment": 12288, "offset": 4660, "bytes": "ff" }
       ]
+    },
+    {
+      "name": "single_bit_shift_right_word_flags",
+      "initial": { "CS": 50688, "IP": 0, "BX": 32769, "FLAGS": 18 },
+      "program": "d1ebf4",
+      "statuses": ["ok", "halted"],
+      "expected": { "BX": 16384, "CS": 50688, "IP": 3, "FLAGS": 2055 }
+    },
+    {
+      "name": "single_bit_arithmetic_shift_right_memory",
+      "initial": { "CS": 50944, "IP": 0, "DS": 16384, "FLAGS": 2050 },
+      "program": "d03e3412f4",
+      "memory": [
+        { "segment": 16384, "offset": 4660, "bytes": "81" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "CS": 50944, "IP": 5, "FLAGS": 135 },
+      "expectedMemory": [
+        { "segment": 16384, "offset": 4660, "bytes": "c0" }
+      ]
     }
   ]
 }
