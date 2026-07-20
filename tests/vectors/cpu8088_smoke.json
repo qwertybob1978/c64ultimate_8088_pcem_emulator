@@ -392,6 +392,34 @@
       "program": "d3e0f4",
       "statuses": ["ok", "halted"],
       "expected": { "AX": 4660, "CX": 0, "CS": 51456, "IP": 3, "FLAGS": 2631 }
+    },
+    {
+      "name": "loop_decrements_cx_until_zero",
+      "initial": { "CS": 51712, "IP": 0, "FLAGS": 135 },
+      "program": "b90300e2fef4",
+      "statuses": ["ok", "ok", "ok", "ok", "halted"],
+      "expected": { "CX": 0, "CS": 51712, "IP": 6, "FLAGS": 135 }
+    },
+    {
+      "name": "jcxz_takes_without_decrementing",
+      "initial": { "CS": 51968, "IP": 0, "CX": 0, "FLAGS": 2 },
+      "program": "e301fff4",
+      "statuses": ["ok", "halted"],
+      "expected": { "CX": 0, "CS": 51968, "IP": 4, "FLAGS": 2 }
+    },
+    {
+      "name": "loopne_uses_zero_flag",
+      "initial": { "CS": 52224, "IP": 0, "CX": 2, "FLAGS": 2 },
+      "program": "e001fff4",
+      "statuses": ["ok", "halted"],
+      "expected": { "CX": 1, "CS": 52224, "IP": 4, "FLAGS": 2 }
+    },
+    {
+      "name": "loope_uses_zero_flag",
+      "initial": { "CS": 52480, "IP": 0, "CX": 2, "FLAGS": 66 },
+      "program": "e101fff4",
+      "statuses": ["ok", "halted"],
+      "expected": { "CX": 1, "CS": 52480, "IP": 4, "FLAGS": 66 }
     }
   ]
 }

@@ -113,6 +113,8 @@ The native control-flow slice also supports register `INC`/`DEC`, register
 short conditional branches with REU-backed SS:SP stack accesses.
 Group-4 `INC`/`DEC` extends the same carry-preserving flag behavior to byte
 register and REU-memory operands.
+`LOOPNE`, `LOOPE`, `LOOP`, and `JCXZ` provide the 8088 CX-controlled short
+branch family without modifying arithmetic flags.
 Native prefix decoding applies ES/CS/SS/DS overrides to ModR/M operands and
 supports interruptible-instruction groundwork for `REP`/`REPNE`. Byte and word
 `MOVS`, `CMPS`, `STOS`, `LODS`, and `SCAS` execute directly against REU-backed

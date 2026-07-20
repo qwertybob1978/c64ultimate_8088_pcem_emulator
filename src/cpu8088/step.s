@@ -306,6 +306,14 @@ cpu8088_step:
     long_beq @shift_one
     cmp #$D3                    ; SHL/SAL/SHR/SAR r/m16,CL
     long_beq @shift_one
+    cmp #$E0                    ; LOOPNE/LOOPE/LOOP/JCXZ
+    long_beq @loop_rel8
+    cmp #$E1
+    long_beq @loop_rel8
+    cmp #$E2
+    long_beq @loop_rel8
+    cmp #$E3
+    long_beq @loop_rel8
 
     cmp #$B8                    ; MOV r16, imm16
     long_bcc @invalid
@@ -1854,6 +1862,63 @@ cpu8088_step:
 @jcc_not_taken:
     lda #$04
 @jcc_done:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@loop_rel8:
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta immediate_low
+    lda cpu8088_last_opcode
+    cmp #$E3
+    beq @jcxz_test
+    lda cpu8088_state+CPU_CX
+    bne :+
+    dec cpu8088_state+CPU_CX+1
+:
+    dec cpu8088_state+CPU_CX
+    lda cpu8088_state+CPU_CX
+    ora cpu8088_state+CPU_CX+1
+    beq @loop_not_taken
+    lda cpu8088_last_opcode
+    cmp #$E2
+    beq @loop_taken
+    lda cpu8088_state+CPU_FLAGS
+    and #<X86_FLAG_ZF
+    ldx cpu8088_last_opcode
+    cpx #$E1
+    beq @loope_test
+    cmp #$00                    ; LOOPNE requires ZF clear
+    beq @loop_taken
+    bne @loop_not_taken
+@loope_test:
+    cmp #$00                    ; LOOPE requires ZF set
+    bne @loop_taken
+    beq @loop_not_taken
+@jcxz_test:
+    lda cpu8088_state+CPU_CX
+    ora cpu8088_state+CPU_CX+1
+    bne @loop_not_taken
+@loop_taken:
+    clc
+    lda cpu8088_state+CPU_IP
+    adc immediate_low
+    sta cpu8088_state+CPU_IP
+    lda immediate_low
+    bpl :+
+    lda #$FF
+    bne @loop_add_high
+:
+    lda #$00
+@loop_add_high:
+    adc cpu8088_state+CPU_IP+1
+    sta cpu8088_state+CPU_IP+1
+    lda #$12
+    bne @loop_done
+@loop_not_taken:
+    lda #$05
+@loop_done:
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts

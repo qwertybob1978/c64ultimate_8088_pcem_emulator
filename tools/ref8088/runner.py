@@ -449,6 +449,24 @@ class Reference8088:
             if self.condition(opcode & 0x0F):
                 self.registers["IP"] = (self.registers["IP"] + displacement) & 0xFFFF
                 cycles = 16
+        elif handler == "loop_rel8":
+            displacement = self.fetch_u8()
+            if displacement & 0x80:
+                displacement -= 0x100
+            if opcode == 0xE3:
+                taken = self.registers["CX"] == 0
+            else:
+                self.registers["CX"] = (self.registers["CX"] - 1) & 0xFFFF
+                nonzero = self.registers["CX"] != 0
+                zero_flag = bool(self.registers["FLAGS"] & self.flags["ZF"])
+                taken = nonzero and (
+                    opcode == 0xE2
+                    or (opcode == 0xE1 and zero_flag)
+                    or (opcode == 0xE0 and not zero_flag)
+                )
+            if taken:
+                self.registers["IP"] = (self.registers["IP"] + displacement) & 0xFFFF
+                cycles = 18
         elif handler == "call_rel16":
             displacement = self.fetch_u16()
             if displacement & 0x8000:
