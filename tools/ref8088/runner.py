@@ -562,6 +562,34 @@ class Reference8088:
             if extension == 2:
                 self.write_operand(operand, ~operand_value & ((1 << width) - 1))
                 cycles = 3 if operand["kind"] == "register" else 16
+            elif extension in (4, 5):
+                signed = extension == 5
+                accumulator = self.registers["AX"] & ((1 << width) - 1)
+                multiplier = operand_value
+                if signed:
+                    sign = 1 << (width - 1)
+                    accumulator = accumulator - (sign << 1) if accumulator & sign else accumulator
+                    multiplier = multiplier - (sign << 1) if multiplier & sign else multiplier
+                product = accumulator * multiplier
+                full_mask = (1 << (width * 2)) - 1
+                encoded = product & full_mask
+                if width == 8:
+                    self.registers["AX"] = encoded
+                else:
+                    self.registers["AX"] = encoded & 0xFFFF
+                    self.registers["DX"] = encoded >> 16
+                upper = encoded >> width
+                lower = encoded & ((1 << width) - 1)
+                if signed:
+                    expected_upper = ((1 << width) - 1) if lower & (1 << (width - 1)) else 0
+                    overflow = upper != expected_upper
+                else:
+                    overflow = upper != 0
+                self.set_flag("CF", overflow)
+                self.set_flag("OF", overflow)
+                self.set_flag("AF", False)
+                self.update_result_flags(lower, width)
+                cycles = 70 if width == 8 else 118
             elif extension not in (6, 7):
                 self.last_cycles = 0
                 return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)

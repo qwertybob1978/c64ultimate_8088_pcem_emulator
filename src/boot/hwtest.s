@@ -10,6 +10,10 @@
 .importzp cpu8088_phys_addr
 .import cpu8088_state
 .import cpu8088_step
+.import cpu8088_mul_u8
+.import cpu8088_mul_s8
+.import cpu8088_mul_u16
+.import cpu8088_mul_s16
 .import cpu8088_request_irq
 .import cpu8088_fetch_cache_invalidate
 .import io_debug_latch
@@ -34,6 +38,12 @@ COLOR_ORANGE = $08
 
 .macro long_bne target
     beq :+
+    jmp target
+:
+.endmacro
+
+.macro long_bcc target
+    bcs :+
     jmp target
 :
 .endmacro
@@ -89,6 +99,8 @@ start:
     ldx #>msg_cpu_ok
     jsr print
     jsr test_cpu_stepper
+    bcc @stepper_fail
+    jsr test_cpu_multiply
     bcc @stepper_fail
     lda #<msg_stepper_ok
     ldx #>msg_stepper_ok
@@ -301,6 +313,78 @@ test_cpu_stepper:
     sec
     rts
 @stepper_failed:
+    clc
+    rts
+
+; Exercise the native multiply primitives independently of the desktop model.
+test_cpu_multiply:
+    lda #$FF
+    sta cpu8088_state+CPU_AX
+    lda #$02
+    jsr cpu8088_mul_u8
+    long_bcc @multiply_failed
+    lda cpu8088_state+CPU_AX
+    cmp #$FE
+    bne @multiply_failed
+    lda cpu8088_state+CPU_AX+1
+    cmp #$01
+    bne @multiply_failed
+
+    lda #$F0
+    sta cpu8088_state+CPU_AX
+    lda #$02
+    jsr cpu8088_mul_s8
+    bcs @multiply_failed
+    lda cpu8088_state+CPU_AX
+    cmp #$E0
+    bne @multiply_failed
+    lda cpu8088_state+CPU_AX+1
+    cmp #$FF
+    bne @multiply_failed
+
+    lda #$34
+    sta cpu8088_state+CPU_AX
+    lda #$12
+    sta cpu8088_state+CPU_AX+1
+    lda #$10
+    ldx #$00
+    jsr cpu8088_mul_u16
+    bcc @multiply_failed
+    lda cpu8088_state+CPU_AX
+    cmp #$40
+    bne @multiply_failed
+    lda cpu8088_state+CPU_AX+1
+    cmp #$23
+    bne @multiply_failed
+    lda cpu8088_state+CPU_DX
+    cmp #$01
+    bne @multiply_failed
+    lda cpu8088_state+CPU_DX+1
+    bne @multiply_failed
+
+    lda #$FE
+    sta cpu8088_state+CPU_AX
+    lda #$FF
+    sta cpu8088_state+CPU_AX+1
+    lda #$03
+    ldx #$00
+    jsr cpu8088_mul_s16
+    bcs @multiply_failed
+    lda cpu8088_state+CPU_AX
+    cmp #$FA
+    bne @multiply_failed
+    lda cpu8088_state+CPU_AX+1
+    cmp #$FF
+    bne @multiply_failed
+    lda cpu8088_state+CPU_DX
+    cmp #$FF
+    bne @multiply_failed
+    lda cpu8088_state+CPU_DX+1
+    cmp #$FF
+    bne @multiply_failed
+    sec
+    rts
+@multiply_failed:
     clc
     rts
 

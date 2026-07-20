@@ -577,6 +577,44 @@
       "program": "a90080f4",
       "statuses": ["ok", "halted"],
       "expected": { "AX": 32769, "CS": 55744, "IP": 4, "FLAGS": 1670 }
+    },
+    {
+      "name": "mul_byte_memory_matches_bios_helper",
+      "initial": { "CS": 55808, "IP": 0, "AX": 0, "DS": 0, "FLAGS": 663 },
+      "program": "f6264a00f4",
+      "memory": [
+        { "segment": 0, "offset": 74, "bytes": "00" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 0, "CS": 55808, "IP": 5, "FLAGS": 582 }
+    },
+    {
+      "name": "mul_byte_sets_overflow_from_upper_half",
+      "initial": { "CS": 55872, "IP": 0, "AX": 255, "BX": 2, "FLAGS": 3799 },
+      "program": "f6e3f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 510, "BX": 2, "CS": 55872, "IP": 3, "FLAGS": 3715 }
+    },
+    {
+      "name": "imul_byte_fits_signed_result",
+      "initial": { "CS": 55936, "IP": 0, "AX": 240, "BX": 2, "FLAGS": 3799 },
+      "program": "f6ebf4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 65504, "BX": 2, "CS": 55936, "IP": 3, "FLAGS": 1666 }
+    },
+    {
+      "name": "mul_word_writes_dx_ax",
+      "initial": { "CS": 56000, "IP": 0, "AX": 4660, "BX": 16, "DX": 65535, "FLAGS": 3799 },
+      "program": "f7e3f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 9024, "BX": 16, "DX": 1, "CS": 56000, "IP": 3, "FLAGS": 3587 }
+    },
+    {
+      "name": "imul_word_writes_sign_extended_product",
+      "initial": { "CS": 56064, "IP": 0, "AX": 65534, "BX": 3, "DX": 0, "FLAGS": 3799 },
+      "program": "f7ebf4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 65530, "BX": 3, "DX": 65535, "CS": 56064, "IP": 3, "FLAGS": 1670 }
     }
   ]
 }

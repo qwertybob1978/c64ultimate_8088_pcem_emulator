@@ -17,8 +17,8 @@ Current branch and known-good commit:
 
 ```text
 branch: master
-commit: c783907
-subject: feat(cpu): add rotate family
+commit: b628513
+subject: feat(cpu): add accumulator test
 ```
 
 The working tree was clean when this guide was created. Confirm before work:
@@ -35,6 +35,7 @@ and preserve them.
 Completed recent milestones, newest first:
 
 ```text
+b628513 feat(cpu): add accumulator test
 c783907 feat(cpu): add rotate family
 5f0de0f feat(cpu): add complement carry
 7c4d2f9 feat(video): render CGA text on C64
@@ -45,7 +46,6 @@ ddd09f6 feat(cpu): add LES and LDS
 ff9baa0 docs: add continuation handoff
 a3f0b1e feat(cpu): add loop branch family
 b09704a feat(cpu): add CL-count shifts
-575caef test(media): validate DOS boot disk
 ```
 
 The end goal is not complete. Continue until the Generic XT BIOS displays via
@@ -84,6 +84,7 @@ The native 6502 8088 core already has these major slices:
 - byte/word string operations with REP/REPE/REPNE;
 - software interrupts, IRET, IRQ/NMI latches, and interrupt shadow behavior;
 - DIV/IDIV plus divide-error entry;
+- MUL/IMUL byte and word products with CF/OF overflow reporting;
 - PUSHF/POPF/SAHF/LAHF;
 - immediate and DX-addressed byte/word IN/OUT dispatch;
 - Group-3 NOT, Group-4 byte INC/DEC, and register word INC/DEC;
@@ -100,30 +101,28 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: Group-3 multiply
+## 4. Exact next task: Group-3 TEST
 
-Accumulator-immediate TEST is complete. The Generic XT BIOS now executes
-38,592 successful instructions and stops on instruction number 38,593
-(zero-based trace index 38592):
+Group-3 MUL/IMUL is complete. The Generic XT BIOS now executes 38,917
+successful instructions and stops on instruction number 38,918 (zero-based
+trace index 38917):
 
 ```text
-reported start: F000:F74B
-bytes:          F6 26 4A 00
-meaning:        MUL byte ptr [004Ah]
-opcode family:  F6 /4, unsigned byte multiply
-AX:             0000
-DS:             0000
-FLAGS:          0297 before MUL
+reported start: F000:E3DF (after ES prefix at E3DE)
+bytes:          26 F6 06 10 00 01
+meaning:        TEST byte ptr ES:[0010h],01h
+opcode family:  F6 /0, Group-3 immediate TEST
+AX:             0200
+ES:             B800
+FLAGS:          0046 before TEST
 ```
 
-Extend Group 3 with `MUL` (`/4`) and `IMUL` (`/5`) for byte and word register or
-memory operands. Byte MUL writes the product to AX; word MUL writes DX:AX.
-Set CF and OF together when the upper product half is nonzero (or is not the
-sign-extension of the lower half for IMUL). Treat the remaining arithmetic
-flags as undefined using one deterministic project convention, verified against
-the differential vectors where Unicorn defines stable output. Regenerate, test,
-build, run VICE in warp mode, trace the next blocker, update this guide, and
-commit the milestone.
+Extend Group 3 with `TEST` (`F6 /0` and `F7 /0`). Fetch the immediate after the
+ModR/M displacement, AND it with the byte/word register or memory operand,
+update logical flags, and never store the result. Cover the exact ES-prefixed
+BIOS memory form plus register and word forms. Regenerate, test, build, run VICE
+in warp mode, trace the next blocker, update this guide, and commit the
+milestone. B8000 remains all zero at this blocker.
 
 ## 5. How to trace the BIOS to the next blocker
 
@@ -285,6 +284,7 @@ git status --short
 | `src/cpu8088/stack.s` | REU-backed SS:SP push/pop helpers |
 | `src/cpu8088/interrupts.s` | Interrupt entry and boundary delivery helpers |
 | `src/cpu8088/divide.s` | Native bounded byte/word signed/unsigned division |
+| `src/cpu8088/multiply.s` | Native byte/word signed/unsigned multiplication |
 | `src/cpu8088/core.inc` | Shared CPU imports/constants |
 | `tools/generate_cpu8088.py` | Generates `state.inc` and `smoke_vector.inc` from config/vectors |
 | `tools/ref8088/runner.py` | Deterministic desktop 8088 reference model and BIOS trace engine |

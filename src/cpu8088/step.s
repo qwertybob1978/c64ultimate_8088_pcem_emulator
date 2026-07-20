@@ -24,6 +24,10 @@
 .import cpu8088_div_s8
 .import cpu8088_div_u16
 .import cpu8088_div_s16
+.import cpu8088_mul_u8
+.import cpu8088_mul_s8
+.import cpu8088_mul_u16
+.import cpu8088_mul_s16
 .import io_read_u8
 .import io_write_u8
 .import cpu8088_segment_override
@@ -673,10 +677,10 @@ cpu8088_step:
     and #$07
     cmp #$02
     beq @group3_extension_ok
-    cmp #$06
+    cmp #$04
     long_bcc @invalid
 @group3_extension_ok:
-    sta source_offset           ; group extension: 2=NOT, 6=DIV, 7=IDIV
+    sta source_offset           ; 2=NOT, 4/5=MUL/IMUL, 6/7=DIV/IDIV
     lda modrm_byte
     jsr cpu8088_decode_ea
     cmp #$FE
@@ -714,7 +718,9 @@ cpu8088_step:
 @group3_execute:
     lda source_offset
     cmp #$02
-    beq @group3_not
+    long_beq @group3_not
+    cmp #$06
+    bcc @group3_multiply
     lda operand_width
     bne @group3_word
     lda immediate_low
@@ -750,6 +756,50 @@ cpu8088_step:
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts
+
+@group3_multiply:
+    lda operand_width
+    bne @group3_multiply_word
+    lda immediate_low
+    ldx source_offset
+    cpx #$05
+    beq :+
+    jsr cpu8088_mul_u8
+    jmp @group3_multiply_flags
+:
+    jsr cpu8088_mul_s8
+    jmp @group3_multiply_flags
+@group3_multiply_word:
+    lda immediate_low
+    ldx relative_high
+    ldy source_offset
+    cpy #$05
+    beq :+
+    jsr cpu8088_mul_u16
+    jmp @group3_multiply_flags
+:
+    jsr cpu8088_mul_s16
+@group3_multiply_flags:
+    lda #$00                    ; capture multiply overflow carry
+    adc #$00
+    sta alu_carry
+    sta shift_overflow          ; MUL/IMUL set CF and OF together
+    lda #$01
+    sta shift_pending
+    sta alu_test_only           ; update flags without storing ALU result
+    lda #$04
+    sta alu_operation
+    lda cpu8088_state+CPU_AX
+    sta alu_result
+    lda cpu8088_state+CPU_AX+1
+    sta alu_result+1
+    lda #$46
+    ldx operand_width
+    beq :+
+    lda #$76
+:
+    sta alu_last_cycles
+    jmp @alu_flags
 
 @group3_not:
     lda immediate_low
