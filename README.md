@@ -2,6 +2,9 @@
 
 Native Intel 8088 / IBM PC-XT simulation for the Commodore 64 Ultimate.
 
+For an exact implementation checkpoint and step-by-step continuation handoff,
+see [`CONTINUATION.md`](CONTINUATION.md).
+
 The project is in Phase 0. The current target program validates the host
 features on which the simulator will depend:
 
