@@ -1,0 +1,103 @@
+# C64 x86
+
+Native Intel 8088 / IBM PC-XT simulation for the Commodore 64 Ultimate.
+
+The project is in Phase 0. The current target program validates the host
+features on which the simulator will depend:
+
+- software-controlled C64U turbo mode;
+- REU register presence;
+- a non-destructive 16 MiB REU capacity probe;
+- guarded C64-to-REU and REU-to-C64 block transfers;
+- the 8088 register block, PC/XT reset state, and 20-bit segmented addressing;
+- manifest-verified BIOS placement into a raw 1 MiB guest-memory image.
+
+See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the architecture and milestones.
+
+## Build requirements
+
+- cc65, including `ca65` and `ld65`
+- GNU Make, or PowerShell on Windows
+- Python 3 for host-side tests
+
+On Windows, install the portable project-local cc65 toolchain with:
+
+```powershell
+./tools/bootstrap_cc65.ps1
+```
+
+It is unpacked under `.cache/cc65`, which is ignored by Git. `build.ps1`
+automatically uses this copy when cc65 is not available on `PATH`.
+
+Build with either:
+
+```sh
+make
+```
+
+or:
+
+```powershell
+./build.ps1
+```
+
+The output is `build/c64x86-hwtest.prg`.
+
+## Running the hardware diagnostic
+
+1. Configure a 16 MiB REU in the Ultimate settings.
+2. Set Turbo Control to `U64 Turbo Registers` or `Turbo Enable Bit`.
+3. Load and run `c64x86-hwtest.prg`.
+4. Confirm that turbo control, REU presence, and the 16 MiB probe all report
+   `OK`. The diagnostic also checks the 8088 reset address and executes a small
+   cached guest instruction stream; both CPU checks should report `OK`.
+
+The capacity test temporarily changes one byte at REU addresses `$000000` and
+`$800000`, but saves and restores both bytes before returning. Turbo settings
+are likewise restored before the program returns to BASIC.
+
+## Current 8088 execution subset
+
+The native stepper currently implements `NOP`, `HLT`, `MOV r16,imm16`, short
+and near relative `JMP`, and `CLC`/`STC`/`CLI`/`STI`/`CLD`/`STD`. Other opcodes
+return an explicit unsupported-instruction status. Instruction fetch uses one
+256-byte C64-RAM page backed by REU DMA; the byte-at-a-time fetch remains only
+as a bootstrap diagnostic path.
+
+## PCem reference checkout
+
+PCem is reference material and is not linked into the target program. Fetch the
+pinned revision with:
+
+```powershell
+./tools/fetch_pcem.ps1
+```
+
+The checkout lives at `third_party/pcem` and is ignored by this repository.
+
+Fetch and validate the user-requested development ROM collection with:
+
+```powershell
+./tools/fetch_roms.ps1
+python ./tools/verify_roms.py
+```
+
+The ROM checkout is also ignored. Its upstream repository has no license file,
+so ROM binaries must not be committed or packaged with releases.
+
+Create a raw 1 MiB REU guest-memory image with the selected BIOS mapped into
+place:
+
+```sh
+python tools/build_guest_image.py --profile genxt
+```
+
+This writes `build/guest-genxt.reu`, which is ignored because it contains the
+locally acquired ROM. It can be preloaded at REU address zero for bootstrap
+testing.
+
+## Host tests
+
+```sh
+python -m unittest discover -s tests -v
+```

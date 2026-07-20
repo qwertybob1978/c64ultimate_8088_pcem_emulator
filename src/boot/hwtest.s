@@ -1,0 +1,233 @@
+.setcpu "6502"
+
+.import turbo_detect
+.import turbo_enable_max
+.import turbo_restore
+.import reu_detect
+.import reu_probe_16m
+.import cpu8088_reset
+.import cpu8088_cs_ip_physical
+.importzp cpu8088_phys_addr
+.import cpu8088_state
+.import cpu8088_step
+.import cpu8088_fetch_cache_invalidate
+.import reu_copy_to_reu
+.import reu_copy_from_reu
+.importzp reu_c64_addr
+.importzp reu_ext_addr
+.importzp reu_length
+
+.include "cpu8088/state.inc"
+.include "cpu8088/core.inc"
+
+CHROUT = $FFD2
+
+.segment "LOADADDR"
+    .word $0801
+
+.segment "BASIC"
+    .word @next_line
+    .word 10
+    .byte $9E
+    .byte "2061", $00             ; SYS $080D
+@next_line:
+    .word $0000
+
+.segment "ZEROPAGE"
+message_ptr: .res 2
+
+.segment "CODE"
+start:
+    lda #<msg_title
+    ldx #>msg_title
+    jsr print
+
+    jsr turbo_detect
+    bcc @turbo_fail
+    lda #<msg_turbo_ok
+    ldx #>msg_turbo_ok
+    jsr print
+    jsr turbo_enable_max
+    jmp @test_reu
+@turbo_fail:
+    lda #<msg_turbo_fail
+    ldx #>msg_turbo_fail
+    jsr print
+
+@test_reu:
+    jsr reu_detect
+    bcc @reu_fail
+    lda #<msg_reu_ok
+    ldx #>msg_reu_ok
+    jsr print
+    jsr reu_probe_16m
+    bcc @capacity_fail
+    lda #<msg_capacity_ok
+    ldx #>msg_capacity_ok
+    jsr print
+    jsr test_cpu_reset
+    bcc @cpu_fail
+    lda #<msg_cpu_ok
+    ldx #>msg_cpu_ok
+    jsr print
+    jsr test_cpu_stepper
+    bcc @stepper_fail
+    lda #<msg_stepper_ok
+    ldx #>msg_stepper_ok
+    jsr print
+    jmp @done
+@stepper_fail:
+    lda #<msg_stepper_fail
+    ldx #>msg_stepper_fail
+    jsr print
+    jmp @done
+@cpu_fail:
+    lda #<msg_cpu_fail
+    ldx #>msg_cpu_fail
+    jsr print
+    jmp @done
+@capacity_fail:
+    lda #<msg_capacity_fail
+    ldx #>msg_capacity_fail
+    jsr print
+    jmp @done
+@reu_fail:
+    lda #<msg_reu_fail
+    ldx #>msg_reu_fail
+    jsr print
+
+@done:
+    jsr turbo_restore
+    rts
+
+; A/X point to a zero-terminated PETSCII-compatible string.
+print:
+    sta message_ptr
+    stx message_ptr+1
+@next:
+    ldy #$00
+    lda (message_ptr),y
+    beq @return
+    jsr CHROUT
+    inc message_ptr
+    bne @next
+    inc message_ptr+1
+    jmp @next
+@return:
+    rts
+
+; Validate the first architectural invariant before an opcode decoder exists:
+; reset must resolve FFFF:0000 to physical address $FFFF0.
+test_cpu_reset:
+    jsr cpu8088_reset
+    jsr cpu8088_cs_ip_physical
+    lda cpu8088_phys_addr
+    cmp #$F0
+    bne @failed
+    lda cpu8088_phys_addr+1
+    cmp #$FF
+    bne @failed
+    lda cpu8088_phys_addr+2
+    cmp #$0F
+    bne @failed
+    sec
+    rts
+@failed:
+    clc
+    rts
+
+; Save eight guest bytes at physical zero, run a four-instruction program from
+; that location, then restore the original bytes and invalidate the cache.
+test_cpu_stepper:
+    lda #$00
+    sta stepper_result
+    lda #<stepper_saved
+    ldx #>stepper_saved
+    jsr setup_stepper_transfer
+    jsr reu_copy_from_reu
+    bcs @restore_done
+
+    lda #<stepper_program
+    ldx #>stepper_program
+    jsr setup_stepper_transfer
+    jsr reu_copy_to_reu
+    bcs @restore
+    jsr cpu8088_fetch_cache_invalidate
+    jsr cpu8088_reset
+    lda #$00
+    sta cpu8088_state+CPU_CS
+    sta cpu8088_state+CPU_CS+1
+
+    jsr cpu8088_step
+    cmp #CPU_STEP_OK
+    bne @restore
+    jsr cpu8088_step
+    cmp #CPU_STEP_OK
+    bne @restore
+    jsr cpu8088_step
+    cmp #CPU_STEP_OK
+    bne @restore
+    jsr cpu8088_step
+    cmp #CPU_STEP_HALTED
+    bne @restore
+
+    lda cpu8088_state+CPU_AX
+    cmp #$34
+    bne @restore
+    lda cpu8088_state+CPU_AX+1
+    cmp #$12
+    bne @restore
+    lda cpu8088_state+CPU_BX
+    cmp #$78
+    bne @restore
+    lda cpu8088_state+CPU_BX+1
+    cmp #$56
+    bne @restore
+    lda #$01
+    sta stepper_result
+
+@restore:
+    lda #<stepper_saved
+    ldx #>stepper_saved
+    jsr setup_stepper_transfer
+    jsr reu_copy_to_reu
+    jsr cpu8088_fetch_cache_invalidate
+@restore_done:
+    lda stepper_result
+    beq @stepper_failed
+    sec
+    rts
+@stepper_failed:
+    clc
+    rts
+
+setup_stepper_transfer:
+    sta reu_c64_addr
+    stx reu_c64_addr+1
+    lda #$00
+    sta reu_ext_addr
+    sta reu_ext_addr+1
+    sta reu_ext_addr+2
+    lda #$08
+    sta reu_length
+    lda #$00
+    sta reu_length+1
+    rts
+
+.segment "BSS"
+stepper_saved: .res 8
+stepper_result: .res 1
+
+.segment "RODATA"
+msg_title:         .byte $0D, "C64 X86 PHASE 0", $0D, $00
+msg_turbo_ok:      .byte "TURBO CONTROL: OK", $0D, $00
+msg_turbo_fail:    .byte "TURBO CONTROL: NOT AVAILABLE", $0D, $00
+msg_reu_ok:        .byte "REU REGISTERS: OK", $0D, $00
+msg_reu_fail:      .byte "REU REGISTERS: NOT FOUND", $0D, $00
+msg_capacity_ok:   .byte "REU 16MB: OK", $0D, $00
+msg_capacity_fail: .byte "REU 16MB: FAILED", $0D, $00
+msg_cpu_ok:        .byte "8088 RESET VECTOR: OK", $0D, $00
+msg_cpu_fail:      .byte "8088 RESET VECTOR: FAILED", $0D, $00
+msg_stepper_ok:    .byte "8088 FETCH/STEP: OK", $0D, $00
+msg_stepper_fail:  .byte "8088 FETCH/STEP: FAILED", $0D, $00
+stepper_program:   .byte $B8, $34, $12, $BB, $78, $56, $90, $F4

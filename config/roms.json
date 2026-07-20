@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "source": {
+    "repository": "https://github.com/BaRRaKudaRain/PCem-ROMs.git",
+    "commit": "75bd118dd86378cac1d9d55e29e26ef82d6d57ef"
+  },
+  "profiles": {
+    "genxt": {
+      "description": "Generic Turbo XT; initial development profile",
+      "files": [
+        {
+          "path": "genxt/pcxt.rom",
+          "size": 8192,
+          "guest_address": "0xFE000",
+          "sha256": "c3353ceed8954e586ae711373e3b3fdc923354fe6ceb9a124acb7d760bc974b5"
+        }
+      ]
+    },
+    "ibmxt": {
+      "description": "IBM 5160 XT split 64 KiB ROM set",
+      "files": [
+        {
+          "path": "ibmxt/5000027.u19",
+          "size": 32768,
+          "guest_address": "0xF0000",
+          "sha256": "1904ef4c9faa845711bf7f4c6417a2391b109cd6082d91659fdfd4ba76c6e8e9"
+        },
+        {
+          "path": "ibmxt/1501512.u18",
+          "size": 32768,
+          "guest_address": "0xF8000",
+          "sha256": "545aeea288235c36be53f23422efb32e9230dadce4b19d4b21682b36c3e86fb2"
+        }
+      ]
+    },
+    "ibmpc": {
+      "description": "IBM 5150 PC BIOS without optional BASIC ROMs",
+      "files": [
+        {
+          "path": "ibmpc/pc102782.bin",
+          "size": 8192,
+          "guest_address": "0xFE000",
+          "sha256": "3700c345f3dcb76039986429ade9ff0cffbc2f0cae535b987b95a5de8aa0094f"
+        }
+      ]
+    }
+  }
+}
+
