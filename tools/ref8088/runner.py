@@ -29,6 +29,7 @@ class Reference8088:
         self.pending_irq = None
         self.pending_nmi = False
         self.interrupt_shadow = 0
+        self.last_interrupt_return_ip = None
         self.opcodes = {}
         for entry in spec["opcodes"]:
             for opcode in range(entry["first"], entry["last"] + 1):
@@ -191,6 +192,7 @@ class Reference8088:
         return value
 
     def interrupt(self, vector: int) -> None:
+        self.last_interrupt_return_ip = self.registers["IP"]
         self.push_u16(self.registers["FLAGS"] | 0xF000)
         self.push_u16(self.registers["CS"])
         self.push_u16(self.registers["IP"])
@@ -225,6 +227,7 @@ class Reference8088:
         before_ip = self.registers["IP"]
         physical = self.physical(self.registers["CS"], before_ip)
         self.memory_writes = []
+        self.last_interrupt_return_ip = None
         if self.pending_nmi:
             self.pending_nmi = False
             self.halted = False
@@ -398,6 +401,48 @@ class Reference8088:
             self.registers["IP"] = self.pop_u16()
             self.registers["CS"] = self.pop_u16()
             self.registers["FLAGS"] = (self.pop_u16() & 0x0FFF) | self.flags["RESERVED"]
+        elif handler == "group3":
+            width = 16 if opcode & 1 else 8
+            operand, extension = self.decode_modrm(width)
+            divisor_raw = self.read_operand(operand)
+            if extension not in (6, 7):
+                self.last_cycles = 0
+                return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
+            signed = extension == 7
+            if width == 8:
+                dividend_raw = self.registers["AX"]
+                quotient_bits = 8
+            else:
+                dividend_raw = (self.registers["DX"] << 16) | self.registers["AX"]
+                quotient_bits = 16
+            if signed:
+                dividend_sign = 1 << (width * 2 - 1)
+                divisor_sign = 1 << (width - 1)
+                dividend = dividend_raw - (dividend_sign << 1) if dividend_raw & dividend_sign else dividend_raw
+                divisor = divisor_raw - (divisor_sign << 1) if divisor_raw & divisor_sign else divisor_raw
+            else:
+                dividend = dividend_raw
+                divisor = divisor_raw
+            divide_error = divisor == 0
+            if not divide_error:
+                magnitude = abs(dividend) // abs(divisor)
+                quotient = -magnitude if (dividend < 0) != (divisor < 0) else magnitude
+                remainder = dividend - quotient * divisor
+                if signed:
+                    minimum = -(1 << (quotient_bits - 1))
+                    maximum = (1 << (quotient_bits - 1)) - 1
+                else:
+                    minimum = 0
+                    maximum = (1 << quotient_bits) - 1
+                divide_error = not minimum <= quotient <= maximum
+            if divide_error:
+                self.interrupt(0)
+            elif width == 8:
+                self.registers["AX"] = ((remainder & 0xFF) << 8) | (quotient & 0xFF)
+            else:
+                self.registers["AX"] = quotient & 0xFFFF
+                self.registers["DX"] = remainder & 0xFFFF
+            cycles = 80 if width == 8 else 144
         elif handler in ("clear_cf", "set_cf", "clear_if", "set_if", "clear_df", "set_df"):
             action, flag = handler.split("_")
             self.set_flag(flag.upper(), action == "set")
@@ -410,7 +455,7 @@ class Reference8088:
         return self.trace(before_ip, physical, opcode, metadata["mnemonic"], status)
 
     def trace(self, before_ip: int, physical: int, opcode: int | None, mnemonic: str, status: int) -> dict:
-        return {
+        result = {
             "cs": self.registers["CS"],
             "ip": before_ip,
             "physical": physical,
@@ -421,6 +466,9 @@ class Reference8088:
             "writes": list(self.memory_writes),
             "after": {name: self.registers[name] for name in REGISTER_ORDER},
         }
+        if self.last_interrupt_return_ip is not None:
+            result["interruptReturnIP"] = self.last_interrupt_return_ip
+        return result
 
 
 def run_vector(spec: dict, vector: dict) -> dict:

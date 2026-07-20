@@ -171,6 +171,52 @@
       ],
       "statuses": ["ok", "ok", "ok", "ok", "halted"],
       "expected": { "AX": 43605, "SP": 256, "CS": 53248, "IP": 2, "FLAGS": 2 }
+    },
+    {
+      "name": "unsigned_byte_divide",
+      "initial": { "CS": 4096, "IP": 0, "AX": 4660, "BX": 52, "FLAGS": 2 },
+      "program": "f6f3f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 8281, "BX": 52, "CS": 4096, "IP": 3, "FLAGS": 2 }
+    },
+    {
+      "name": "signed_byte_divide",
+      "initial": { "CS": 8192, "IP": 0, "AX": 65236, "BX": 249, "FLAGS": 2 },
+      "program": "f6fbf4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 64042, "BX": 249, "CS": 8192, "IP": 3, "FLAGS": 2 }
+    },
+    {
+      "name": "unsigned_word_divide",
+      "initial": { "CS": 12288, "IP": 0, "AX": 0, "DX": 1, "BX": 256, "FLAGS": 2 },
+      "program": "f7f3f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 256, "DX": 0, "BX": 256, "CS": 12288, "IP": 3, "FLAGS": 2 }
+    },
+    {
+      "name": "divide_by_zero_uses_8088_return_ip",
+      "initial": { "CS": 16384, "IP": 0, "SS": 8192, "SP": 256, "AX": 4660, "BX": 0, "FLAGS": 2 },
+      "program": "f6f3f4",
+      "memory": [
+        { "segment": 0, "offset": 0, "bytes": "00000050" },
+        { "segment": 20480, "offset": 0, "bytes": "b8addebaefbecf" }
+      ],
+      "statuses": ["ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 57005, "DX": 48879, "SP": 256, "CS": 16384, "IP": 3, "FLAGS": 2 },
+      "expectedMemory": [
+        { "segment": 8192, "offset": 250, "bytes": "0200004002f0" }
+      ]
+    },
+    {
+      "name": "divide_quotient_overflow",
+      "initial": { "CS": 24576, "IP": 0, "SS": 12288, "SP": 512, "AX": 4660, "BX": 1, "FLAGS": 2 },
+      "program": "f6f3f4",
+      "memory": [
+        { "segment": 0, "offset": 0, "bytes": "00000070" },
+        { "segment": 28672, "offset": 0, "bytes": "ba7856cf" }
+      ],
+      "statuses": ["ok", "ok", "ok", "halted"],
+      "expected": { "AX": 4660, "DX": 22136, "SP": 512, "CS": 24576, "IP": 3, "FLAGS": 2 }
     }
   ]
 }

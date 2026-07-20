@@ -79,6 +79,7 @@
     { "first": 233, "last": 233, "mnemonic": "JMP rel16", "handler": "jmp_rel16", "length": 3, "cycles": 15 },
     { "first": 235, "last": 235, "mnemonic": "JMP rel8", "handler": "jmp_rel8", "length": 2, "cycles": 15 },
     { "first": 244, "last": 244, "mnemonic": "HLT", "handler": "hlt", "length": 1, "cycles": 2 },
+    { "first": 246, "last": 247, "mnemonic": "GRP3", "handler": "group3", "length": 2, "cycles": 80 },
     { "first": 248, "last": 248, "mnemonic": "CLC", "handler": "clear_cf", "length": 1, "cycles": 2 },
     { "first": 249, "last": 249, "mnemonic": "STC", "handler": "set_cf", "length": 1, "cycles": 2 },
     { "first": 250, "last": 250, "mnemonic": "CLI", "handler": "clear_if", "length": 1, "cycles": 2 },

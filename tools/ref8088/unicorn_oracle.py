@@ -60,6 +60,8 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
         flags = uc.reg_read(UC_X86_REG_EFLAGS) & 0xFFFF
         cs = uc.reg_read(UC_X86_REG_CS) & 0xFFFF
         ip = uc.reg_read(UC_X86_REG_IP) & 0xFFFF
+        if interrupt_return_override[0] is not None:
+            ip = interrupt_return_override[0]
         for value in (flags | 0xF000, cs, ip):
             sp = (sp - 2) & 0xFFFF
             write_word(ss, sp, value)
@@ -71,6 +73,7 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
         uc.reg_write(UC_X86_REG_CS, int.from_bytes(entry[2:], "little"))
 
     oracle.hook_add(UC_HOOK_INTR, software_interrupt)
+    interrupt_return_override = [None]
 
     flag_mask = sum(spec["flags"][name] for name in ("CF", "PF", "AF", "ZF", "SF", "TF", "IF", "DF", "OF"))
     for index, reference_trace in enumerate(expected["trace"]):
@@ -91,6 +94,7 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
         cs = oracle.reg_read(UC_X86_REG_CS)
         ip = oracle.reg_read(UC_X86_REG_IP)
         begin = address_cpu.physical(cs, ip)
+        interrupt_return_override[0] = reference_trace.get("interruptReturnIP")
         prefix_bytes = bytes(oracle.mem_read(begin, 8))
         has_repeat = False
         for byte in prefix_bytes:
@@ -109,6 +113,7 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
             )
             if not has_repeat or repeat_complete:
                 break
+        interrupt_return_override[0] = None
         for name in REGISTER_ORDER:
             actual = oracle.reg_read(REGISTER_IDS[name]) & 0xFFFF
             wanted = reference_trace["after"][name]

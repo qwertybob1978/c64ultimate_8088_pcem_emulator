@@ -164,6 +164,10 @@ Prefix-aware reference execution supports ES/CS/SS/DS segment overrides,
 `REP`/`REPE`/`REPNE`, and byte/word `MOVS`, `CMPS`, `STOS`, `LODS`, and `SCAS`.
 The Unicorn adapter accounts for its one-iteration-at-a-time REP stepping so
 the comparison still covers the complete architectural instruction.
+The reference core also covers unsigned/signed byte and word division,
+including divide-by-zero and quotient-overflow interrupt 0. Its oracle adapter
+preserves the original 8088 rule that the saved return IP follows the `DIV` or
+`IDIV`; later x86 generations report the faulting instruction instead.
 
 ## PCem reference checkout
 
