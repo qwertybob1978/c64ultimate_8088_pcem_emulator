@@ -21,6 +21,9 @@
 .include "cpu8088/core.inc"
 
 CHROUT = $FFD2
+BORDER_COLOR = $D020
+COLOR_RED = $02
+COLOR_GREEN = $05
 
 .segment "LOADADDR"
     .word $0801
@@ -38,6 +41,8 @@ message_ptr: .res 2
 
 .segment "CODE"
 start:
+    lda #COLOR_RED
+    sta BORDER_COLOR
     lda #<msg_title
     ldx #>msg_title
     jsr print
@@ -75,6 +80,8 @@ start:
     lda #<msg_stepper_ok
     ldx #>msg_stepper_ok
     jsr print
+    lda #COLOR_GREEN
+    sta BORDER_COLOR
     jmp @done
 @stepper_fail:
     lda #<msg_stepper_fail

@@ -68,6 +68,34 @@ The capacity test temporarily changes one byte at REU addresses `$000000` and
 `$800000`, but saves and restores both bytes before returning. Turbo settings
 are likewise restored before the program returns to BASIC.
 
+The border starts red and changes to green only after every required REU and
+8088 check passes. VICE does not emulate the C64 Ultimate turbo register, so
+`TURBO CONTROL: NOT AVAILABLE` is expected in desktop smoke tests.
+
+## VICE smoke test
+
+Install the pinned, project-local VICE 3.10 package on Windows with:
+
+```powershell
+./tools/bootstrap_vice.ps1
+```
+
+It is downloaded from the official VICE SourceForge release archive, verified
+against `config/vice.json`, and unpacked below `.cache`, which is ignored by
+Git. No system-wide installation or user VICE configuration is changed.
+
+Build and boot the CRT in cycle-accurate `x64sc` with a 16 MiB REU:
+
+```powershell
+./tools/test_vice.ps1
+```
+
+The script validates the cartridge independently with VICE `cartconv`, starts
+from VICE defaults, explicitly enables a 16384 KiB REU, boots the Magic Desk
+CRT in warp mode, and checks the log and final green diagnostic border. The
+ignored evidence files are `build/vice-smoke.log` and
+`build/vice-smoke.png`.
+
 ## Current 8088 execution subset
 
 The native stepper currently implements `NOP`, `HLT`, `MOV r16,imm16`, short

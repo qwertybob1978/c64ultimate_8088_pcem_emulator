@@ -84,6 +84,10 @@ mouse support, protected mode, 80286 instructions, or cycle-exact CGA effects.
   tooling, Git, and a desktop PCem build for differential testing.
 - VICE with REU enabled for functional automation. VICE is not a substitute
   for final turbo and REU performance tests on actual C64U hardware.
+  The repository pins the official Windows VICE 3.10 build in
+  `config/vice.json`; `tools/test_vice.ps1` runs `x64sc` from clean defaults,
+  attaches the `.crt`, enables a 16384 KiB REU, and verifies the diagnostic's
+  green completion border. The absent C64U turbo register is expected in VICE.
 
 ### 3.3 Cartridge executable requirements
 

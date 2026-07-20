@@ -106,8 +106,12 @@ trampoline:
     lda #$80
     sta MAGIC_DESK_BANK                 ; bit 7 disables GAME/EXROM
     cli
-    jmp PAYLOAD_ENTRY
+    jsr PAYLOAD_ENTRY
+@halt:
+    ; The diagnostic is also a normal PRG and therefore returns with RTS.
+    ; A cartridge has no BASIC caller to return to, so keep its final screen
+    ; visible instead of falling through an undefined reset stack frame.
+    jmp TRAMPOLINE_RAM + (@halt - trampoline)
 trampoline_end:
 
 .assert * <= PAYLOAD_ROM_ADDRESS, error, "cartridge bootstrap exceeds reserved space"
-

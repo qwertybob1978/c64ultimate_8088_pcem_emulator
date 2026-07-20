@@ -16,7 +16,6 @@ reu_ext_addr: .res 3
 reu_length:   .res 2
 
 .segment "BSS"
-saved_registers: .res 7
 probe_byte:      .res 1
 probe_saved_0:   .res 1
 probe_saved_8m:  .res 1
@@ -25,57 +24,49 @@ transfer_command:.res 1
 
 .segment "CODE"
 
-; Check that the REU address and length registers are writable. This routine
-; does not start a DMA transfer. Returns carry set when a controller responds.
+; Probe a byte through DMA and restore its original value. Testing an actual
+; transfer is more portable than checking register readback: compatible REU
+; implementations differ in which address bits read back as writable.
+; Returns carry set when a controller responds.
 reu_detect:
-    ldx #$00
-@save:
-    lda REU_C64_ADDR_LO,x
-    sta saved_registers,x
-    inx
-    cpx #$07
-    bne @save
-
-    ldx #$00
-@write_pattern:
-    lda @patterns,x
-    sta REU_C64_ADDR_LO,x
-    inx
-    cpx #$07
-    bne @write_pattern
-
-    lda #$01
-    sta probe_result
-    ldx #$00
-@verify:
-    lda REU_C64_ADDR_LO,x
-    cmp @patterns,x
-    beq @next
+    lda #<probe_byte
+    sta reu_c64_addr
+    lda #>probe_byte
+    sta reu_c64_addr+1
     lda #$00
+    sta reu_ext_addr
+    sta reu_ext_addr+1
+    sta reu_ext_addr+2
+    lda #$01
+    sta reu_length
+    lda #$00
+    sta reu_length+1
+
+    lda #$A5
+    sta probe_byte
+    jsr reu_copy_from_reu
+    lda probe_byte
+    sta probe_saved_0
+    eor #$FF
     sta probe_result
-@next:
-    inx
-    cpx #$07
-    bne @verify
+    sta probe_byte
+    jsr reu_copy_to_reu
 
-    ldx #$00
-@restore:
-    lda saved_registers,x
-    sta REU_C64_ADDR_LO,x
-    inx
-    cpx #$07
-    bne @restore
+    lda probe_saved_0
+    sta probe_byte
+    jsr reu_copy_from_reu
+    lda probe_byte
+    cmp probe_result
+    bne @missing
 
-    lda probe_result
-    beq @missing
+    lda probe_saved_0
+    sta probe_byte
+    jsr reu_copy_to_reu
     sec
     rts
 @missing:
     clc
     rts
-
-@patterns:
-    .byte $55, $AA, $3C, $C3, $69, $96, $5A
 
 ; Transfer reu_length bytes. A zero length is rejected because the hardware
 ; interprets zero as 65536 bytes. Carry is clear on success, set on rejection.
