@@ -76,6 +76,8 @@
     { "first": 160, "last": 163, "mnemonic": "MOV moffs", "handler": "mov_moffs", "length": 3, "cycles": 10 },
     { "first": 164, "last": 165, "mnemonic": "MOVS", "handler": "movs", "length": 1, "cycles": 18 },
     { "first": 166, "last": 167, "mnemonic": "CMPS", "handler": "cmps", "length": 1, "cycles": 22 },
+    { "first": 168, "last": 168, "mnemonic": "TEST AL,imm8", "handler": "test_acc_imm8", "operation": "and", "length": 2, "cycles": 4 },
+    { "first": 169, "last": 169, "mnemonic": "TEST AX,imm16", "handler": "test_acc_imm16", "operation": "and", "length": 3, "cycles": 4 },
     { "first": 170, "last": 171, "mnemonic": "STOS", "handler": "stos", "length": 1, "cycles": 11 },
     { "first": 172, "last": 173, "mnemonic": "LODS", "handler": "lods", "length": 1, "cycles": 12 },
     { "first": 174, "last": 175, "mnemonic": "SCAS", "handler": "scas", "length": 1, "cycles": 15 },

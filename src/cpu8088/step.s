@@ -80,6 +80,7 @@ alu_last_cycles:     .res 1
 alu_preserve_cf:     .res 1
 alu_saved_cf:        .res 1
 alu_string_compare:  .res 1
+alu_test_only:       .res 1
 condition_code:      .res 1
 stack_adjust:        .res 2
 string_value:        .res 2
@@ -119,6 +120,7 @@ cpu8088_step:
 @begin:
     lda #$00
     sta shift_pending
+    sta alu_test_only
     lda #$FF
     sta cpu8088_segment_override
     lda #$00
@@ -209,6 +211,10 @@ cpu8088_step:
     long_beq @string_instruction
     cmp #$A7
     long_beq @string_instruction
+    cmp #$A8                    ; TEST AL/AX, immediate
+    long_beq @test_accumulator
+    cmp #$A9
+    long_beq @test_accumulator
     cmp #$AA                    ; STOSB/STOSW
     long_beq @string_instruction
     cmp #$AB
@@ -627,6 +633,11 @@ cpu8088_step:
     lsr a
     and #$07
     sta alu_operation
+    lda alu_test_only
+    beq :+
+    lda #$04                    ; TEST uses AND flags without storing
+    sta alu_operation
+:
 
     lda cpu8088_state+CPU_AX
     sta alu_left
@@ -644,6 +655,11 @@ cpu8088_step:
     sta alu_right+1
 
     jmp @alu_execute
+
+@test_accumulator:
+    lda #$01
+    sta alu_test_only
+    jmp @alu_accumulator_immediate
 
 @group3_divide:
     and #$01
@@ -1536,6 +1552,8 @@ cpu8088_step:
 @alu_store_result:
     lda alu_string_compare
     long_bne @string_compare_repeat
+    lda alu_test_only
+    long_bne @alu_accumulator_done
     lda alu_operation
     cmp #$07                    ; CMP updates flags without storing
     beq @alu_accumulator_done

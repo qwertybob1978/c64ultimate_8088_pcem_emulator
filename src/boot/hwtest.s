@@ -29,6 +29,8 @@ CHROUT = $FFD2
 BORDER_COLOR = $D020
 COLOR_RED = $02
 COLOR_GREEN = $05
+COLOR_PURPLE = $04
+COLOR_ORANGE = $08
 
 .macro long_bne target
     beq :+
@@ -97,11 +99,15 @@ start:
     sta BORDER_COLOR
     jmp @done
 @cga_fail:
+    lda #COLOR_ORANGE
+    sta BORDER_COLOR
     lda #<msg_cga_fail
     ldx #>msg_cga_fail
     jsr print
     jmp @done
 @stepper_fail:
+    lda #COLOR_PURPLE
+    sta BORDER_COLOR
     lda #<msg_stepper_fail
     ldx #>msg_stepper_fail
     jsr print

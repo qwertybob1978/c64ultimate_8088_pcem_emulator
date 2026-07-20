@@ -460,12 +460,12 @@ class Reference8088:
             result = self.alu(operation, self.read_operand(destination), immediate, width)
             if operation != "cmp":
                 self.write_operand(destination, result)
-        elif handler in ("alu_acc_imm8", "alu_acc_imm16"):
+        elif handler in ("alu_acc_imm8", "alu_acc_imm16", "test_acc_imm8", "test_acc_imm16"):
             width = 16 if handler.endswith("16") else 8
             destination = {"kind": "register", "index": 0, "width": width}
             immediate = self.fetch_u16() if width == 16 else self.fetch_u8()
             result = self.alu(metadata["operation"], self.read_operand(destination), immediate, width)
-            if metadata["operation"] != "cmp":
+            if metadata["operation"] != "cmp" and not handler.startswith("test_"):
                 self.write_operand(destination, result)
         elif handler == "jmp_rel8":
             displacement = self.fetch_u8()

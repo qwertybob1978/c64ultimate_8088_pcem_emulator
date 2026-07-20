@@ -17,8 +17,8 @@ Current branch and known-good commit:
 
 ```text
 branch: master
-commit: 5f0de0f
-subject: feat(cpu): add complement carry
+commit: c783907
+subject: feat(cpu): add rotate family
 ```
 
 The working tree was clean when this guide was created. Confirm before work:
@@ -35,6 +35,7 @@ and preserve them.
 Completed recent milestones, newest first:
 
 ```text
+c783907 feat(cpu): add rotate family
 5f0de0f feat(cpu): add complement carry
 7c4d2f9 feat(video): render CGA text on C64
 407f11a feat(dev): add visible VICE launcher
@@ -45,8 +46,6 @@ ff9baa0 docs: add continuation handoff
 a3f0b1e feat(cpu): add loop branch family
 b09704a feat(cpu): add CL-count shifts
 575caef test(media): validate DOS boot disk
-a9d4b5f feat(cpu): add single-bit right shifts
-b5304e1 feat(cpu): add group4 byte inc dec
 ```
 
 The end goal is not complete. Continue until the Generic XT BIOS displays via
@@ -101,28 +100,30 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: accumulator TEST
+## 4. Exact next task: Group-3 multiply
 
-The D0-D3 rotate family is complete. The Generic XT BIOS now executes 37,595
-successful instructions and stops on instruction number 37,596 (zero-based
-trace index 37595):
+Accumulator-immediate TEST is complete. The Generic XT BIOS now executes
+38,592 successful instructions and stops on instruction number 38,593
+(zero-based trace index 38592):
 
 ```text
-reported start: F000:E373
-bytes:          A8 0F
-meaning:        TEST AL,0Fh
-opcode family:  A8, accumulator immediate TEST
-AX:             00FF
-FLAGS:          0046 before TEST
+reported start: F000:F74B
+bytes:          F6 26 4A 00
+meaning:        MUL byte ptr [004Ah]
+opcode family:  F6 /4, unsigned byte multiply
+AX:             0000
+DS:             0000
+FLAGS:          0297 before MUL
 ```
 
-Implement `A8` (`TEST AL,imm8`) and `A9` (`TEST AX,imm16`) through the existing
-logical-AND flag path without storing the result. TEST clears CF and OF, updates
-SF/ZF/PF, and follows the project's established logical-operation AF convention.
-Add byte/word vectors, including a case proving AL/AX is unchanged. Regenerate,
-test, build, run VICE in warp mode, trace the next blocker, update this guide,
-and commit the milestone. The BIOS CGA page at B8000 is still all zero at this
-point, so it remains in adapter initialization/probing rather than text output.
+Extend Group 3 with `MUL` (`/4`) and `IMUL` (`/5`) for byte and word register or
+memory operands. Byte MUL writes the product to AX; word MUL writes DX:AX.
+Set CF and OF together when the upper product half is nonzero (or is not the
+sign-extension of the lower half for IMUL). Treat the remaining arithmetic
+flags as undefined using one deterministic project convention, verified against
+the differential vectors where Unicorn defines stable output. Regenerate, test,
+build, run VICE in warp mode, trace the next blocker, update this guide, and
+commit the milestone.
 
 ## 5. How to trace the BIOS to the next blocker
 

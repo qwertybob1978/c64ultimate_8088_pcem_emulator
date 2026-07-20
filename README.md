@@ -136,6 +136,8 @@ use correctness-first byte DMA; Phase 2 replaces this with a write-back page
 cache. Register and memory ModR/M forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
 `SUB`, `XOR`, and `CMP` share the same native flag engine as accumulator forms.
 `CMC` toggles CF without disturbing the remaining FLAGS state.
+Accumulator-immediate `TEST` (`A8`/`A9`) updates logical flags without changing
+AL or AX.
 The native control-flow slice also supports register `INC`/`DEC`, register
 `PUSH`/`POP`, near relative `CALL`, near `RET`/`RET imm16`, and all sixteen
 short conditional branches with REU-backed SS:SP stack accesses.

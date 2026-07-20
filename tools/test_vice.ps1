@@ -1,5 +1,5 @@
 param(
-    [int]$CycleLimit = 4000000,
+    [int]$CycleLimit = 8000000,
     [switch]$SkipBuild
 )
 

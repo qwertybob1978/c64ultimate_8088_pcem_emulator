@@ -563,6 +563,20 @@
       "program": "f5f5f4",
       "statuses": ["ok", "ok", "halted"],
       "expected": { "CS": 55552, "IP": 3, "FLAGS": 2247 }
+    },
+    {
+      "name": "test_al_immediate_matches_bios_probe",
+      "initial": { "CS": 55680, "IP": 0, "AX": 255, "FLAGS": 70 },
+      "program": "a80ff4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 255, "CS": 55680, "IP": 3, "FLAGS": 6 }
+    },
+    {
+      "name": "test_ax_immediate_preserves_accumulator",
+      "initial": { "CS": 55744, "IP": 0, "AX": 32769, "FLAGS": 3799 },
+      "program": "a90080f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 32769, "CS": 55744, "IP": 4, "FLAGS": 1670 }
     }
   ]
 }
