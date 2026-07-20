@@ -59,6 +59,15 @@ RAM, clears BSS, disables the cartridge through `$DE00`,
 and continues at the relocated entry point. The REU at `$DF00` remains
 available. The `.prg` remains a developer diagnostic artifact.
 
+Build and open the latest CRT in a visible VICE window with a 16 MiB REU and
+warp mode enabled:
+
+```powershell
+.\start_vice.ps1
+```
+
+Use `.\start_vice.ps1 -SkipBuild` when `build/c64x86.crt` is already current.
+
 ## Running the hardware diagnostic
 
 1. Configure a 16 MiB REU in the Ultimate settings.
