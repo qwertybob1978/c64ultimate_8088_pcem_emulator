@@ -4,11 +4,11 @@
     {
       "name": "native_smoke",
       "initial": { "CS": 0, "IP": 0 },
-      "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060005efbe8b1e0005c60602057a8a0e0205be0005bb1000c7400534128b50050150052b400533d239c2bc000250b800005be8f900b978563d01007403bbffffc70600032211c70602034433be0003bf2003b90400f3a4be2003b90400f3acb90300bf3003b07af3aac606220399be0003bf2003b90400f3a6c606300300b90300bf3003b07af2aec70600028003c70602020000c7068003b834c706820312cfcd80c70604028403c70606020000c7068403ba78c706860356cffb90b83412bb3400f6f33d59207401ffb8d4febbf900f6fb3d2afa7401ffb80000ba0100bb0001f7f33d00017401ff09d27401ffb8d4febaffffbbf9fff7fb8bf08bfa3d2a007401ff8bc23dfaff7401ffc70600009003c70602000000c706900341cfb83412bb0100f6f3b4d59e9cfaf89d9ff440c3",
-      "preserveBytes": 1302,
+      "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060005efbe8b1e0005c60602057a8a0e0205be0005bb1000c7400534128b50050150052b400533d239c2bc000250b800005be80a01b978563d01007403bbffffc70600032211c70602034433be0003bf2003b90400f3a4be2003b90400f3acb90300bf3003b07af3aac606220399be0003bf2003b90400f3a6c606300300b90300bf3003b07af2aec70600028003c70602020000c7068003b834c706820312cfcd80c70604028403c70606020000c7068403ba78c706860356cffb90b83412bb3400f6f33d59207401ffb8d4febbf900f6fb3d2afa7401ffb80000ba0100bb0001f7f33d00017401ff09d27401ffb8d4febaffffbbf9fff7fb8bf08bfa3d2a007401ff8bc23dfaff7401ffc70600009003c70602000000c706900341cfb83412bb0100f6f3b4d59e9cfaf89d9fc706000643cb9a00006000ea54010000fff440c3",
+      "preserveBytes": 1538,
       "pendingIrq": 129,
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 55092, "CX": 2, "DX": 65530, "BX": 1, "SP": 512, "SI": 42, "DI": 65530, "IP": 324, "FLAGS": 727 }
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 55092, "CX": 2, "DX": 65530, "BX": 2, "SP": 512, "SI": 42, "DI": 65530, "IP": 341, "FLAGS": 515 }
     },
     {
       "name": "flags_and_short_jump",
@@ -231,6 +231,27 @@
       "program": "b4d59e9cfaf89d9ff4",
       "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
       "expected": { "AX": 55040, "SP": 256, "CS": 32768, "IP": 9, "FLAGS": 727 }
+    },
+    {
+      "name": "far_call_jump_and_return",
+      "initial": { "CS": 4096, "IP": 0, "SS": 8192, "SP": 256, "FLAGS": 2 },
+      "program": "9a00000030ea0b000010fff4",
+      "memory": [
+        { "segment": 12288, "offset": 0, "bytes": "bb3412cb" }
+      ],
+      "statuses": ["ok", "ok", "ok", "ok", "halted"],
+      "expected": { "BX": 4660, "SP": 256, "CS": 4096, "IP": 12, "FLAGS": 2 }
+    },
+    {
+      "name": "far_return_with_stack_adjustment",
+      "initial": { "CS": 16384, "IP": 0, "SS": 20480, "SP": 256, "FLAGS": 2 },
+      "program": "ca0200",
+      "memory": [
+        { "segment": 20480, "offset": 256, "bytes": "030000600000" },
+        { "segment": 24576, "offset": 3, "bytes": "f4" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "SP": 262, "CS": 24576, "IP": 4, "FLAGS": 2 }
     }
   ]
 }

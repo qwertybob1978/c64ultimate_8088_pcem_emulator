@@ -396,9 +396,26 @@ class Reference8088:
                 displacement -= 0x10000
             self.push_u16(self.registers["IP"])
             self.registers["IP"] = (self.registers["IP"] + displacement) & 0xFFFF
+        elif handler == "call_far":
+            target_ip = self.fetch_u16()
+            target_cs = self.fetch_u16()
+            self.push_u16(self.registers["CS"])
+            self.push_u16(self.registers["IP"])
+            self.registers["IP"] = target_ip
+            self.registers["CS"] = target_cs
+        elif handler == "jmp_far":
+            target_ip = self.fetch_u16()
+            target_cs = self.fetch_u16()
+            self.registers["IP"] = target_ip
+            self.registers["CS"] = target_cs
         elif handler in ("ret_near", "ret_near_imm"):
             stack_adjust = self.fetch_u16() if handler == "ret_near_imm" else 0
             self.registers["IP"] = self.pop_u16()
+            self.registers["SP"] = (self.registers["SP"] + stack_adjust) & 0xFFFF
+        elif handler in ("ret_far", "ret_far_imm"):
+            stack_adjust = self.fetch_u16() if handler == "ret_far_imm" else 0
+            self.registers["IP"] = self.pop_u16()
+            self.registers["CS"] = self.pop_u16()
             self.registers["SP"] = (self.registers["SP"] + stack_adjust) & 0xFFFF
         elif handler == "int3":
             self.interrupt(3)

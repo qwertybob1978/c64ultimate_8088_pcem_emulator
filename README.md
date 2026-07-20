@@ -126,6 +126,9 @@ They use bounded binary long division and enter interrupt 0 without modifying
 the dividend on a zero divisor or a quotient that cannot fit its destination.
 `PUSHF`/`POPF` round-trip the 8088 FLAGS image through the REU-backed stack,
 while `SAHF`/`LAHF` transfer the five arithmetic status flags through AH.
+Immediate far `CALL`/`JMP` and `RETF`/`RETF imm16` now update CS:IP and the
+far return frame natively, including instruction-cache page changes. This
+includes the `EA` reset-stub jump used by XT-compatible BIOS ROMs.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

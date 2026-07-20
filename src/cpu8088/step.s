@@ -83,6 +83,7 @@ stack_adjust:        .res 2
 string_value:        .res 2
 string_width:        .res 1
 string_source_segment:.res 1
+far_target:          .res 4
 
 .segment "CODE"
 
@@ -165,6 +166,8 @@ cpu8088_step:
     long_beq @sahf
     cmp #$9F                    ; LAHF
     long_beq @lahf
+    cmp #$9A                    ; CALL ptr16:16
+    long_beq @call_far
     cmp #$A4                    ; MOVSB/MOVSW
     long_beq @string_instruction
     cmp #$A5
@@ -205,6 +208,8 @@ cpu8088_step:
     long_beq @jmp_rel8
     cmp #$E9                    ; JMP rel16
     long_beq @jmp_rel16
+    cmp #$EA                    ; JMP ptr16:16
+    long_beq @jmp_far
     cmp #$E8                    ; CALL rel16
     long_beq @call_rel16
     cmp #$F8                    ; CLC
@@ -227,6 +232,10 @@ cpu8088_step:
     long_beq @ret_near_imm
     cmp #$C3                    ; RET
     long_beq @ret_near
+    cmp #$CA                    ; RETF imm16
+    long_beq @ret_far_imm
+    cmp #$CB                    ; RETF
+    long_beq @ret_far
     cmp #$CC                    ; INT3
     long_beq @int3
     cmp #$CD                    ; INT imm8
@@ -1141,6 +1150,54 @@ cpu8088_step:
     lda #CPU_STEP_OK
     rts
 
+@call_far:
+    jsr @fetch_far_target
+    long_bcs @memory_error
+    lda cpu8088_state+CPU_CS
+    ldx cpu8088_state+CPU_CS+1
+    jsr cpu8088_push_u16
+    long_bcs @memory_error
+    lda cpu8088_state+CPU_IP
+    ldx cpu8088_state+CPU_IP+1
+    jsr cpu8088_push_u16
+    long_bcs @memory_error
+    jsr @install_far_target
+    lda #$1C
+    bne @far_control_done
+@jmp_far:
+    jsr @fetch_far_target
+    long_bcs @memory_error
+    jsr @install_far_target
+    lda #$0F
+@far_control_done:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@fetch_far_target:
+    ldx #$00
+@fetch_far_byte:
+    jsr cpu8088_fetch_u8
+    bcs @fetch_far_failed
+    sta far_target,x
+    inx
+    cpx #$04
+    bne @fetch_far_byte
+    clc
+@fetch_far_failed:
+    rts
+
+@install_far_target:
+    lda far_target
+    sta cpu8088_state+CPU_IP
+    lda far_target+1
+    sta cpu8088_state+CPU_IP+1
+    lda far_target+2
+    sta cpu8088_state+CPU_CS
+    lda far_target+3
+    sta cpu8088_state+CPU_CS+1
+    rts
+
 @ret_near_imm:
     jsr cpu8088_fetch_u8
     long_bcs @memory_error
@@ -1149,6 +1206,45 @@ cpu8088_step:
     long_bcs @memory_error
     sta stack_adjust+1
     jmp @ret_pop
+
+@ret_far_imm:
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta stack_adjust
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta stack_adjust+1
+    jmp @ret_far_pop
+@ret_far:
+    lda #$00
+    sta stack_adjust
+    sta stack_adjust+1
+@ret_far_pop:
+    jsr cpu8088_pop_u16
+    long_bcs @memory_error
+    sta far_target
+    stx far_target+1
+    jsr cpu8088_pop_u16
+    long_bcs @memory_error
+    sta far_target+2
+    stx far_target+3
+    jsr @install_far_target
+    clc
+    lda cpu8088_state+CPU_SP
+    adc stack_adjust
+    sta cpu8088_state+CPU_SP
+    lda cpu8088_state+CPU_SP+1
+    adc stack_adjust+1
+    sta cpu8088_state+CPU_SP+1
+    lda #$22
+    ldx cpu8088_last_opcode
+    cpx #$CA
+    bne :+
+    lda #$21
+:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
 
 @int3:
     lda #$03
