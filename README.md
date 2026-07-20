@@ -110,6 +110,11 @@ cache. Register and memory ModR/M forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
 The native control-flow slice also supports register `INC`/`DEC`, register
 `PUSH`/`POP`, near relative `CALL`, near `RET`/`RET imm16`, and all sixteen
 short conditional branches with REU-backed SS:SP stack accesses.
+Native prefix decoding applies ES/CS/SS/DS overrides to ModR/M operands and
+supports interruptible-instruction groundwork for `REP`/`REPNE`. Byte and word
+`MOVS`, `STOS`, and `LODS` execute directly against REU-backed guest memory,
+including direction-flag index updates and zero-count repetition. Native
+`CMPS`/`SCAS` and their repeat termination rules are the next CPU slice.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

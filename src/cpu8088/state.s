@@ -6,11 +6,15 @@
 .export cpu8088_state
 .export cpu8088_halted
 .export cpu8088_last_cycles
+.export cpu8088_segment_override
+.export cpu8088_repeat_prefix
 
 .segment "BSS"
 cpu8088_state: .res CPU_STATE_SIZE
 cpu8088_halted: .res 1
 cpu8088_last_cycles: .res 1
+cpu8088_segment_override: .res 1
+cpu8088_repeat_prefix: .res 1
 
 .segment "CODE"
 

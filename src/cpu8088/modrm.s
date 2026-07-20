@@ -3,6 +3,7 @@
 .include "cpu8088/state.inc"
 
 .import cpu8088_state
+.import cpu8088_segment_override
 .import cpu8088_fetch_u8
 .import cpu8088_segment_offset_physical
 .importzp cpu8088_segment
@@ -105,10 +106,14 @@ cpu8088_decode_ea:
     lda ea_mod
     bne @bp
     jsr cpu8088_fetch_u8
-    bcs @error
+    bcc :+
+    jmp @error
+:
     sta cpu8088_ea_offset
     jsr cpu8088_fetch_u8
-    bcs @error
+    bcc :+
+    jmp @error
+:
     sta cpu8088_ea_offset+1
     jmp @finish
 @bp:
@@ -155,7 +160,11 @@ cpu8088_decode_ea:
     sta cpu8088_ea_offset+1
 
 @finish:
+    ldx cpu8088_segment_override
+    cpx #$FF
+    bne :+
     ldx ea_segment_offset
+:
     lda cpu8088_state,x
     sta cpu8088_ea_segment
     sta cpu8088_segment

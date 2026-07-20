@@ -16,6 +16,11 @@
 .import cpu8088_mem_write_u8
 .import cpu8088_push_u16
 .import cpu8088_pop_u16
+.import cpu8088_segment_override
+.import cpu8088_repeat_prefix
+.import cpu8088_segment_offset_physical
+.importzp cpu8088_segment
+.importzp cpu8088_offset
 
 .export cpu8088_step
 .export cpu8088_last_opcode
@@ -66,6 +71,9 @@ alu_preserve_cf:     .res 1
 alu_saved_cf:        .res 1
 condition_code:      .res 1
 stack_adjust:        .res 2
+string_value:        .res 2
+string_width:        .res 1
+string_source_segment:.res 1
 
 .segment "CODE"
 
@@ -74,14 +82,34 @@ stack_adjust:        .res 2
 ; opcodes return CPU_STEP_INVALID without pretending to execute them.
 cpu8088_step:
     lda cpu8088_halted
-    beq @fetch
+    beq @begin
     lda #CPU_STEP_HALTED
     rts
 
+@begin:
+    lda #$FF
+    sta cpu8088_segment_override
+    lda #$00
+    sta cpu8088_repeat_prefix
 @fetch:
     jsr cpu8088_fetch_u8
     long_bcs @memory_error
     sta cpu8088_last_opcode
+
+    cmp #$26                    ; ES override
+    long_beq @prefix_es
+    cmp #$2E                    ; CS override
+    long_beq @prefix_cs
+    cmp #$36                    ; SS override
+    long_beq @prefix_ss
+    cmp #$3E                    ; DS override
+    long_beq @prefix_ds
+    cmp #$F2                    ; REPNE
+    long_beq @prefix_repeat
+    cmp #$F3                    ; REP/REPE
+    long_beq @prefix_repeat
+    cmp #$F0                    ; LOCK (bus behavior is implicit on one CPU)
+    beq @fetch
 
     and #$C6                    ; AL/AX immediate ALU forms: xx00010w
     cmp #$04
@@ -110,6 +138,18 @@ cpu8088_step:
 
     cmp #$90                    ; NOP
     long_beq @nop
+    cmp #$A4                    ; MOVSB/MOVSW
+    long_beq @string_instruction
+    cmp #$A5
+    long_beq @string_instruction
+    cmp #$AA                    ; STOSB/STOSW
+    long_beq @string_instruction
+    cmp #$AB
+    long_beq @string_instruction
+    cmp #$AC                    ; LODSB/LODSW
+    long_beq @string_instruction
+    cmp #$AD
+    long_beq @string_instruction
     cmp #$88                    ; MOV r/m,reg and MOV reg,r/m
     long_bcc @check_mov_imm8
     cmp #$8C
@@ -168,6 +208,187 @@ cpu8088_step:
     lda #$04
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
+    rts
+
+@prefix_es:
+    lda #CPU_ES
+    bne @set_segment_prefix
+@prefix_cs:
+    lda #CPU_CS
+    bne @set_segment_prefix
+@prefix_ss:
+    lda #CPU_SS
+    bne @set_segment_prefix
+@prefix_ds:
+    lda #CPU_DS
+@set_segment_prefix:
+    sta cpu8088_segment_override
+    jmp @fetch
+@prefix_repeat:
+    sta cpu8088_repeat_prefix
+    jmp @fetch
+
+@string_instruction:
+    and #$01
+    sta string_width
+    lda cpu8088_repeat_prefix
+    beq @string_once
+    lda cpu8088_state+CPU_CX
+    ora cpu8088_state+CPU_CX+1
+    long_beq @string_done
+@string_once:
+@string_loop:
+    lda cpu8088_last_opcode
+    and #$FE
+    cmp #$AA
+    beq @string_stos
+    cmp #$AC
+    beq @string_lods
+
+    jsr @string_source_address
+    jsr @string_read_value
+    long_bcs @memory_error
+    jsr @string_destination_address
+    jsr @string_write_value
+    long_bcs @memory_error
+    jsr @string_adjust_si
+    jsr @string_adjust_di
+    jmp @string_repeat
+
+@string_stos:
+    lda cpu8088_state+CPU_AX
+    sta string_value
+    lda cpu8088_state+CPU_AX+1
+    sta string_value+1
+    jsr @string_destination_address
+    jsr @string_write_value
+    long_bcs @memory_error
+    jsr @string_adjust_di
+    jmp @string_repeat
+
+@string_lods:
+    jsr @string_source_address
+    jsr @string_read_value
+    long_bcs @memory_error
+    lda string_value
+    sta cpu8088_state+CPU_AX
+    lda string_width
+    beq :+
+    lda string_value+1
+    sta cpu8088_state+CPU_AX+1
+:
+    jsr @string_adjust_si
+
+@string_repeat:
+    lda cpu8088_repeat_prefix
+    beq @string_done
+    sec
+    lda cpu8088_state+CPU_CX
+    sbc #$01
+    sta cpu8088_state+CPU_CX
+    lda cpu8088_state+CPU_CX+1
+    sbc #$00
+    sta cpu8088_state+CPU_CX+1
+    ora cpu8088_state+CPU_CX
+    long_bne @string_loop
+@string_done:
+    lda #$12
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@string_source_address:
+    ldx cpu8088_segment_override
+    cpx #$FF
+    bne :+
+    ldx #CPU_DS
+:
+    stx string_source_segment
+    lda cpu8088_state,x
+    sta cpu8088_segment
+    lda cpu8088_state+1,x
+    sta cpu8088_segment+1
+    lda cpu8088_state+CPU_SI
+    sta cpu8088_offset
+    lda cpu8088_state+CPU_SI+1
+    sta cpu8088_offset+1
+    jmp cpu8088_segment_offset_physical
+
+@string_destination_address:
+    lda cpu8088_state+CPU_ES
+    sta cpu8088_segment
+    lda cpu8088_state+CPU_ES+1
+    sta cpu8088_segment+1
+    lda cpu8088_state+CPU_DI
+    sta cpu8088_offset
+    lda cpu8088_state+CPU_DI+1
+    sta cpu8088_offset+1
+    jmp cpu8088_segment_offset_physical
+
+@string_read_value:
+    jsr cpu8088_mem_read_u8
+    bcs @string_io_failed
+    sta string_value
+    lda #$00
+    sta string_value+1
+    lda string_width
+    beq @string_io_ok
+    jsr @string_next_address
+    jsr cpu8088_mem_read_u8
+    bcs @string_io_failed
+    sta string_value+1
+@string_io_ok:
+    clc
+@string_io_failed:
+    rts
+
+@string_write_value:
+    lda string_value
+    jsr cpu8088_mem_write_u8
+    bcs @string_io_failed
+    lda string_width
+    beq @string_io_ok
+    jsr @string_next_address
+    lda string_value+1
+    jsr cpu8088_mem_write_u8
+    rts
+
+@string_next_address:
+    inc cpu8088_offset
+    bne :+
+    inc cpu8088_offset+1
+:
+    jmp cpu8088_segment_offset_physical
+
+@string_adjust_si:
+    ldx #CPU_SI
+    jmp @string_adjust_index
+@string_adjust_di:
+    ldx #CPU_DI
+@string_adjust_index:
+    lda string_width
+    clc
+    adc #$01
+    sta alu_temp
+    lda cpu8088_state+CPU_FLAGS+1
+    and #X86_FLAG_DF_HI
+    bne @string_decrement
+    clc
+    lda cpu8088_state,x
+    adc alu_temp
+    sta cpu8088_state,x
+    bcc :+
+    inc cpu8088_state+1,x
+:
+    rts
+@string_decrement:
+    sec
+    lda cpu8088_state,x
+    sbc alu_temp
+    sta cpu8088_state,x
+    bcs :+
+    dec cpu8088_state+1,x
+:
     rts
 
 @alu_accumulator_immediate:

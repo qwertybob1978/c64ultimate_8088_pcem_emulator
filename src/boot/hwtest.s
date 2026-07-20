@@ -214,6 +214,18 @@ test_cpu_stepper:
     lda cpu8088_state+CPU_SP+1
     cmp #>CPU_SMOKE_EXPECTED_SP
     bne @restore
+    lda cpu8088_state+CPU_SI
+    cmp #<CPU_SMOKE_EXPECTED_SI
+    bne @restore
+    lda cpu8088_state+CPU_SI+1
+    cmp #>CPU_SMOKE_EXPECTED_SI
+    bne @restore
+    lda cpu8088_state+CPU_DI
+    cmp #<CPU_SMOKE_EXPECTED_DI
+    bne @restore
+    lda cpu8088_state+CPU_DI+1
+    cmp #>CPU_SMOKE_EXPECTED_DI
+    bne @restore
     lda cpu8088_state+CPU_FLAGS
     cmp #<CPU_SMOKE_EXPECTED_FLAGS
     bne @restore
