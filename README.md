@@ -124,6 +124,8 @@ guest once delivery becomes legal. A separate NMI latch bypasses IF/shadow.
 Native `DIV`/`IDIV` handlers cover byte and word register or memory divisors.
 They use bounded binary long division and enter interrupt 0 without modifying
 the dividend on a zero divisor or a quotient that cannot fit its destination.
+`PUSHF`/`POPF` round-trip the 8088 FLAGS image through the REU-backed stack,
+while `SAHF`/`LAHF` transfer the five arithmetic status flags through AH.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

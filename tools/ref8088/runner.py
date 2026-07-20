@@ -287,6 +287,17 @@ class Reference8088:
             self.push_u16(self.get_register(opcode & 7, 16))
         elif handler == "pop_reg16":
             self.set_register(opcode & 7, 16, self.pop_u16())
+        elif handler == "pushf":
+            self.push_u16(self.registers["FLAGS"] | 0xF000)
+        elif handler == "popf":
+            self.registers["FLAGS"] = (self.pop_u16() & 0x0FFF) | self.flags["RESERVED"]
+        elif handler == "sahf":
+            status_mask = self.flags["SF"] | self.flags["ZF"] | self.flags["AF"] | self.flags["PF"] | self.flags["CF"]
+            ah = self.get_register(4, 8)
+            self.registers["FLAGS"] = (self.registers["FLAGS"] & ~status_mask) | (ah & status_mask)
+            self.registers["FLAGS"] |= self.flags["RESERVED"]
+        elif handler == "lahf":
+            self.set_register(4, 8, self.registers["FLAGS"] & 0xFF)
         elif handler == "mov_modrm":
             width = 16 if opcode & 1 else 8
             rm_operand, reg_index = self.decode_modrm(width)

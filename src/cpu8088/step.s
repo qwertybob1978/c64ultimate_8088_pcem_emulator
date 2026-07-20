@@ -157,6 +157,14 @@ cpu8088_step:
 
     cmp #$90                    ; NOP
     long_beq @nop
+    cmp #$9C                    ; PUSHF
+    long_beq @pushf
+    cmp #$9D                    ; POPF
+    long_beq @popf
+    cmp #$9E                    ; SAHF
+    long_beq @sahf
+    cmp #$9F                    ; LAHF
+    long_beq @lahf
     cmp #$A4                    ; MOVSB/MOVSW
     long_beq @string_instruction
     cmp #$A5
@@ -1065,6 +1073,47 @@ cpu8088_step:
     sta cpu8088_state+1,x
     lda #$0C
 @stack_instruction_done:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@pushf:
+    lda cpu8088_state+CPU_FLAGS
+    ldx cpu8088_state+CPU_FLAGS+1
+    txa
+    ora #$F0
+    tax
+    lda cpu8088_state+CPU_FLAGS
+    jsr cpu8088_push_u16
+    long_bcs @memory_error
+    lda #$0E
+    bne @flags_transfer_done
+@popf:
+    jsr cpu8088_pop_u16
+    long_bcs @memory_error
+    ora #$02
+    sta cpu8088_state+CPU_FLAGS
+    txa
+    and #$0F
+    sta cpu8088_state+CPU_FLAGS+1
+    lda #$0C
+    bne @flags_transfer_done
+@sahf:
+    lda cpu8088_state+CPU_FLAGS
+    and #$2A
+    sta immediate_low
+    lda cpu8088_state+CPU_AX+1
+    and #$D5
+    ora immediate_low
+    ora #$02
+    sta cpu8088_state+CPU_FLAGS
+    lda #$04
+    bne @flags_transfer_done
+@lahf:
+    lda cpu8088_state+CPU_FLAGS
+    sta cpu8088_state+CPU_AX+1
+    lda #$04
+@flags_transfer_done:
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts
