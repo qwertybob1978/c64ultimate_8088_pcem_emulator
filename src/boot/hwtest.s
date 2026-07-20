@@ -3,6 +3,7 @@
 .import turbo_detect
 .import turbo_enable_max
 .import turbo_restore
+.import host_keyboard_translate
 .import reu_detect
 .import reu_probe_16m
 .import cpu8088_reset
@@ -105,6 +106,8 @@ start:
     jsr test_cpu_multiply
     bcc @stepper_fail
     jsr test_video_status
+    bcc @stepper_fail
+    jsr test_keyboard_translation
     bcc @stepper_fail
     lda #<msg_stepper_ok
     ldx #>msg_stepper_ok
@@ -430,6 +433,41 @@ test_video_status:
     sec
     rts
 @video_status_failed:
+    clc
+    rts
+
+test_keyboard_translation:
+    lda #$41                    ; A
+    jsr host_keyboard_translate
+    bcc @keyboard_failed
+    cmp #$1E
+    bne @keyboard_failed
+    lda #$5A                    ; Z
+    jsr host_keyboard_translate
+    bcc @keyboard_failed
+    cmp #$2C
+    bne @keyboard_failed
+    lda #$31                    ; 1
+    jsr host_keyboard_translate
+    bcc @keyboard_failed
+    cmp #$02
+    bne @keyboard_failed
+    lda #$0D                    ; Return
+    jsr host_keyboard_translate
+    bcc @keyboard_failed
+    cmp #$1C
+    bne @keyboard_failed
+    lda #$9D                    ; Cursor left
+    jsr host_keyboard_translate
+    bcc @keyboard_failed
+    cmp #$4B
+    bne @keyboard_failed
+    lda #$00
+    jsr host_keyboard_translate
+    bcs @keyboard_failed
+    sec
+    rts
+@keyboard_failed:
     clc
     rts
 

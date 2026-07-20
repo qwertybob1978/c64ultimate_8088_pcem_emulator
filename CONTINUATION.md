@@ -17,8 +17,8 @@ Current branch and known-good commit:
 
 ```text
 branch: master
-commit: 9f18f05
-subject: feat(cpu): add decimal adjust
+commit: b00bfd5
+subject: feat(io): select XT CGA hardware
 ```
 
 The working tree was clean when this guide was created. Confirm before work:
@@ -35,6 +35,7 @@ and preserve them.
 Completed recent milestones, newest first:
 
 ```text
+b00bfd5 feat(io): select XT CGA hardware
 9f18f05 feat(cpu): add decimal adjust
 f150476 feat(video): add status transitions
 f1c8cac feat(cpu): add group3 test
@@ -45,7 +46,6 @@ c783907 feat(cpu): add rotate family
 7c4d2f9 feat(video): render CGA text on C64
 407f11a feat(dev): add visible VICE launcher
 8cac29d feat(cpu): add ModR/M exchange
-ddd09f6 feat(cpu): add LES and LDS
 ```
 
 The end goal is not complete. Continue until the Generic XT BIOS displays via
@@ -101,9 +101,9 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: C64-to-XT keyboard routing
+## 4. Exact next task: native BIOS loop and IRQ scheduling
 
-The XT PPI/DIP slice is complete. Port 62h now advertises color 80-column video,
+The XT PPI/DIP slice and C64 keyboard translation are complete. Port 62h now advertises color 80-column video,
 03BAh remains open bus, and 03DAh supplies display-enable plus vertical-retrace
 phases. The BIOS makes its first nonzero B8000 write at instruction 26,398 and
 produces this real CGA page:
@@ -126,13 +126,13 @@ BDA 0040:001C: 001E (keyboard tail)
 B8000:          complete 80x25 space/attribute page plus BIOS banner
 ```
 
-Add a host keyboard module that polls the C64 keyboard, translates useful
-PETSCII keys to XT set-1 make scan codes, queues them at PPI port 60h, and raises
-emulated IRQ1/vector 09h. Start with letters, digits, Enter, Backspace, Space,
-punctuation, and cursor keys needed to operate DOS. Preserve the port-B reset/
-acknowledge behavior. Add deterministic translation and queue diagnostics. The
-native BIOS execution loop must call the poller between batches of 8088 steps.
-Then continue into PIT/PIC and floppy hardware.
+The mapping in `src/host/keyboard.s` covers letters, digits, Enter, Backspace,
+Space, punctuation, and cursor keys and queues set-1 make codes on port 60h.
+The immediate task is to add a native BIOS execution loop that initializes the
+Generic XT ROM in REU, executes bounded batches, calls `host_keyboard_poll`,
+generates PIT IRQ0 and keyboard IRQ1 through an XT PIC slice, and calls
+`cga_render_text_40` periodically. Then implement DMA channel 2/FDC commands and
+attach the validated 360 KiB DOS image.
 
 ## 5. How to trace the BIOS to the next blocker
 
@@ -295,6 +295,7 @@ git status --short
 | `src/cpu8088/interrupts.s` | Interrupt entry and boundary delivery helpers |
 | `src/cpu8088/divide.s` | Native bounded byte/word signed/unsigned division |
 | `src/cpu8088/multiply.s` | Native byte/word signed/unsigned multiplication |
+| `src/host/keyboard.s` | PETSCII/C64 key to XT set-1 scan-code routing |
 | `src/cpu8088/core.inc` | Shared CPU imports/constants |
 | `tools/generate_cpu8088.py` | Generates `state.inc` and `smoke_vector.inc` from config/vectors |
 | `tools/ref8088/runner.py` | Deterministic desktop 8088 reference model and BIOS trace engine |

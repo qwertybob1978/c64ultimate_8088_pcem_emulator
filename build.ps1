@@ -25,6 +25,7 @@ if ($LASTEXITCODE -ne 0) {
 $objects = @(
     @{ Source = "src/boot/hwtest.s"; Object = "boot/hwtest.o" },
     @{ Source = "src/host/turbo.s"; Object = "host/turbo.o" },
+    @{ Source = "src/host/keyboard.s"; Object = "host/keyboard.o" },
     @{ Source = "src/memory/reu.s"; Object = "memory/reu.o" },
     @{ Source = "src/memory/page_cache.s"; Object = "memory/page_cache.o" },
     @{ Source = "src/cpu8088/state.s"; Object = "cpu8088/state.o" },

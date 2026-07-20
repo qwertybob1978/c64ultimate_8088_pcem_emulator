@@ -196,6 +196,9 @@ BIOS polling loops can complete without host-timing dependence. The XT PPI
 switch bank at `60h`–`62h` advertises an 80-column color adapter.
 The desktop BIOS trace now produces the real Generic Turbo XT BIOS banner in
 the emulated B8000 80x25 text page before waiting for keyboard input.
+C64 KERNAL key events are translated to XT set-1 make scan codes for letters,
+digits, common punctuation, editing keys, and cursor movement, then queued on
+port 60h with keyboard IRQ vector 09h.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 
