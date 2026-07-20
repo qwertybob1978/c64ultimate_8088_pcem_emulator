@@ -90,6 +90,7 @@ The native 6502 8088 core already has these major slices:
 - Group-3 NOT, Group-4 byte INC/DEC, and register word INC/DEC;
 - single-bit and CL-count SHL/SAL/SHR/SAR for registers and memory;
 - LOOPNE, LOOPE, LOOP, and JCXZ;
+- Group-5 near indirect CALL/JMP with general ModR/M segment overrides;
 - a four-bank 32 KiB Magic Desk CRT with a RAM-resident multi-bank loader;
 - automated VICE 3.10 CRT smoke testing with a 16 MiB REU in warp mode.
 
@@ -97,88 +98,47 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: Group-5 indirect near jump
+## 4. Exact next task: LES/LDS far-pointer loads
 
-The Generic XT BIOS now executes 25,401 successful instructions and stops on
-instruction number 25,402 (zero-based trace index 25401):
-
-```text
-reported start: F000:F110
-bytes:          2E FF A7 45 F0
-meaning:        CS: JMP word ptr [BX+F045]
-opcode family:  FF /4, Group 5 near indirect JMP
-BX:             0000
-pointer address:F000:F045, physical FF045
-pointer value:  F115
-expected target:F000:F115
-```
-
-The bytes around the dispatch table are:
+The Group-5 BIOS dispatch is complete. The Generic XT BIOS now executes 25,416
+successful instructions and stops on instruction number 25,417 (zero-based
+trace index 25416):
 
 ```text
-FF040: FF FF FF FF FF 15 F1 C2 F1 CF F1 DF F1 FB F1 7C
-FF110: 2E FF A7 45 F0 A0 10 00 BA B4 03 24 30 3C 30 B0
+reported start: F000:F13D
+bytes:          C4 36 74 00
+meaning:        LES SI,[0074]
+opcode family:  C4, LES r16,m16:16
+DS:             0000
+pointer address:0000:0074, physical 00074
 ```
 
-Implement at least the coherent Group-5 near-control-flow slice:
-
-- `FF /2`: near indirect CALL r/m16;
-- `FF /4`: near indirect JMP r/m16.
-
-It is reasonable to implement the other legal Group-5 forms in separate
-milestones:
-
-- `/0` INC r/m16 and `/1` DEC r/m16, preserving CF;
-- `/3` far indirect CALL m16:16 (memory only);
-- `/5` far indirect JMP m16:16 (memory only);
-- `/6` PUSH r/m16;
-- `/7` is invalid.
-
-For `FF /2`, decode and read the operand before pushing the already-advanced IP,
-then install the target IP. For `FF /4`, install the target IP without touching
-the stack or FLAGS. Support both register and memory operands for near forms.
-
-### Important reference-model bug to fix with Group 5
-
-`tools/ref8088/runner.py` currently recognizes general segment prefixes in
-`Reference8088.step()`, but `decode_modrm()` still chooses only its normal
-DS/SS segment and does not apply that prefix. String source operations do use
-the override. The next BIOS instruction requires `CS:` for a normal ModR/M
-memory operand, so fix the reference model before trusting a Group-5 BIOS test.
-
-A simple safe approach is:
-
-1. Set a per-instruction `segment_override` field to `None` at the start of
-   `step()`.
-2. Set it while consuming `26`, `2E`, `36`, or `3E` prefixes.
-3. In `decode_modrm()`, after determining the normal `segmentName`, replace it
-   with the override when one is active.
-4. Use the selected segment register value in the returned memory operand.
-5. Add a vector that proves `2E FF A7 45 F0` reads from CS rather than DS.
-
-The native decoder already tracks `cpu8088_segment_override`; confirm its
-general ModR/M path uses it rather than reimplementing prefix logic.
-
-### Required Group-5 tests
-
-Add vectors to `tests/vectors/cpu8088_smoke.json` for at least:
-
-- register near JMP;
-- memory near JMP with a CS override and 16-bit displacement;
-- register near CALL followed by RET, checking pushed return IP and SP;
-- an invalid extension if convenient.
-
-Update both implementations:
+Bytes around the instruction:
 
 ```text
-config/cpu8088.json          opcode metadata for FF
-tools/ref8088/runner.py      deterministic desktop semantics
-src/cpu8088/step.s           native 6502 implementation
-tests/vectors/cpu8088_smoke.json
-README.md                    current supported subset
+FF130: 80 C2 04 EE 88 1E 49 00 1E 33 C0 8E D8 C4 36 74
+FF140: 00 1F B7 00 53 2E 8A 9F FC F0 03 F3 B9 10 00 26
 ```
 
-Then regenerate contracts, test, build, run VICE in warp mode, and commit.
+Implement the coherent far-pointer load family:
+
+- `C4 /r`: `LES r16,m16:16` loads the offset into the ModR/M reg field and the
+  following word into ES;
+- `C5 /r`: `LDS r16,m16:16` does the same but loads DS.
+
+These instructions require a memory operand; ModR/M `mod=3` is invalid. Decode
+the effective address once, read four consecutive bytes with 16-bit offset
+wrapping, and only update the destination register/segment after all reads
+succeed. FLAGS are unchanged. General segment overrides must select the pointer
+source segment, and the newly loaded ES/DS must not affect reads already in
+progress.
+
+Add desktop/Unicorn vectors for LES and LDS, including one BP-based SS-default
+pointer and one explicit segment override. Add the BIOS-shaped `C4 36 74 00`
+case. Update `config/cpu8088.json`, `tools/ref8088/runner.py`,
+`src/cpu8088/step.s`, `tests/vectors/cpu8088_smoke.json`, and `README.md`.
+Regenerate contracts, run all tests, build the CRT, run VICE in warp mode, trace
+the BIOS to the next blocker, and commit the milestone.
 
 ## 5. How to trace the BIOS to the next blocker
 

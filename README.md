@@ -118,6 +118,8 @@ Group-4 `INC`/`DEC` extends the same carry-preserving flag behavior to byte
 register and REU-memory operands.
 `LOOPNE`, `LOOPE`, `LOOP`, and `JCXZ` provide the 8088 CX-controlled short
 branch family without modifying arithmetic flags.
+Group-5 near indirect `CALL` and `JMP` support register and memory targets,
+including segment-overridden BIOS dispatch tables.
 Native prefix decoding applies ES/CS/SS/DS overrides to ModR/M operands and
 supports interruptible-instruction groundwork for `REP`/`REPNE`. Byte and word
 `MOVS`, `CMPS`, `STOS`, `LODS`, and `SCAS` execute directly against REU-backed

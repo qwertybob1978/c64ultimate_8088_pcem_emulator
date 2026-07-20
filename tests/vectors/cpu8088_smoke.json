@@ -420,6 +420,34 @@
       "program": "e101fff4",
       "statuses": ["ok", "halted"],
       "expected": { "CX": 1, "CS": 52480, "IP": 4, "FLAGS": 66 }
+    },
+    {
+      "name": "group5_near_jump_register",
+      "initial": { "CS": 53248, "IP": 0, "AX": 4, "FLAGS": 135 },
+      "program": "ffe0fff4f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 4, "CS": 53248, "IP": 5, "FLAGS": 135 }
+    },
+    {
+      "name": "group5_near_jump_cs_override_bios_shape",
+      "initial": { "CS": 53504, "IP": 0, "DS": 4096, "BX": 0, "FLAGS": 2 },
+      "program": "2effa74500f4",
+      "memory": [
+        { "segment": 53504, "offset": 69, "bytes": "0500" },
+        { "segment": 4096, "offset": 69, "bytes": "ffff" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "CS": 53504, "DS": 4096, "IP": 6, "FLAGS": 2 }
+    },
+    {
+      "name": "group5_near_call_register_and_return",
+      "initial": { "CS": 53760, "IP": 0, "SS": 8192, "SP": 256, "AX": 4, "FLAGS": 2 },
+      "program": "ffd0f49040c3",
+      "statuses": ["ok", "ok", "ok", "halted"],
+      "expected": { "AX": 5, "CS": 53760, "SS": 8192, "SP": 256, "IP": 3, "FLAGS": 6 },
+      "expectedMemory": [
+        { "segment": 8192, "offset": 254, "bytes": "0200" }
+      ]
     }
   ]
 }

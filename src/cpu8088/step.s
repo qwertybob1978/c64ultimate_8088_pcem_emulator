@@ -314,6 +314,8 @@ cpu8088_step:
     long_beq @loop_rel8
     cmp #$E3
     long_beq @loop_rel8
+    cmp #$FF                    ; Group 5 indirect control flow
+    long_beq @group5_control
 
     cmp #$B8                    ; MOV r16, imm16
     long_bcc @invalid
@@ -1464,6 +1466,70 @@ cpu8088_step:
     lda #$00
     sta alu_right+1
     jmp @alu_execute
+
+@group5_control:
+    lda #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    cmp #$02
+    beq @group5_extension_ok
+    cmp #$04
+    long_bne @invalid
+@group5_extension_ok:
+    sta source_offset
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @group5_register
+    lda #$01
+    sta alu_destination_kind
+    jsr @read_ea_to_left
+    long_bcs @memory_error
+    jmp @group5_execute
+@group5_register:
+    lda #$00
+    sta alu_destination_kind
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    jsr @read_register_to_left
+@group5_execute:
+    lda source_offset
+    cmp #$02
+    bne @group5_install_ip
+    lda cpu8088_state+CPU_IP
+    ldx cpu8088_state+CPU_IP+1
+    jsr cpu8088_push_u16
+    long_bcs @memory_error
+@group5_install_ip:
+    lda alu_left
+    sta cpu8088_state+CPU_IP
+    lda alu_left+1
+    sta cpu8088_state+CPU_IP+1
+    lda source_offset
+    cmp #$02
+    bne @group5_jump_cycles
+    lda #$10
+    ldx alu_destination_kind
+    beq @group5_done
+    lda #$15
+    bne @group5_done
+@group5_jump_cycles:
+    lda #$0B
+    ldx alu_destination_kind
+    beq @group5_done
+    lda #$12
+@group5_done:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
 
 @push_pop_reg16:
     lda cpu8088_last_opcode

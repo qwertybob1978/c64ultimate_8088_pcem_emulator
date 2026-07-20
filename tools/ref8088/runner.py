@@ -32,6 +32,7 @@ class Reference8088:
         self.last_interrupt_return_ip = None
         self.ports = {}
         self.io_events = []
+        self.segment_override = None
         self.opcodes = {}
         for entry in spec["opcodes"]:
             for opcode in range(entry["first"], entry["last"] + 1):
@@ -128,7 +129,7 @@ class Reference8088:
                 offset = (offset + displacement) & 0xFFFF
             elif mod == 2:
                 offset = (offset + self.fetch_u16()) & 0xFFFF
-        segment_name = "SS" if bp_based else "DS"
+        segment_name = self.segment_override or ("SS" if bp_based else "DS")
         return {
             "kind": "memory",
             "segment": self.registers[segment_name],
@@ -268,10 +269,12 @@ class Reference8088:
 
         opcode = self.fetch_u8()
         segment_override = None
+        self.segment_override = None
         repeat = None
         while opcode in (0x26, 0x2E, 0x36, 0x3E, 0xF0, 0xF2, 0xF3):
             if opcode in (0x26, 0x2E, 0x36, 0x3E):
                 segment_override = {0x26: "ES", 0x2E: "CS", 0x36: "SS", 0x3E: "DS"}[opcode]
+                self.segment_override = segment_override
             elif opcode in (0xF2, 0xF3):
                 repeat = opcode
             opcode = self.fetch_u8()
@@ -309,6 +312,18 @@ class Reference8088:
             self.write_operand(operand, result)
             self.set_flag("CF", carry)
             cycles = 3 if operand["kind"] == "register" else 15
+        elif handler == "group5":
+            operand, extension = self.decode_modrm(16)
+            if extension not in (2, 4):
+                self.last_cycles = 0
+                return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
+            target = self.read_operand(operand)
+            if extension == 2:
+                self.push_u16(self.registers["IP"])
+                cycles = 16 if operand["kind"] == "register" else 21
+            else:
+                cycles = 11 if operand["kind"] == "register" else 18
+            self.registers["IP"] = target
         elif handler == "push_reg16":
             self.push_u16(self.get_register(opcode & 7, 16))
         elif handler == "pop_reg16":
