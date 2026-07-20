@@ -8,12 +8,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / ".cache/python"))
 
-from unicorn import Uc, UC_ARCH_X86, UC_HOOK_INTR, UC_MODE_16
+from unicorn import Uc, UC_ARCH_X86, UC_HOOK_INSN, UC_HOOK_INTR, UC_MODE_16
 from unicorn.x86_const import (
     UC_X86_REG_AX, UC_X86_REG_BP, UC_X86_REG_BX, UC_X86_REG_CS,
     UC_X86_REG_CX, UC_X86_REG_DI, UC_X86_REG_DS, UC_X86_REG_DX,
     UC_X86_REG_EFLAGS, UC_X86_REG_ES, UC_X86_REG_IP, UC_X86_REG_SI,
     UC_X86_REG_SP, UC_X86_REG_SS,
+    UC_X86_INS_IN, UC_X86_INS_OUT,
 )
 
 try:
@@ -75,6 +76,31 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
     oracle.hook_add(UC_HOOK_INTR, software_interrupt)
     interrupt_return_override = [None]
 
+    oracle_ports = {
+        entry["port"] & 0xFFFF: entry["value"] & 0xFF
+        for entry in vector.get("ports", [])
+    }
+    oracle_io = []
+
+    def port_in(_uc: Uc, port: int, size: int, _user_data: object) -> int:
+        value = 0
+        for index in range(size):
+            byte_port = (port + index) & 0xFFFF
+            byte = oracle_ports.get(byte_port, 0xFF)
+            oracle_io.append({"direction": "in", "port": byte_port, "value": byte})
+            value |= byte << (index * 8)
+        return value
+
+    def port_out(_uc: Uc, port: int, size: int, value: int, _user_data: object) -> None:
+        for index in range(size):
+            byte_port = (port + index) & 0xFFFF
+            byte = (value >> (index * 8)) & 0xFF
+            oracle_ports[byte_port] = byte
+            oracle_io.append({"direction": "out", "port": byte_port, "value": byte})
+
+    oracle.hook_add(UC_HOOK_INSN, port_in, None, 1, 0, UC_X86_INS_IN)
+    oracle.hook_add(UC_HOOK_INSN, port_out, None, 1, 0, UC_X86_INS_OUT)
+
     flag_mask = sum(spec["flags"][name] for name in ("CF", "PF", "AF", "ZF", "SF", "TF", "IF", "DF", "OF"))
     for index, reference_trace in enumerate(expected["trace"]):
         if reference_trace["mnemonic"] in ("IRQ", "NMI"):
@@ -133,6 +159,8 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
             raise AssertionError(
                 f"{vector['name']}: Unicorn memory {actual.hex()} != {expected_bytes.hex()}"
             )
+    if "expectedIo" in vector and oracle_io != vector["expectedIo"]:
+        raise AssertionError(f"{vector['name']}: Unicorn I/O {oracle_io} != {vector['expectedIo']}")
     return expected
 
 

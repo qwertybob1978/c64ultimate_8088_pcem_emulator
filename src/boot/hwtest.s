@@ -12,6 +12,7 @@
 .import cpu8088_step
 .import cpu8088_request_irq
 .import cpu8088_fetch_cache_invalidate
+.import io_debug_latch
 .import reu_copy_to_reu
 .import reu_copy_from_reu
 .importzp reu_c64_addr
@@ -213,58 +214,64 @@ test_cpu_stepper:
     long_bne @restore
     lda cpu8088_state+CPU_BX
     cmp #<CPU_SMOKE_EXPECTED_BX
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_BX+1
     cmp #>CPU_SMOKE_EXPECTED_BX
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_SP
     cmp #<CPU_SMOKE_EXPECTED_SP
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_SP+1
     cmp #>CPU_SMOKE_EXPECTED_SP
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_SI
     cmp #<CPU_SMOKE_EXPECTED_SI
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_SI+1
     cmp #>CPU_SMOKE_EXPECTED_SI
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_DI
     cmp #<CPU_SMOKE_EXPECTED_DI
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_DI+1
     cmp #>CPU_SMOKE_EXPECTED_DI
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_ES
     cmp #<CPU_SMOKE_EXPECTED_ES
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_ES+1
     cmp #>CPU_SMOKE_EXPECTED_ES
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_CS
     cmp #<CPU_SMOKE_EXPECTED_CS
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_CS+1
     cmp #>CPU_SMOKE_EXPECTED_CS
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_SS
     cmp #<CPU_SMOKE_EXPECTED_SS
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_SS+1
     cmp #>CPU_SMOKE_EXPECTED_SS
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_DS
     cmp #<CPU_SMOKE_EXPECTED_DS
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_DS+1
     cmp #>CPU_SMOKE_EXPECTED_DS
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_FLAGS
     cmp #<CPU_SMOKE_EXPECTED_FLAGS
-    bne @restore
+    long_bne @restore
     lda cpu8088_state+CPU_FLAGS+1
     cmp #>CPU_SMOKE_EXPECTED_FLAGS
-    bne @restore
+    long_bne @restore
+    lda io_debug_latch
+    cmp #CPU_SMOKE_EXPECTED_PORT80
+    long_bne @restore
+    lda io_debug_latch+1
+    cmp #CPU_SMOKE_EXPECTED_PORT81
+    long_bne @restore
     lda #$01
     sta stepper_result
 

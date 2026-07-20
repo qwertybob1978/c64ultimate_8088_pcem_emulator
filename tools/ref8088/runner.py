@@ -30,6 +30,8 @@ class Reference8088:
         self.pending_nmi = False
         self.interrupt_shadow = 0
         self.last_interrupt_return_ip = None
+        self.ports = {}
+        self.io_events = []
         self.opcodes = {}
         for entry in spec["opcodes"]:
             for opcode in range(entry["first"], entry["last"] + 1):
@@ -88,6 +90,18 @@ class Reference8088:
             address = self.physical(segment, (offset + 1) & 0xFFFF)
             self.memory[address] = (value >> 8) & 0xFF
             self.memory_writes.append({"physical": address, "value": (value >> 8) & 0xFF})
+
+    def read_port_u8(self, port: int) -> int:
+        port &= 0xFFFF
+        value = self.ports.get(port, 0xFF)
+        self.io_events.append({"direction": "in", "port": port, "value": value})
+        return value
+
+    def write_port_u8(self, port: int, value: int) -> None:
+        port &= 0xFFFF
+        value &= 0xFF
+        self.ports[port] = value
+        self.io_events.append({"direction": "out", "port": port, "value": value})
 
     def decode_modrm(self, width: int) -> tuple[dict, int]:
         value = self.fetch_u8()
@@ -227,6 +241,7 @@ class Reference8088:
         before_ip = self.registers["IP"]
         physical = self.physical(self.registers["CS"], before_ip)
         self.memory_writes = []
+        self.io_events = []
         self.last_interrupt_return_ip = None
         if self.pending_nmi:
             self.pending_nmi = False
@@ -441,6 +456,20 @@ class Reference8088:
             target_cs = self.fetch_u16()
             self.registers["IP"] = target_ip
             self.registers["CS"] = target_cs
+        elif handler in ("in_imm", "in_dx"):
+            width = 16 if opcode & 1 else 8
+            port = self.fetch_u8() if handler == "in_imm" else self.registers["DX"]
+            value = self.read_port_u8(port)
+            if width == 16:
+                value |= self.read_port_u8((port + 1) & 0xFFFF) << 8
+            self.set_register(0, width, value)
+        elif handler in ("out_imm", "out_dx"):
+            width = 16 if opcode & 1 else 8
+            port = self.fetch_u8() if handler == "out_imm" else self.registers["DX"]
+            value = self.get_register(0, width)
+            self.write_port_u8(port, value)
+            if width == 16:
+                self.write_port_u8((port + 1) & 0xFFFF, value >> 8)
         elif handler in ("ret_near", "ret_near_imm"):
             stack_adjust = self.fetch_u16() if handler == "ret_near_imm" else 0
             self.registers["IP"] = self.pop_u16()
@@ -525,6 +554,7 @@ class Reference8088:
             "status": STATUS_NAMES[status],
             "cycles": self.last_cycles,
             "writes": list(self.memory_writes),
+            "io": list(self.io_events),
             "after": {name: self.registers[name] for name in REGISTER_ORDER},
         }
         if self.last_interrupt_return_ip is not None:
@@ -549,6 +579,8 @@ def run_vector(spec: dict, vector: dict) -> dict:
         cpu.pending_irq = vector["pendingIrq"] & 0xFF
     if vector.get("pendingNmi"):
         cpu.pending_nmi = True
+    for entry in vector.get("ports", []):
+        cpu.ports[entry["port"] & 0xFFFF] = entry["value"] & 0xFF
 
     step_count = vector.get("maxSteps", len(vector["statuses"]))
     trace = [cpu.step() for _ in range(step_count)]
@@ -568,6 +600,16 @@ def run_vector(spec: dict, vector: dict) -> dict:
         expected = bytes.fromhex(block["bytes"])
         if actual != expected:
             raise AssertionError(f"{vector['name']}: memory {actual.hex()} != {expected.hex()}")
+    if "expectedIo" in vector:
+        actual_io = [event for entry in trace for event in entry["io"]]
+        if actual_io != vector["expectedIo"]:
+            raise AssertionError(f"{vector['name']}: I/O {actual_io} != {vector['expectedIo']}")
+    for entry in vector.get("expectedPorts", []):
+        actual = cpu.ports.get(entry["port"] & 0xFFFF, 0xFF)
+        if actual != entry["value"]:
+            raise AssertionError(
+                f"{vector['name']}: port {entry['port']:#06x}={actual:#04x}, expected {entry['value']:#04x}"
+            )
     return {"name": vector["name"], "trace": trace, "final": cpu.registers}
 
 

@@ -24,6 +24,8 @@
 .import cpu8088_div_s8
 .import cpu8088_div_u16
 .import cpu8088_div_s16
+.import io_read_u8
+.import io_write_u8
 .import cpu8088_segment_override
 .import cpu8088_repeat_prefix
 .import cpu8088_segment_offset_physical
@@ -84,6 +86,9 @@ string_value:        .res 2
 string_width:        .res 1
 string_source_segment:.res 1
 far_target:          .res 4
+io_port:             .res 2
+io_value:            .res 1
+io_cycles:           .res 1
 
 .segment "CODE"
 
@@ -237,6 +242,22 @@ cpu8088_step:
     long_beq @jmp_far
     cmp #$E8                    ; CALL rel16
     long_beq @call_rel16
+    cmp #$E4                    ; IN AL/AX,imm8
+    long_beq @in_immediate
+    cmp #$E5
+    long_beq @in_immediate
+    cmp #$E6                    ; OUT imm8,AL/AX
+    long_beq @out_immediate
+    cmp #$E7
+    long_beq @out_immediate
+    cmp #$EC                    ; IN AL/AX,DX
+    long_beq @in_dx
+    cmp #$ED
+    long_beq @in_dx
+    cmp #$EE                    ; OUT DX,AL/AX
+    long_beq @out_dx
+    cmp #$EF
+    long_beq @out_dx
     cmp #$F8                    ; CLC
     long_beq @clc
     cmp #$F9                    ; STC
@@ -1301,6 +1322,80 @@ cpu8088_step:
 @far_control_done:
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
+    rts
+
+@in_immediate:
+    jsr @io_immediate_port
+    long_bcs @memory_error
+    jmp @io_read_accumulator
+@in_dx:
+    jsr @io_dx_port
+@io_read_accumulator:
+    lda io_port
+    ldx io_port+1
+    jsr io_read_u8
+    sta cpu8088_state+CPU_AX
+    lda cpu8088_last_opcode
+    and #$01
+    beq @io_done
+    jsr @io_next_port
+    lda io_port
+    ldx io_port+1
+    jsr io_read_u8
+    sta cpu8088_state+CPU_AX+1
+    jmp @io_done
+
+@out_immediate:
+    jsr @io_immediate_port
+    long_bcs @memory_error
+    jmp @io_write_accumulator
+@out_dx:
+    jsr @io_dx_port
+@io_write_accumulator:
+    lda cpu8088_state+CPU_AX
+    sta io_value
+    ldx io_port
+    ldy io_port+1
+    jsr io_write_u8
+    lda cpu8088_last_opcode
+    and #$01
+    beq @io_done
+    jsr @io_next_port
+    lda cpu8088_state+CPU_AX+1
+    sta io_value
+    ldx io_port
+    ldy io_port+1
+    jsr io_write_u8
+@io_done:
+    lda io_cycles
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@io_immediate_port:
+    jsr cpu8088_fetch_u8
+    bcs @io_port_failed
+    sta io_port
+    lda #$00
+    sta io_port+1
+    lda #$0A
+    sta io_cycles
+    clc
+@io_port_failed:
+    rts
+@io_dx_port:
+    lda cpu8088_state+CPU_DX
+    sta io_port
+    lda cpu8088_state+CPU_DX+1
+    sta io_port+1
+    lda #$08
+    sta io_cycles
+    rts
+@io_next_port:
+    inc io_port
+    bne :+
+    inc io_port+1
+:
     rts
 
 @fetch_far_target:
