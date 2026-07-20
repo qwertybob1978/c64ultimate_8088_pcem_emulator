@@ -166,6 +166,12 @@ cpu8088_step:
     cmp #$1F
     long_beq @segment_stack
     lda cpu8088_last_opcode
+    cmp #$80
+    bcc @not_group1_immediate
+    cmp #$84
+    long_bcc @alu_rm_immediate
+@not_group1_immediate:
+    lda cpu8088_last_opcode
     and #$C4                    ; core ALU ModR/M forms: 00ooo0dw
     cmp #$00
     long_beq @alu_modrm
@@ -690,19 +696,79 @@ cpu8088_step:
     cmp #$FE
     long_beq @memory_error
     cmp #$01
-    beq @alu_modrm_register
+    long_beq @alu_modrm_register
 
     lda #$10
     sta alu_last_cycles
     lda cpu8088_last_opcode
     and #$02
-    bne @alu_memory_source
+    long_bne @alu_memory_source
     lda #$01                    ; destination is memory
     sta alu_destination_kind
     jsr @read_ea_to_left
     long_bcs @memory_error
     ldx source_offset
     jsr @read_register_to_right
+    jmp @alu_execute
+
+@alu_rm_immediate:
+    lda #$00
+    sta alu_preserve_cf
+    sta alu_string_compare
+    lda cpu8088_last_opcode
+    and #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    sta alu_operation
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @alu_rm_imm_register
+    lda #$01
+    sta alu_destination_kind
+    jsr @read_ea_to_left
+    long_bcs @memory_error
+    lda #$11
+    sta alu_last_cycles
+    jmp @alu_rm_imm_fetch
+@alu_rm_imm_register:
+    lda #$00
+    sta alu_destination_kind
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    stx destination_offset
+    jsr @read_register_to_left
+    lda #$04
+    sta alu_last_cycles
+@alu_rm_imm_fetch:
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta alu_right
+    lda #$00
+    sta alu_right+1
+    lda operand_width
+    long_beq @alu_execute
+    lda cpu8088_last_opcode
+    cmp #$83
+    beq @alu_rm_imm_sign_extend
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta alu_right+1
+    jmp @alu_execute
+@alu_rm_imm_sign_extend:
+    lda alu_right
+    bpl :+
+    lda #$FF
+    sta alu_right+1
+:
     jmp @alu_execute
 @alu_memory_source:
     lda #$00                    ; destination is reg field

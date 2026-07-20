@@ -386,6 +386,19 @@ class Reference8088:
             result = self.alu(metadata["operation"], self.read_operand(destination), self.read_operand(source), width)
             if metadata["operation"] != "cmp":
                 self.write_operand(destination, result)
+        elif handler == "alu_rm_imm":
+            width = 16 if opcode & 1 else 8
+            destination, extension = self.decode_modrm(width)
+            operation = ("add", "or", "adc", "sbb", "and", "sub", "xor", "cmp")[extension]
+            if opcode == 0x83:
+                immediate = self.fetch_u8()
+                if immediate & 0x80:
+                    immediate |= 0xFF00
+            else:
+                immediate = self.fetch_u16() if width == 16 else self.fetch_u8()
+            result = self.alu(operation, self.read_operand(destination), immediate, width)
+            if operation != "cmp":
+                self.write_operand(destination, result)
         elif handler in ("alu_acc_imm8", "alu_acc_imm16"):
             width = 16 if handler.endswith("16") else 8
             destination = {"kind": "register", "index": 0, "width": width}
