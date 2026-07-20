@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / ".cache/python"))
 
-from unicorn import Uc, UC_ARCH_X86, UC_MODE_16
+from unicorn import Uc, UC_ARCH_X86, UC_HOOK_INTR, UC_MODE_16
 from unicorn.x86_const import (
     UC_X86_REG_AX, UC_X86_REG_BP, UC_X86_REG_BX, UC_X86_REG_CS,
     UC_X86_REG_CX, UC_X86_REG_DI, UC_X86_REG_DS, UC_X86_REG_DX,
@@ -49,6 +49,28 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
     for block in vector.get("memory", []):
         address = address_cpu.physical(block["segment"], block["offset"])
         oracle.mem_write(address, bytes.fromhex(block["bytes"]))
+
+    def write_word(segment: int, offset: int, value: int) -> None:
+        oracle.mem_write(address_cpu.physical(segment, offset), bytes((value & 0xFF,)))
+        oracle.mem_write(address_cpu.physical(segment, (offset + 1) & 0xFFFF), bytes(((value >> 8) & 0xFF,)))
+
+    def software_interrupt(uc: Uc, number: int, _user_data: object) -> None:
+        ss = uc.reg_read(UC_X86_REG_SS) & 0xFFFF
+        sp = uc.reg_read(UC_X86_REG_SP) & 0xFFFF
+        flags = uc.reg_read(UC_X86_REG_EFLAGS) & 0xFFFF
+        cs = uc.reg_read(UC_X86_REG_CS) & 0xFFFF
+        ip = uc.reg_read(UC_X86_REG_IP) & 0xFFFF
+        for value in (flags | 0xF000, cs, ip):
+            sp = (sp - 2) & 0xFFFF
+            write_word(ss, sp, value)
+        uc.reg_write(UC_X86_REG_SP, sp)
+        uc.reg_write(UC_X86_REG_EFLAGS, flags & ~(spec["flags"]["IF"] | spec["flags"]["TF"]))
+        vector_address = (number & 0xFF) * 4
+        entry = bytes(uc.mem_read(vector_address, 4))
+        uc.reg_write(UC_X86_REG_IP, int.from_bytes(entry[:2], "little"))
+        uc.reg_write(UC_X86_REG_CS, int.from_bytes(entry[2:], "little"))
+
+    oracle.hook_add(UC_HOOK_INTR, software_interrupt)
 
     flag_mask = sum(spec["flags"][name] for name in ("CF", "PF", "AF", "ZF", "SF", "TF", "IF", "DF", "OF"))
     for index, reference_trace in enumerate(expected["trace"]):

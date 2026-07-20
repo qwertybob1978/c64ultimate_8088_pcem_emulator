@@ -184,6 +184,16 @@ class Reference8088:
         self.registers["SP"] = (self.registers["SP"] + 2) & 0xFFFF
         return value
 
+    def interrupt(self, vector: int) -> None:
+        self.push_u16(self.registers["FLAGS"] | 0xF000)
+        self.push_u16(self.registers["CS"])
+        self.push_u16(self.registers["IP"])
+        self.set_flag("IF", False)
+        self.set_flag("TF", False)
+        table_offset = (vector & 0xFF) * 4
+        self.registers["IP"] = self.read_memory(0, table_offset, 16)
+        self.registers["CS"] = self.read_memory(0, table_offset + 2, 16)
+
     def condition(self, code: int) -> bool:
         flags = self.registers["FLAGS"]
         cf = bool(flags & self.flags["CF"])
@@ -350,6 +360,18 @@ class Reference8088:
             stack_adjust = self.fetch_u16() if handler == "ret_near_imm" else 0
             self.registers["IP"] = self.pop_u16()
             self.registers["SP"] = (self.registers["SP"] + stack_adjust) & 0xFFFF
+        elif handler == "int3":
+            self.interrupt(3)
+        elif handler == "int_imm8":
+            self.interrupt(self.fetch_u8())
+        elif handler == "into":
+            if self.registers["FLAGS"] & self.flags["OF"]:
+                self.interrupt(4)
+                cycles = 73
+        elif handler == "iret":
+            self.registers["IP"] = self.pop_u16()
+            self.registers["CS"] = self.pop_u16()
+            self.registers["FLAGS"] = (self.pop_u16() & 0x0FFF) | self.flags["RESERVED"]
         elif handler in ("clear_cf", "set_cf", "clear_if", "set_if", "clear_df", "set_df"):
             action, flag = handler.split("_")
             self.set_flag(flag.upper(), action == "set")

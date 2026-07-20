@@ -103,6 +103,49 @@
       "expectedMemory": [
         { "segment": 8192, "offset": 32, "bytes": "aabb" }
       ]
+    },
+    {
+      "name": "software_interrupt_and_iret",
+      "initial": { "CS": 16384, "IP": 0, "SS": 8192, "SP": 256, "FLAGS": 771 },
+      "program": "ccf4",
+      "memory": [
+        { "segment": 0, "offset": 12, "bytes": "00000050" },
+        { "segment": 20480, "offset": 0, "bytes": "b83412cf" }
+      ],
+      "statuses": ["ok", "ok", "ok", "halted"],
+      "expected": { "AX": 4660, "SP": 256, "CS": 16384, "IP": 2, "FLAGS": 771 },
+      "expectedMemory": [
+        { "segment": 8192, "offset": 250, "bytes": "0100004003f3" }
+      ]
+    },
+    {
+      "name": "interrupt_immediate_vector",
+      "initial": { "CS": 24576, "IP": 0, "SS": 12288, "SP": 512, "FLAGS": 515 },
+      "program": "cd21f4",
+      "memory": [
+        { "segment": 0, "offset": 132, "bytes": "10000070" },
+        { "segment": 28672, "offset": 16, "bytes": "b8efbecf" }
+      ],
+      "statuses": ["ok", "ok", "ok", "halted"],
+      "expected": { "AX": 48879, "SP": 512, "CS": 24576, "IP": 3, "FLAGS": 515 }
+    },
+    {
+      "name": "into_taken_and_returned",
+      "initial": { "CS": 32768, "IP": 0, "SS": 16384, "SP": 768, "FLAGS": 2562 },
+      "program": "cef4",
+      "memory": [
+        { "segment": 0, "offset": 16, "bytes": "20000090" },
+        { "segment": 36864, "offset": 32, "bytes": "b8fecacf" }
+      ],
+      "statuses": ["ok", "ok", "ok", "halted"],
+      "expected": { "AX": 51966, "SP": 768, "CS": 32768, "IP": 2, "FLAGS": 2562 }
+    },
+    {
+      "name": "into_not_taken",
+      "initial": { "CS": 40960, "IP": 0, "FLAGS": 2 },
+      "program": "cef4",
+      "statuses": ["ok", "halted"],
+      "expected": { "CS": 40960, "IP": 2, "FLAGS": 2 }
     }
   ]
 }
