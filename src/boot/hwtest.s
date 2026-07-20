@@ -18,6 +18,7 @@
 .import cpu8088_fetch_cache_invalidate
 .import io_debug_latch
 .import io_read_u8
+.import io_write_u8
 .import cga_test_render
 .import cga_test_error
 .import reu_copy_to_reu
@@ -395,13 +396,13 @@ test_video_status:
     lda #$BA
     ldx #$03
     jsr io_read_u8
-    and #$01
+    cmp #$FF
     bne @video_status_failed
     lda #$BA
     ldx #$03
     jsr io_read_u8
-    and #$01
-    beq @video_status_failed
+    cmp #$FF
+    bne @video_status_failed
     lda #$DA
     ldx #$03
     jsr io_read_u8
@@ -412,6 +413,20 @@ test_video_status:
     jsr io_read_u8
     and #$01
     beq @video_status_failed
+    lda #$08
+    ldx #$61
+    ldy #$00
+    jsr io_write_u8
+    lda #$62
+    ldx #$00
+    jsr io_read_u8
+    cmp #$06
+    bne @video_status_failed
+    lda #$61
+    ldx #$00
+    jsr io_read_u8
+    cmp #$08
+    bne @video_status_failed
     sec
     rts
 @video_status_failed:

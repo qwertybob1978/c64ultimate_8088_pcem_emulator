@@ -191,8 +191,11 @@ leave operands and flags unchanged when that count is zero.
 All immediate- and DX-addressed `IN`/`OUT` forms execute natively as 8088 byte
 bus transfers. The initial XT I/O dispatcher returns `$FF` for open ports and
 provides `$80`/`$81` POST/debug latches with deterministic desktop traces.
-MDA/CGA status reads at `03BAh`/`03DAh` expose deterministic display-enable
-transitions so BIOS polling loops can complete without host-timing dependence.
+CGA status reads at `03DAh` expose deterministic display-enable transitions so
+BIOS polling loops can complete without host-timing dependence. The XT PPI
+switch bank at `60h`–`62h` advertises an 80-column color adapter.
+The desktop BIOS trace now produces the real Generic Turbo XT BIOS banner in
+the emulated B8000 80x25 text page before waiting for keyboard input.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

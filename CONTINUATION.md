@@ -17,8 +17,8 @@ Current branch and known-good commit:
 
 ```text
 branch: master
-commit: f150476
-subject: feat(video): add status transitions
+commit: 9f18f05
+subject: feat(cpu): add decimal adjust
 ```
 
 The working tree was clean when this guide was created. Confirm before work:
@@ -35,6 +35,7 @@ and preserve them.
 Completed recent milestones, newest first:
 
 ```text
+9f18f05 feat(cpu): add decimal adjust
 f150476 feat(video): add status transitions
 f1c8cac feat(cpu): add group3 test
 e26642e feat(cpu): add group3 multiply
@@ -45,7 +46,6 @@ c783907 feat(cpu): add rotate family
 407f11a feat(dev): add visible VICE launcher
 8cac29d feat(cpu): add ModR/M exchange
 ddd09f6 feat(cpu): add LES and LDS
-3778e51 feat(cpu): add group5 near control flow
 ```
 
 The end goal is not complete. Continue until the Generic XT BIOS displays via
@@ -101,28 +101,38 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: XT PPI/DIP display selection
+## 4. Exact next task: C64-to-XT keyboard routing
 
-DAA is complete. A three-million-instruction BIOS trace encounters no further
-unsupported opcode, completes the long POST delay, and then waits for keyboard
-buffer state to change:
+The XT PPI/DIP slice is complete. Port 62h now advertises color 80-column video,
+03BAh remains open bus, and 03DAh supplies display-enable plus vertical-retrace
+phases. The BIOS makes its first nonzero B8000 write at instruction 26,398 and
+produces this real CGA page:
+
+```text
+  Generic Turbo XT Bios 1987
+      for 8088 or V20 cpu
+         (c)Anonymous
+```
+
+After POST delays it waits for keyboard buffer state to change:
 
 ```text
 loop:           F000:E845 through E852
 bytes:          FA 8B 1E 1A 00 3B 1E 1C 00 75 03 FB EB F2
 meaning:        wait until BIOS keyboard-buffer head and tail differ
 state:          both compared values remain zero
-B8000:          all zero after 3,000,000 instructions
+BDA 0040:001A: 001E (keyboard head)
+BDA 0040:001C: 001E (keyboard tail)
+B8000:          complete 80x25 space/attribute page plus BIOS banner
 ```
 
-The likely cause is the current `$FF` open-bus response on the XT 8255/PPI and
-motherboard switch ports, which advertises an MDA/error configuration instead
-of the intended 80-column CGA adapter. Verify the Generic XT BIOS switch-reading
-code and PCem's XT PPI model, then implement the minimum deterministic 60h-63h
-reads for a sane XT configuration with CGA 80-column video and installed floppy
-drives. Keep 03DAh status transitions enabled; 03BAh should not falsely claim an
-MDA when CGA is selected. Add reference/native I/O diagnostics, trace until the
-first B8000 write, render that page, update this guide, and commit the milestone.
+Add a host keyboard module that polls the C64 keyboard, translates useful
+PETSCII keys to XT set-1 make scan codes, queues them at PPI port 60h, and raises
+emulated IRQ1/vector 09h. Start with letters, digits, Enter, Backspace, Space,
+punctuation, and cursor keys needed to operate DOS. Preserve the port-B reset/
+acknowledge behavior. Add deterministic translation and queue diagnostics. The
+native BIOS execution loop must call the poller between batches of 8088 steps.
+Then continue into PIT/PIC and floppy hardware.
 
 ## 5. How to trace the BIOS to the next blocker
 

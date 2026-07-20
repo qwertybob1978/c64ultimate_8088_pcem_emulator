@@ -641,12 +641,24 @@
       "initial": { "CS": 56256, "IP": 0, "FLAGS": 2 },
       "program": "baba03ececbada03ececf4",
       "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 1, "DX": 986, "CS": 56256, "IP": 11, "FLAGS": 2 },
+      "expected": { "AX": 9, "DX": 986, "CS": 56256, "IP": 11, "FLAGS": 2 },
       "expectedIo": [
-        { "direction": "in", "port": 954, "value": 0 },
-        { "direction": "in", "port": 954, "value": 1 },
+        { "direction": "in", "port": 954, "value": 255 },
+        { "direction": "in", "port": 954, "value": 255 },
         { "direction": "in", "port": 986, "value": 0 },
-        { "direction": "in", "port": 986, "value": 1 }
+        { "direction": "in", "port": 986, "value": 9 }
+      ]
+    },
+    {
+      "name": "xt_ppi_selects_cga_80_column_switches",
+      "initial": { "CS": 56576, "IP": 0, "FLAGS": 2 },
+      "program": "b008e661e462e461f4",
+      "statuses": ["ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 8, "CS": 56576, "IP": 9, "FLAGS": 2 },
+      "expectedIo": [
+        { "direction": "out", "port": 97, "value": 8 },
+        { "direction": "in", "port": 98, "value": 6 },
+        { "direction": "in", "port": 97, "value": 8 }
       ]
     },
     {

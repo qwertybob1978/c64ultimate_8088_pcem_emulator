@@ -82,13 +82,18 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
     }
     oracle_io = []
     video_status_phase = {0x3BA: 0, 0x3DA: 0}
+    ppi_port_b = [0]
 
     def port_in(_uc: Uc, port: int, size: int, _user_data: object) -> int:
         value = 0
         for index in range(size):
             byte_port = (port + index) & 0xFFFF
-            if byte_port in video_status_phase and byte_port not in oracle_ports:
-                byte = video_status_phase[byte_port]
+            if byte_port == 0x61:
+                byte = ppi_port_b[0]
+            elif byte_port == 0x62:
+                byte = 0x06 if ppi_port_b[0] & 0x08 else 0x0D
+            elif byte_port == 0x3DA and byte_port not in oracle_ports:
+                byte = 0x09 if video_status_phase[byte_port] else 0x00
                 video_status_phase[byte_port] ^= 1
             else:
                 byte = oracle_ports.get(byte_port, 0xFF)
@@ -101,6 +106,8 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
             byte_port = (port + index) & 0xFFFF
             byte = (value >> (index * 8)) & 0xFF
             oracle_ports[byte_port] = byte
+            if byte_port == 0x61:
+                ppi_port_b[0] = byte
             oracle_io.append({"direction": "out", "port": byte_port, "value": byte})
 
     oracle.hook_add(UC_HOOK_INSN, port_in, None, 1, 0, UC_X86_INS_IN)

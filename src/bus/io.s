@@ -3,11 +3,14 @@
 .export io_read_u8
 .export io_write_u8
 .export io_debug_latch
+.export io_keyboard_push
 
 .segment "BSS"
 io_debug_latch: .res 2
 io_write_value: .res 1
 io_video_status: .res 2
+io_ppi_port_b:   .res 1
+io_keyboard_data:.res 1
 
 .segment "CODE"
 
@@ -20,6 +23,12 @@ io_read_u8:
     beq @video_port
     cpx #$00
     bne @open_bus
+    cmp #$60
+    beq @keyboard_data
+    cmp #$61
+    beq @ppi_port_b
+    cmp #$62
+    beq @ppi_switches
     cmp #$80
     beq @debug_low
     cmp #$81
@@ -34,25 +43,40 @@ io_read_u8:
     lda io_debug_latch+1
     rts
 @video_port:
-    cmp #$BA
-    beq @mda_status
     cmp #$DA
     bne @open_bus
     ldx #$01
-    bne @toggle_video_status
-@mda_status:
-    ldx #$00
 @toggle_video_status:
     lda io_video_status,x
     eor #$01
     sta io_video_status,x
-    eor #$01                    ; return the phase before this read
+    eor #$01                    ; phase before this read
+    beq :+
+    lda #$09                    ; display-enable plus vertical retrace
+:
+    rts
+@keyboard_data:
+    lda io_keyboard_data
+    rts
+@ppi_port_b:
+    lda io_ppi_port_b
+    rts
+@ppi_switches:
+    lda io_ppi_port_b
+    and #$08
+    beq @ppi_equipment
+    lda #$06                    ; PCem Generic XT: color 80-column display
+    rts
+@ppi_equipment:
+    lda #$0D                    ; no FPU, base equipment switch bank
     rts
 
 io_write_u8:
     sta io_write_value
     cpy #$00
     bne @done
+    cpx #$61
+    beq @write_ppi_port_b
     cpx #$80
     beq @write_low
     cpx #$81
@@ -64,4 +88,13 @@ io_write_u8:
     lda io_write_value
     sta io_debug_latch
 @done:
+    rts
+@write_ppi_port_b:
+    lda io_write_value
+    sta io_ppi_port_b
+    rts
+
+; Queue one XT set-1 scan code for the emulated keyboard data port.
+io_keyboard_push:
+    sta io_keyboard_data
     rts

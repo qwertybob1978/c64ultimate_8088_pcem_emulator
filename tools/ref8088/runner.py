@@ -30,6 +30,8 @@ class Reference8088:
         self.pending_nmi = False
         self.interrupt_shadow = 0
         self.video_status_phase = {0x3BA: 0, 0x3DA: 0}
+        self.ppi_port_b = 0
+        self.keyboard_data = 0
         self.last_interrupt_return_ip = None
         self.ports = {}
         self.io_events = []
@@ -50,6 +52,8 @@ class Reference8088:
         self.pending_nmi = False
         self.interrupt_shadow = 0
         self.video_status_phase = {0x3BA: 0, 0x3DA: 0}
+        self.ppi_port_b = 0
+        self.keyboard_data = 0
 
     def physical(self, segment: int, offset: int) -> int:
         return ((segment << 4) + offset) & 0xFFFFF
@@ -96,8 +100,14 @@ class Reference8088:
 
     def read_port_u8(self, port: int) -> int:
         port &= 0xFFFF
-        if port in self.video_status_phase and port not in self.ports:
-            value = self.video_status_phase[port]
+        if port == 0x60 and port not in self.ports:
+            value = self.keyboard_data
+        elif port == 0x61 and port not in self.ports:
+            value = self.ppi_port_b
+        elif port == 0x62 and port not in self.ports:
+            value = 0x06 if self.ppi_port_b & 0x08 else 0x0D
+        elif port == 0x3DA and port not in self.ports:
+            value = 0x09 if self.video_status_phase[port] else 0x00
             self.video_status_phase[port] ^= 1
         else:
             value = self.ports.get(port, 0xFF)
@@ -108,6 +118,8 @@ class Reference8088:
         port &= 0xFFFF
         value &= 0xFF
         self.ports[port] = value
+        if port == 0x61:
+            self.ppi_port_b = value
         self.io_events.append({"direction": "out", "port": port, "value": value})
 
     def decode_modrm(self, width: int) -> tuple[dict, int]:
