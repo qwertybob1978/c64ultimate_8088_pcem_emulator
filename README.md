@@ -105,7 +105,8 @@ the byte/word accumulator-immediate forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
 `CLC`/`STC`/`CLI`/`STI`/`CLD`/`STD`. All 8088 ModR/M effective-address forms
 are decoded with the correct DS/SS default segment. Data operands currently
 use correctness-first byte DMA; Phase 2 replaces this with a write-back page
-cache. ModR/M ALU forms remain the next native decoder slice.
+cache. Register and memory ModR/M forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
+`SUB`, `XOR`, and `CMP` share the same native flag engine as accumulator forms.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

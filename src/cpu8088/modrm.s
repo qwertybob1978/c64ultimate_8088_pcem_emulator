@@ -11,6 +11,7 @@
 .export cpu8088_decode_ea
 .export cpu8088_ea_next_byte
 .export cpu8088_ea_recompute
+.export cpu8088_ea_previous_byte
 .export cpu8088_ea_rm_index
 
 .segment "ZEROPAGE"
@@ -197,3 +198,11 @@ cpu8088_ea_recompute:
     lda cpu8088_ea_offset+1
     sta cpu8088_offset+1
     jmp cpu8088_segment_offset_physical
+
+cpu8088_ea_previous_byte:
+    lda cpu8088_ea_offset
+    bne :+
+    dec cpu8088_ea_offset+1
+:
+    dec cpu8088_ea_offset
+    jmp cpu8088_ea_recompute

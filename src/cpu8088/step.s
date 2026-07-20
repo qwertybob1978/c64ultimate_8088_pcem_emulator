@@ -10,6 +10,7 @@
 .import cpu8088_decode_ea
 .import cpu8088_ea_next_byte
 .import cpu8088_ea_recompute
+.import cpu8088_ea_previous_byte
 .import cpu8088_ea_rm_index
 .import cpu8088_mem_read_u8
 .import cpu8088_mem_write_u8
@@ -55,6 +56,10 @@ alu_right:           .res 2
 alu_result:          .res 2
 alu_carry:           .res 1
 alu_temp:            .res 1
+alu_xor_operands:    .res 1
+alu_xor_result:      .res 1
+alu_destination_kind:.res 1
+alu_last_cycles:     .res 1
 
 .segment "CODE"
 
@@ -75,6 +80,10 @@ cpu8088_step:
     and #$C6                    ; AL/AX immediate ALU forms: xx00010w
     cmp #$04
     long_beq @alu_accumulator_immediate
+    lda cpu8088_last_opcode
+    and #$C4                    ; core ALU ModR/M forms: 00ooo0dw
+    cmp #$00
+    long_beq @alu_modrm
     lda cpu8088_last_opcode
 
     cmp #$90                    ; NOP
@@ -134,6 +143,11 @@ cpu8088_step:
     rts
 
 @alu_accumulator_immediate:
+    lda #$00
+    sta alu_destination_kind
+    sta destination_offset      ; AX
+    lda #$04
+    sta alu_last_cycles
     lda cpu8088_last_opcode
     and #$01
     sta operand_width
@@ -154,10 +168,139 @@ cpu8088_step:
     lda #$00
     sta alu_right+1
     lda operand_width
-    beq @alu_execute
+    long_beq @alu_execute
     jsr cpu8088_fetch_u8
     long_bcs @memory_error
     sta alu_right+1
+
+    jmp @alu_execute
+
+@alu_modrm:
+    lda cpu8088_last_opcode
+    and #$01
+    sta operand_width
+    lda cpu8088_last_opcode
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    sta alu_operation
+    lda #$03
+    sta alu_last_cycles
+
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    jsr @register_offset
+    stx source_offset           ; reg field
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @alu_modrm_register
+
+    lda #$10
+    sta alu_last_cycles
+    lda cpu8088_last_opcode
+    and #$02
+    bne @alu_memory_source
+    lda #$01                    ; destination is memory
+    sta alu_destination_kind
+    jsr @read_ea_to_left
+    long_bcs @memory_error
+    ldx source_offset
+    jsr @read_register_to_right
+    jmp @alu_execute
+@alu_memory_source:
+    lda #$00                    ; destination is reg field
+    sta alu_destination_kind
+    lda source_offset
+    sta destination_offset
+    ldx source_offset
+    jsr @read_register_to_left
+    jsr @read_ea_to_right
+    long_bcs @memory_error
+    jmp @alu_execute
+
+@alu_modrm_register:
+    lda #$00
+    sta alu_destination_kind
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    stx destination_offset      ; r/m field
+    lda cpu8088_last_opcode
+    and #$02
+    beq @alu_register_operands
+    ldx source_offset
+    ldy destination_offset
+    stx destination_offset
+    sty source_offset
+@alu_register_operands:
+    ldx destination_offset
+    jsr @read_register_to_left
+    ldx source_offset
+    jsr @read_register_to_right
+    jmp @alu_execute
+
+@read_register_to_left:
+    lda cpu8088_state,x
+    sta alu_left
+    lda #$00
+    sta alu_left+1
+    lda operand_width
+    beq :+
+    lda cpu8088_state+1,x
+    sta alu_left+1
+:
+    rts
+@read_register_to_right:
+    lda cpu8088_state,x
+    sta alu_right
+    lda #$00
+    sta alu_right+1
+    lda operand_width
+    beq :+
+    lda cpu8088_state+1,x
+    sta alu_right+1
+:
+    rts
+@read_ea_to_left:
+    jsr cpu8088_mem_read_u8
+    bcs @ea_read_failed
+    sta alu_left
+    lda #$00
+    sta alu_left+1
+    lda operand_width
+    beq :+
+    jsr cpu8088_ea_next_byte
+    jsr cpu8088_mem_read_u8
+    bcs @ea_read_failed
+    sta alu_left+1
+    jsr cpu8088_ea_previous_byte
+:
+    clc
+@ea_read_failed:
+    rts
+@read_ea_to_right:
+    jsr cpu8088_mem_read_u8
+    bcs @ea_read_failed
+    sta alu_right
+    lda #$00
+    sta alu_right+1
+    lda operand_width
+    beq :+
+    jsr cpu8088_ea_next_byte
+    jsr cpu8088_mem_read_u8
+    bcs @ea_read_failed
+    sta alu_right+1
+    jsr cpu8088_ea_previous_byte
+:
+    rts
 
 @alu_execute:
     lda #$00
@@ -340,22 +483,22 @@ cpu8088_step:
 @alu_overflow_values:
     ; A=right sign byte, X=result sign byte, alu_temp=left sign byte.
     eor alu_temp
-    sta destination_offset
+    sta alu_xor_operands
     txa
     eor alu_temp
-    sta source_offset
+    sta alu_xor_result
     lda alu_operation
     cmp #$00
     beq @alu_add_overflow
     cmp #$02
     beq @alu_add_overflow
-    lda destination_offset
-    and source_offset
+    lda alu_xor_operands
+    and alu_xor_result
     jmp @alu_test_overflow
 @alu_add_overflow:
-    lda destination_offset
+    lda alu_xor_operands
     eor #$FF
-    and source_offset
+    and alu_xor_result
 @alu_test_overflow:
     and #$80
     beq @alu_flags_done
@@ -367,14 +510,29 @@ cpu8088_step:
     lda alu_operation
     cmp #$07                    ; CMP updates flags without storing
     beq @alu_accumulator_done
+    lda alu_destination_kind
+    bne @alu_store_memory
+    ldx destination_offset
     lda alu_result
-    sta cpu8088_state+CPU_AX
+    sta cpu8088_state,x
     lda operand_width
     beq @alu_accumulator_done
     lda alu_result+1
-    sta cpu8088_state+CPU_AX+1
+    sta cpu8088_state+1,x
+    jmp @alu_accumulator_done
+@alu_store_memory:
+    jsr cpu8088_ea_recompute
+    lda alu_result
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    lda operand_width
+    beq @alu_accumulator_done
+    jsr cpu8088_ea_next_byte
+    lda alu_result+1
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
 @alu_accumulator_done:
-    lda #$04
+    lda alu_last_cycles
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts

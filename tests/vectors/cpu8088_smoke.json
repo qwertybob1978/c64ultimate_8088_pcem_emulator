@@ -4,10 +4,10 @@
     {
       "name": "native_smoke",
       "initial": { "CS": 0, "IP": 0 },
-      "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060001efbe8b1e0001c60602017a8a0e0201be0001bb1000c7400534128b500590f4",
+      "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060001efbe8b1e0001c60602017a8a0e0201be0001bb1000c7400534128b50050150052b400533d239c290f4",
       "preserveBytes": 279,
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 4608, "CX": 122, "DX": 4660, "BX": 16, "SI": 256, "IP": 56, "FLAGS": 70 }
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 60824, "CX": 122, "DX": 0, "BX": 16, "SI": 256, "IP": 66, "FLAGS": 19 }
     },
     {
       "name": "flags_and_short_jump",
