@@ -149,6 +149,11 @@ The desktop oracle additionally covers 16-bit register `INC`/`DEC`,
 decoder. These handlers are validated in the reference model before entering
 the size-constrained native assembly dispatch.
 
+Prefix-aware reference execution supports ES/CS/SS/DS segment overrides,
+`REP`/`REPE`/`REPNE`, and byte/word `MOVS`, `CMPS`, `STOS`, `LODS`, and `SCAS`.
+The Unicorn adapter accounts for its one-iteration-at-a-time REP stepping so
+the comparison still covers the complete architectural instruction.
+
 ## PCem reference checkout
 
 PCem is reference material and is not linked into the target program. Fetch the

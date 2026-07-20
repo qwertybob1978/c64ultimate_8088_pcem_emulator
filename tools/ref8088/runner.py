@@ -213,6 +213,14 @@ class Reference8088:
             return self.trace(before_ip, physical, None, "HLT", 1)
 
         opcode = self.fetch_u8()
+        segment_override = None
+        repeat = None
+        while opcode in (0x26, 0x2E, 0x36, 0x3E, 0xF0, 0xF2, 0xF3):
+            if opcode in (0x26, 0x2E, 0x36, 0x3E):
+                segment_override = {0x26: "ES", 0x2E: "CS", 0x36: "SS", 0x3E: "DS"}[opcode]
+            elif opcode in (0xF2, 0xF3):
+                repeat = opcode
+            opcode = self.fetch_u8()
         metadata = self.opcodes.get(opcode)
         if metadata is None:
             self.last_cycles = 0
@@ -266,6 +274,40 @@ class Reference8088:
             accumulator = {"kind": "register", "index": 0, "width": width}
             destination, source = (memory_operand, accumulator) if opcode & 2 else (accumulator, memory_operand)
             self.write_operand(destination, self.read_operand(source))
+        elif handler in ("movs", "cmps", "stos", "lods", "scas"):
+            width = 16 if opcode & 1 else 8
+            delta = width // 8
+            if self.registers["FLAGS"] & self.flags["DF"]:
+                delta = -delta
+            iterations = self.registers["CX"] if repeat is not None else 1
+            cycles = 0 if iterations == 0 else metadata["cycles"] * iterations
+            for _ in range(iterations):
+                source_segment = self.registers[segment_override or "DS"]
+                if handler in ("movs", "cmps", "lods"):
+                    source = self.read_memory(source_segment, self.registers["SI"], width)
+                if handler in ("movs", "cmps", "stos", "scas"):
+                    destination = self.read_memory(self.registers["ES"], self.registers["DI"], width)
+                if handler == "movs":
+                    self.write_memory(self.registers["ES"], self.registers["DI"], width, source)
+                elif handler == "cmps":
+                    self.alu("cmp", source, destination, width)
+                elif handler == "stos":
+                    self.write_memory(self.registers["ES"], self.registers["DI"], width, self.get_register(0, width))
+                elif handler == "lods":
+                    self.set_register(0, width, source)
+                elif handler == "scas":
+                    self.alu("cmp", self.get_register(0, width), destination, width)
+
+                if handler in ("movs", "cmps", "lods"):
+                    self.registers["SI"] = (self.registers["SI"] + delta) & 0xFFFF
+                if handler in ("movs", "cmps", "stos", "scas"):
+                    self.registers["DI"] = (self.registers["DI"] + delta) & 0xFFFF
+                if repeat is not None:
+                    self.registers["CX"] = (self.registers["CX"] - 1) & 0xFFFF
+                    if handler in ("cmps", "scas"):
+                        zf = bool(self.registers["FLAGS"] & self.flags["ZF"])
+                        if (repeat == 0xF3 and not zf) or (repeat == 0xF2 and zf):
+                            break
         elif handler == "alu_modrm":
             width = 16 if opcode & 1 else 8
             rm_operand, reg_index = self.decode_modrm(width)

@@ -76,6 +76,33 @@
       "program": "b800003d00007403b8ffff40487500f4",
       "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
       "expected": { "AX": 0, "IP": 16, "FLAGS": 70 }
+    },
+    {
+      "name": "repeat_string_operations",
+      "initial": { "CS": 32768, "IP": 0, "DS": 4096, "ES": 8192, "SI": 16, "DI": 32, "CX": 4 },
+      "program": "f3a4be1000bf2000b90400f3a6b90300bf3000b07af2aaf4",
+      "memory": [
+        { "segment": 4096, "offset": 16, "bytes": "11223344" }
+      ],
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 122, "CX": 0, "SI": 20, "DI": 51, "IP": 24, "FLAGS": 70 },
+      "expectedMemory": [
+        { "segment": 8192, "offset": 32, "bytes": "11223344" },
+        { "segment": 8192, "offset": 48, "bytes": "7a7a7a" }
+      ]
+    },
+    {
+      "name": "segment_override_string_source",
+      "initial": { "CS": 36864, "IP": 0, "DS": 4096, "ES": 8192, "SI": 16, "DI": 32, "CX": 2 },
+      "program": "26f3a4f4",
+      "memory": [
+        { "segment": 8192, "offset": 16, "bytes": "aabb" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "CX": 0, "SI": 18, "DI": 34, "IP": 4, "FLAGS": 2 },
+      "expectedMemory": [
+        { "segment": 8192, "offset": 32, "bytes": "aabb" }
+      ]
     }
   ]
 }

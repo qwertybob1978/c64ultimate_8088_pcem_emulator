@@ -55,7 +55,24 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
         cs = oracle.reg_read(UC_X86_REG_CS)
         ip = oracle.reg_read(UC_X86_REG_IP)
         begin = address_cpu.physical(cs, ip)
-        oracle.emu_start(begin, 2 << 20, count=1)
+        prefix_bytes = bytes(oracle.mem_read(begin, 8))
+        has_repeat = False
+        for byte in prefix_bytes:
+            if byte in (0xF2, 0xF3):
+                has_repeat = True
+            if byte not in (0x26, 0x2E, 0x36, 0x3E, 0xF0, 0xF2, 0xF3):
+                break
+        while True:
+            current_cs = oracle.reg_read(UC_X86_REG_CS)
+            current_ip = oracle.reg_read(UC_X86_REG_IP)
+            current = address_cpu.physical(current_cs, current_ip)
+            oracle.emu_start(current, 2 << 20, count=1)
+            repeat_complete = (
+                oracle.reg_read(UC_X86_REG_CX) == reference_trace["after"]["CX"]
+                and oracle.reg_read(UC_X86_REG_IP) == reference_trace["after"]["IP"]
+            )
+            if not has_repeat or repeat_complete:
+                break
         for name in REGISTER_ORDER:
             actual = oracle.reg_read(REGISTER_IDS[name]) & 0xFFFF
             wanted = reference_trace["after"][name]
