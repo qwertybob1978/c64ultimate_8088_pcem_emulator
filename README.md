@@ -107,6 +107,9 @@ are decoded with the correct DS/SS default segment. Data operands currently
 use correctness-first byte DMA; Phase 2 replaces this with a write-back page
 cache. Register and memory ModR/M forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
 `SUB`, `XOR`, and `CMP` share the same native flag engine as accumulator forms.
+The native control-flow slice also supports register `INC`/`DEC`, register
+`PUSH`/`POP`, near relative `CALL`, near `RET`/`RET imm16`, and all sixteen
+short conditional branches with REU-backed SS:SP stack accesses.
 Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
 byte-at-a-time fetch remains only as a bootstrap diagnostic path.
 

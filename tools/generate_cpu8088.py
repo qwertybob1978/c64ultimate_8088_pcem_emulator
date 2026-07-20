@@ -61,6 +61,7 @@ def render_smoke(vectors: dict) -> str:
         f"CPU_SMOKE_EXPECTED_CX = ${expected.get('CX', 0):04X}",
         f"CPU_SMOKE_EXPECTED_DX = ${expected.get('DX', 0):04X}",
         f"CPU_SMOKE_EXPECTED_BX = ${expected['BX']:04X}",
+        f"CPU_SMOKE_EXPECTED_SP = ${expected.get('SP', 0):04X}",
         f"CPU_SMOKE_EXPECTED_FLAGS = ${expected['FLAGS']:04X}",
         "cpu_smoke_program:",
         f"    .byte {byte_list}",

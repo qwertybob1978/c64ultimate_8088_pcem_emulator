@@ -30,6 +30,7 @@ $objects = @(
     @{ Source = "src/cpu8088/state.s"; Object = "cpu8088/state.o" },
     @{ Source = "src/cpu8088/address.s"; Object = "cpu8088/address.o" },
     @{ Source = "src/cpu8088/modrm.s"; Object = "cpu8088/modrm.o" },
+    @{ Source = "src/cpu8088/stack.s"; Object = "cpu8088/stack.o" },
     @{ Source = "src/memory/guest_memory.s"; Object = "memory/guest_memory.o" },
     @{ Source = "src/cpu8088/step.s"; Object = "cpu8088/step.o" }
 )

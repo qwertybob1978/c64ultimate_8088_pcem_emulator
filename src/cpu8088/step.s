@@ -14,6 +14,8 @@
 .import cpu8088_ea_rm_index
 .import cpu8088_mem_read_u8
 .import cpu8088_mem_write_u8
+.import cpu8088_push_u16
+.import cpu8088_pop_u16
 
 .export cpu8088_step
 .export cpu8088_last_opcode
@@ -60,6 +62,10 @@ alu_xor_operands:    .res 1
 alu_xor_result:      .res 1
 alu_destination_kind:.res 1
 alu_last_cycles:     .res 1
+alu_preserve_cf:     .res 1
+alu_saved_cf:        .res 1
+condition_code:      .res 1
+stack_adjust:        .res 2
 
 .segment "CODE"
 
@@ -81,6 +87,22 @@ cpu8088_step:
     cmp #$04
     long_beq @alu_accumulator_immediate
     lda cpu8088_last_opcode
+
+    cmp #$40
+    bcc @check_push_pop
+    cmp #$50
+    long_bcc @inc_dec_reg16
+@check_push_pop:
+    cmp #$50
+    bcc @check_jcc
+    cmp #$60
+    long_bcc @push_pop_reg16
+@check_jcc:
+    cmp #$70
+    bcc @check_regular_dispatch
+    cmp #$80
+    long_bcc @jcc_rel8
+@check_regular_dispatch:
     and #$C4                    ; core ALU ModR/M forms: 00ooo0dw
     cmp #$00
     long_beq @alu_modrm
@@ -104,6 +126,8 @@ cpu8088_step:
     long_beq @jmp_rel8
     cmp #$E9                    ; JMP rel16
     long_beq @jmp_rel16
+    cmp #$E8                    ; CALL rel16
+    long_beq @call_rel16
     cmp #$F8                    ; CLC
     long_beq @clc
     cmp #$F9                    ; STC
@@ -120,6 +144,10 @@ cpu8088_step:
     long_beq @mov_rm_imm
     cmp #$C7                    ; MOV r/m16, imm16 (/0, register form)
     long_beq @mov_rm_imm
+    cmp #$C2                    ; RET imm16
+    long_beq @ret_near_imm
+    cmp #$C3                    ; RET
+    long_beq @ret_near
 
     cmp #$B8                    ; MOV r16, imm16
     long_bcc @invalid
@@ -145,6 +173,7 @@ cpu8088_step:
 @alu_accumulator_immediate:
     lda #$00
     sta alu_destination_kind
+    sta alu_preserve_cf
     sta destination_offset      ; AX
     lda #$04
     sta alu_last_cycles
@@ -176,6 +205,8 @@ cpu8088_step:
     jmp @alu_execute
 
 @alu_modrm:
+    lda #$00
+    sta alu_preserve_cf
     lda cpu8088_last_opcode
     and #$01
     sta operand_width
@@ -507,6 +538,13 @@ cpu8088_step:
     sta cpu8088_state+CPU_FLAGS+1
 
 @alu_flags_done:
+    lda alu_preserve_cf
+    beq @alu_store_result
+    lda cpu8088_state+CPU_FLAGS
+    and #($FF-X86_FLAG_CF)
+    ora alu_saved_cf
+    sta cpu8088_state+CPU_FLAGS
+@alu_store_result:
     lda alu_operation
     cmp #$07                    ; CMP updates flags without storing
     beq @alu_accumulator_done
@@ -533,6 +571,157 @@ cpu8088_step:
     long_bcs @memory_error
 @alu_accumulator_done:
     lda alu_last_cycles
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@inc_dec_reg16:
+    and #$0F
+    cmp #$08
+    bcc @inc_reg16
+    lda #$05                    ; SUB
+    bne @inc_dec_operation
+@inc_reg16:
+    lda #$00                    ; ADD
+@inc_dec_operation:
+    sta alu_operation
+    lda #$01
+    sta operand_width
+    sta alu_preserve_cf
+    lda cpu8088_state+CPU_FLAGS
+    and #X86_FLAG_CF
+    sta alu_saved_cf
+    lda #$00
+    sta alu_destination_kind
+    lda cpu8088_last_opcode
+    and #$07
+    asl a
+    sta destination_offset
+    tax
+    jsr @read_register_to_left
+    lda #$01
+    sta alu_right
+    lda #$00
+    sta alu_right+1
+    lda #$03
+    sta alu_last_cycles
+    jmp @alu_execute
+
+@push_pop_reg16:
+    lda cpu8088_last_opcode
+    and #$07
+    asl a
+    tax
+    lda cpu8088_last_opcode
+    and #$08
+    bne @pop_reg16
+    lda cpu8088_state,x
+    pha
+    lda cpu8088_state+1,x
+    tax
+    pla
+    jsr cpu8088_push_u16
+    long_bcs @memory_error
+    lda #$0F
+    bne @stack_instruction_done
+@pop_reg16:
+    txa
+    pha
+    jsr cpu8088_pop_u16
+    long_bcs @memory_error
+    sta immediate_low
+    stx relative_high
+    pla
+    tax
+    lda immediate_low
+    sta cpu8088_state,x
+    lda relative_high
+    sta cpu8088_state+1,x
+    lda #$0C
+@stack_instruction_done:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@call_rel16:
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta immediate_low
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta relative_high
+    lda cpu8088_state+CPU_IP
+    ldx cpu8088_state+CPU_IP+1
+    jsr cpu8088_push_u16
+    long_bcs @memory_error
+    clc
+    lda cpu8088_state+CPU_IP
+    adc immediate_low
+    sta cpu8088_state+CPU_IP
+    lda cpu8088_state+CPU_IP+1
+    adc relative_high
+    sta cpu8088_state+CPU_IP+1
+    lda #$17
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@ret_near_imm:
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta stack_adjust
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta stack_adjust+1
+    jmp @ret_pop
+@ret_near:
+    lda #$00
+    sta stack_adjust
+    sta stack_adjust+1
+@ret_pop:
+    jsr cpu8088_pop_u16
+    long_bcs @memory_error
+    sta cpu8088_state+CPU_IP
+    stx cpu8088_state+CPU_IP+1
+    clc
+    lda cpu8088_state+CPU_SP
+    adc stack_adjust
+    sta cpu8088_state+CPU_SP
+    lda cpu8088_state+CPU_SP+1
+    adc stack_adjust+1
+    sta cpu8088_state+CPU_SP+1
+    lda #$14
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@jcc_rel8:
+    and #$0F
+    sta condition_code
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta immediate_low
+    lda condition_code
+    jsr @condition_true
+    bcc @jcc_not_taken
+    clc
+    lda cpu8088_state+CPU_IP
+    adc immediate_low
+    sta cpu8088_state+CPU_IP
+    lda immediate_low
+    bpl :+
+    lda #$FF
+    bne @jcc_add_high
+:
+    lda #$00
+@jcc_add_high:
+    adc cpu8088_state+CPU_IP+1
+    sta cpu8088_state+CPU_IP+1
+    lda #$10
+    bne @jcc_done
+@jcc_not_taken:
+    lda #$04
+@jcc_done:
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts
@@ -800,6 +989,78 @@ cpu8088_step:
     lda #$02
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
+    rts
+
+; Return carry set when Jcc condition A is true.
+@condition_true:
+    and #$0F
+    sta condition_code
+    cmp #$08
+    bcs @condition_high
+    cmp #$04
+    bcs @condition_zf_group
+    cmp #$02
+    bcs @condition_cf_group
+    lda cpu8088_state+CPU_FLAGS+1
+    and #>X86_FLAG_OF
+    jmp @condition_maybe_invert
+@condition_cf_group:
+    lda cpu8088_state+CPU_FLAGS
+    and #X86_FLAG_CF
+    ldx condition_code
+    cpx #$06
+    bcc @condition_maybe_invert
+    ora cpu8088_state+CPU_FLAGS
+    and #(X86_FLAG_CF|<X86_FLAG_ZF)
+    jmp @condition_maybe_invert
+@condition_zf_group:
+    lda cpu8088_state+CPU_FLAGS
+    ldx condition_code
+    cpx #$06
+    bcs @condition_cf_group
+    and #<X86_FLAG_ZF
+    jmp @condition_maybe_invert
+@condition_high:
+    cmp #$0A
+    bcs @condition_parity_or_signed
+    lda cpu8088_state+CPU_FLAGS
+    and #<X86_FLAG_SF
+    jmp @condition_maybe_invert
+@condition_parity_or_signed:
+    cmp #$0C
+    bcs @condition_signed
+    lda cpu8088_state+CPU_FLAGS
+    and #<X86_FLAG_PF
+    jmp @condition_maybe_invert
+@condition_signed:
+    lda cpu8088_state+CPU_FLAGS
+    and #<X86_FLAG_SF
+    beq :+
+    lda #$01
+:
+    sta alu_temp
+    lda cpu8088_state+CPU_FLAGS+1
+    and #>X86_FLAG_OF
+    beq :+
+    lda #$01
+:
+    eor alu_temp               ; SF != OF
+    ldx condition_code
+    cpx #$0E
+    bcc @condition_maybe_invert
+    ora cpu8088_state+CPU_FLAGS
+    and #(<X86_FLAG_ZF|$01)
+@condition_maybe_invert:
+    pha
+    lda condition_code
+    and #$01
+    sta alu_temp
+    pla
+    beq @condition_false_value
+    lda #$01
+@condition_false_value:
+    eor alu_temp
+    lsr a
     rts
 
 @memory_error:
