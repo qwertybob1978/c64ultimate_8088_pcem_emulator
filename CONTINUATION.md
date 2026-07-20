@@ -91,6 +91,7 @@ The native 6502 8088 core already has these major slices:
 - single-bit and CL-count SHL/SAL/SHR/SAR for registers and memory;
 - LOOPNE, LOOPE, LOOP, and JCXZ;
 - Group-5 near indirect CALL/JMP with general ModR/M segment overrides;
+- LES/LDS memory far-pointer loads;
 - a four-bank 32 KiB Magic Desk CRT with a RAM-resident multi-bank loader;
 - automated VICE 3.10 CRT smoke testing with a 16 MiB REU in warp mode.
 
@@ -98,47 +99,38 @@ The current native CRT is still a diagnostic, not an XT boot UI. The desktop
 reference model is presently used to advance the real Generic XT BIOS and find
 the next missing CPU instruction.
 
-## 4. Exact next task: LES/LDS far-pointer loads
+## 4. Exact next task: XCHG ModR/M operands
 
-The Group-5 BIOS dispatch is complete. The Generic XT BIOS now executes 25,416
-successful instructions and stops on instruction number 25,417 (zero-based
-trace index 25416):
-
-```text
-reported start: F000:F13D
-bytes:          C4 36 74 00
-meaning:        LES SI,[0074]
-opcode family:  C4, LES r16,m16:16
-DS:             0000
-pointer address:0000:0074, physical 00074
-```
-
-Bytes around the instruction:
+LES/LDS is complete. The Generic XT BIOS now executes 25,427 successful
+instructions and stops on instruction number 25,428 (zero-based trace index
+25427):
 
 ```text
-FF130: 80 C2 04 EE 88 1E 49 00 1E 33 C0 8E D8 C4 36 74
-FF140: 00 1F B7 00 53 2E 8A 9F FC F0 03 F3 B9 10 00 26
+reported start: F000:F78D
+bytes:          86 C4
+meaning:        XCHG AL,AH
+opcode family:  86, XCHG r/m8,r8
+AX before:      0061
 ```
 
-Implement the coherent far-pointer load family:
+Bytes around the helper:
 
-- `C4 /r`: `LES r16,m16:16` loads the offset into the ModR/M reg field and the
-  following word into ES;
-- `C5 /r`: `LDS r16,m16:16` does the same but loads DS.
+```text
+FF780: C5 E8 04 00 FE C4 8A C1 52 8B 16 63 00 86 C4 EE
+FF790: 86 C4 FE C2 EE 5A C3 FF FF FF FF FF FF FF FF FF
+```
 
-These instructions require a memory operand; ModR/M `mod=3` is invalid. Decode
-the effective address once, read four consecutive bytes with 16-bit offset
-wrapping, and only update the destination register/segment after all reads
-succeed. FLAGS are unchanged. General segment overrides must select the pointer
-source segment, and the newly loaded ES/DS must not affect reads already in
-progress.
+Implement both ModR/M exchange forms:
 
-Add desktop/Unicorn vectors for LES and LDS, including one BP-based SS-default
-pointer and one explicit segment override. Add the BIOS-shaped `C4 36 74 00`
-case. Update `config/cpu8088.json`, `tools/ref8088/runner.py`,
-`src/cpu8088/step.s`, `tests/vectors/cpu8088_smoke.json`, and `README.md`.
-Regenerate contracts, run all tests, build the CRT, run VICE in warp mode, trace
-the BIOS to the next blocker, and commit the milestone.
+- `86 /r`: XCHG r/m8,r8;
+- `87 /r`: XCHG r/m16,r16.
+
+Support register and memory destinations, use normal segment defaults and
+overrides, and leave all FLAGS unchanged. Read both operands before writing
+either so same-register and overlapping cases behave safely. Add vectors for
+the BIOS `86 C4` case, word register exchange, and memory exchange with a
+segment override. Regenerate, run all tests, build the CRT, run VICE in warp
+mode, trace the next blocker, update this guide, and commit the milestone.
 
 ## 5. How to trace the BIOS to the next blocker
 

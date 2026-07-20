@@ -144,6 +144,8 @@ includes the `EA` reset-stub jump used by XT-compatible BIOS ROMs.
 Segment setup now includes `MOV` between ES/SS/DS and register or memory
 operands plus `PUSH`/`POP` for the 8088 segment registers. Loading SS arms the
 same one-instruction interrupt shadow used by the boundary IRQ logic.
+`LES` and `LDS` atomically load a 16:16 memory pointer into a general register
+and ES or DS, including SS-default and explicitly overridden pointer sources.
 Group-1 immediate arithmetic (`80`–`83`) supports byte/word register and
 memory destinations, including sign extension for the compact `83` encoding.
 Single-bit `SHL`/`SAL`, `SHR`, and `SAR` (`D0`/`D1`, ModR/M extensions 4–7)

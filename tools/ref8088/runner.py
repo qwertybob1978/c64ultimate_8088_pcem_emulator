@@ -373,6 +373,17 @@ class Reference8088:
                 return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
             immediate = self.fetch_u16() if width == 16 else self.fetch_u8()
             self.write_operand(destination, immediate)
+        elif handler == "load_far_pointer":
+            source, register_index = self.decode_modrm(16)
+            if source["kind"] != "memory":
+                self.last_cycles = 0
+                return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
+            target_offset = self.read_operand(source)
+            target_segment = self.read_memory(
+                source["segment"], (source["offset"] + 2) & 0xFFFF, 16
+            )
+            self.set_register(register_index, 16, target_offset)
+            self.registers["ES" if opcode == 0xC4 else "DS"] = target_segment
         elif handler == "mov_moffs":
             width = 16 if opcode & 1 else 8
             memory_operand = {

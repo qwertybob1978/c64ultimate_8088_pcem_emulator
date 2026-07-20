@@ -83,6 +83,7 @@
     { "first": 198, "last": 199, "mnemonic": "MOV r/m,imm", "handler": "mov_rm_imm", "length": 3, "cycles": 4 },
     { "first": 194, "last": 194, "mnemonic": "RET imm16", "handler": "ret_near_imm", "length": 3, "cycles": 24 },
     { "first": 195, "last": 195, "mnemonic": "RET", "handler": "ret_near", "length": 1, "cycles": 20 },
+    { "first": 196, "last": 197, "mnemonic": "LES/LDS r16,m16:16", "handler": "load_far_pointer", "length": 2, "cycles": 16 },
     { "first": 202, "last": 202, "mnemonic": "RETF imm16", "handler": "ret_far_imm", "length": 3, "cycles": 33 },
     { "first": 203, "last": 203, "mnemonic": "RETF", "handler": "ret_far", "length": 1, "cycles": 34 },
     { "first": 204, "last": 204, "mnemonic": "INT3", "handler": "int3", "length": 1, "cycles": 72 },

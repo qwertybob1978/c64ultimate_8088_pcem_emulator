@@ -282,6 +282,10 @@ cpu8088_step:
     long_beq @mov_rm_imm
     cmp #$C7                    ; MOV r/m16, imm16 (/0, register form)
     long_beq @mov_rm_imm
+    cmp #$C4                    ; LES r16,m16:16
+    long_beq @load_far_pointer
+    cmp #$C5                    ; LDS r16,m16:16
+    long_beq @load_far_pointer
     cmp #$C2                    ; RET imm16
     long_beq @ret_near_imm
     cmp #$C3                    ; RET
@@ -1527,6 +1531,55 @@ cpu8088_step:
     beq @group5_done
     lda #$12
 @group5_done:
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@load_far_pointer:
+    lda #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    jsr @register_offset
+    stx destination_offset
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    long_beq @invalid           ; LES/LDS require a memory pointer
+    ldx #$00
+@load_far_pointer_byte:
+    jsr cpu8088_mem_read_u8
+    long_bcs @memory_error
+    sta far_target,x
+    inx
+    cpx #$04
+    beq @load_far_pointer_commit
+    jsr cpu8088_ea_next_byte
+    jmp @load_far_pointer_byte
+@load_far_pointer_commit:
+    ldx destination_offset
+    lda far_target
+    sta cpu8088_state,x
+    lda far_target+1
+    sta cpu8088_state+1,x
+    ldx #CPU_ES
+    lda cpu8088_last_opcode
+    cmp #$C4
+    beq :+
+    ldx #CPU_DS
+:
+    lda far_target+2
+    sta cpu8088_state,x
+    lda far_target+3
+    sta cpu8088_state+1,x
+    lda #$10
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts

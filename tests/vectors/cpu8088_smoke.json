@@ -448,6 +448,38 @@
       "expectedMemory": [
         { "segment": 8192, "offset": 254, "bytes": "0200" }
       ]
+    },
+    {
+      "name": "les_bios_direct_pointer",
+      "initial": { "CS": 54016, "IP": 0, "DS": 0, "SI": 65535, "ES": 43690, "FLAGS": 71 },
+      "program": "c4367400f4",
+      "memory": [
+        { "segment": 0, "offset": 116, "bytes": "34127856" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "SI": 4660, "ES": 22136, "CS": 54016, "DS": 0, "IP": 5, "FLAGS": 71 }
+    },
+    {
+      "name": "lds_bp_uses_ss_default",
+      "initial": { "CS": 54272, "IP": 0, "DS": 4096, "SS": 8192, "BP": 256, "CX": 0, "FLAGS": 2 },
+      "program": "c54e02f4",
+      "memory": [
+        { "segment": 8192, "offset": 258, "bytes": "cdab2222" },
+        { "segment": 4096, "offset": 258, "bytes": "ffffeeee" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "CX": 43981, "DS": 8738, "SS": 8192, "BP": 256, "CS": 54272, "IP": 4, "FLAGS": 2 }
+    },
+    {
+      "name": "lds_explicit_es_source_override",
+      "initial": { "CS": 54528, "IP": 0, "DS": 4096, "ES": 12288, "AX": 0, "FLAGS": 135 },
+      "program": "26c5063412f4",
+      "memory": [
+        { "segment": 12288, "offset": 4660, "bytes": "efbe0040" },
+        { "segment": 4096, "offset": 4660, "bytes": "11112222" }
+      ],
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 48879, "DS": 16384, "ES": 12288, "CS": 54528, "IP": 6, "FLAGS": 135 }
     }
   ]
 }
