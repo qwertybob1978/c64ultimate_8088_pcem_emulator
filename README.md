@@ -43,6 +43,18 @@ or:
 
 The output is `build/c64x86-hwtest.prg`.
 
+Build the required autostart cartridge executable with:
+
+```powershell
+./build_crt.ps1
+```
+
+The primary output is `build/c64x86.crt`. It is a four-bank, 32 KiB Magic Desk
+cartridge. On reset, a ROM bootstrap initializes the C64, copies the diagnostic
+payload into internal RAM, clears BSS, disables the cartridge through `$DE00`,
+and continues at the relocated entry point. The REU at `$DF00` remains
+available. The `.prg` remains a developer diagnostic artifact.
+
 ## Running the hardware diagnostic
 
 1. Configure a 16 MiB REU in the Ultimate settings.

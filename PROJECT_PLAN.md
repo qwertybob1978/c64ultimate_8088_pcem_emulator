@@ -97,9 +97,10 @@ mouse support, protected mode, 80286 instructions, or cycle-exact CGA effects.
 - Avoid executing the interpreter directly from cartridge ROM during normal
   operation because cartridge-bus accesses run through the slower external-bus
   path under turbo.
-- Select and document a CRT hardware type with enough banked ROM capacity for
-  the eventual emulator. An EasyFlash-compatible layout is the initial
-  candidate, but Phase 0 must verify cartridge emulation, bank switching,
+- Use CRT hardware type 19 (Magic Desk) initially: 8 KiB ROM banks at
+  `$8000-$9FFF`, bank selection through `$DE00`, and bit 7 of `$DE00` to disable
+  GAME/EXROM after relocation. Its I/O register does not overlap the REU at
+  `$DF00`. Phase 0 must verify cartridge emulation, bank switching,
   autostart, cartridge disable/unmap, and simultaneous 16 MiB REU access on the
   supported C64U firmware matrix.
 - Preserve a minimal recovery/menu path for reset and clean disk-image export

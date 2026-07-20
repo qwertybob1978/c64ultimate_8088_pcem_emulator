@@ -4,6 +4,7 @@ import unittest
 import json
 import hashlib
 import importlib.util
+import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -12,6 +13,14 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 def load_guest_image_module():
     path = ROOT / "tools/build_guest_image.py"
     spec = importlib.util.spec_from_file_location("build_guest_image", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_crt_module():
+    path = ROOT / "tools/build_crt.py"
+    spec = importlib.util.spec_from_file_location("build_crt", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -92,6 +101,24 @@ class Phase0Contracts(unittest.TestCase):
         self.assertEqual(image[0xFE000:0x100000], rom)
         self.assertEqual(image[0xFFFF0:0x100000], rom[-16:])
         self.assertEqual(image[0x00000:0xA0000], bytes(0xA0000))
+
+    def test_magic_desk_crt_structure(self):
+        module = load_crt_module()
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = pathlib.Path(directory)
+            bootstrap = temporary / "bootstrap.bin"
+            payload = temporary / "payload.prg"
+            output = temporary / "test.crt"
+            header = bytearray([0x00, 0x80, 0x00, 0x80])
+            header.extend(module.AUTOSTART_SIGNATURE)
+            header.extend(bytes(0x100 - len(header)))
+            bootstrap.write_bytes(header)
+            payload.write_bytes(b"\x01\x08\x60")
+            module.build(bootstrap, payload, output)
+            details = module.validate(output)
+            self.assertEqual(details["type"], 19)
+            self.assertEqual(details["banks"], 4)
+            self.assertEqual(details["size"], 0x40 + 4 * (0x10 + 0x2000))
 
 
 if __name__ == "__main__":
