@@ -12,6 +12,7 @@ OBJECTS := $(patsubst src/%.s,$(BUILD_DIR)/%.o,$(SOURCES))
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS) cfg/c64x86.cfg
+	python tools/generate_cpu8088.py --check
 	$(LD) -C cfg/c64x86.cfg -m $(BUILD_DIR)/c64x86-hwtest.map \
 		-Ln $(BUILD_DIR)/c64x86-hwtest.lbl -o $@ $(OBJECTS)
 

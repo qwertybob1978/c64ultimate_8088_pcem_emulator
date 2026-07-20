@@ -154,8 +154,8 @@ test_cpu_stepper:
     jsr reu_copy_from_reu
     bcs @restore_done
 
-    lda #<stepper_program
-    ldx #>stepper_program
+    lda #<cpu_smoke_program
+    ldx #>cpu_smoke_program
     jsr setup_stepper_transfer
     jsr reu_copy_to_reu
     bcs @restore
@@ -179,16 +179,16 @@ test_cpu_stepper:
     bne @restore
 
     lda cpu8088_state+CPU_AX
-    cmp #$34
+    cmp #<CPU_SMOKE_EXPECTED_AX
     bne @restore
     lda cpu8088_state+CPU_AX+1
-    cmp #$12
+    cmp #>CPU_SMOKE_EXPECTED_AX
     bne @restore
     lda cpu8088_state+CPU_BX
-    cmp #$78
+    cmp #<CPU_SMOKE_EXPECTED_BX
     bne @restore
     lda cpu8088_state+CPU_BX+1
-    cmp #$56
+    cmp #>CPU_SMOKE_EXPECTED_BX
     bne @restore
     lda #$01
     sta stepper_result
@@ -215,7 +215,7 @@ setup_stepper_transfer:
     sta reu_ext_addr
     sta reu_ext_addr+1
     sta reu_ext_addr+2
-    lda #$08
+    lda #CPU_SMOKE_PROGRAM_SIZE
     sta reu_length
     lda #$00
     sta reu_length+1
@@ -237,4 +237,4 @@ msg_cpu_ok:        .byte "8088 RESET VECTOR: OK", $0D, $00
 msg_cpu_fail:      .byte "8088 RESET VECTOR: FAILED", $0D, $00
 msg_stepper_ok:    .byte "8088 FETCH/STEP: OK", $0D, $00
 msg_stepper_fail:  .byte "8088 FETCH/STEP: FAILED", $0D, $00
-stepper_program:   .byte $B8, $34, $12, $BB, $78, $56, $90, $F4
+.include "cpu8088/smoke_vector.inc"

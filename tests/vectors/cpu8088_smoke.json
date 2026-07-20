@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "vectors": [
+    {
+      "name": "native_smoke",
+      "initial": { "CS": 0, "IP": 0 },
+      "program": "b83412bb785690f4",
+      "statuses": ["ok", "ok", "ok", "halted"],
+      "expected": { "AX": 4660, "BX": 22136, "IP": 8, "FLAGS": 2 }
+    },
+    {
+      "name": "flags_and_short_jump",
+      "initial": { "CS": 4096, "IP": 256 },
+      "program": "f9fbfdeb03b8fffff8fafc90f4",
+      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
+      "expected": { "AX": 0, "IP": 269, "FLAGS": 2 }
+    },
+    {
+      "name": "near_jump_backwards",
+      "initial": { "CS": 8192, "IP": 512 },
+      "program": "e90300909090e9f7fff4",
+      "maxSteps": 4,
+      "statuses": ["ok", "ok", "ok", "ok"],
+      "expected": { "IP": 512, "FLAGS": 2 }
+    }
+  ]
+}

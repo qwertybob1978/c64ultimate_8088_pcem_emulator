@@ -17,6 +17,11 @@ if (-not $assembler -or -not $linker) {
 $assemblerPath = if ($assembler.Source) { $assembler.Source } else { $assembler.FullName }
 $linkerPath = if ($linker.Source) { $linker.Source } else { $linker.FullName }
 
+python (Join-Path $PSScriptRoot "tools/generate_cpu8088.py") --check
+if ($LASTEXITCODE -ne 0) {
+    throw "generated 8088 CPU contracts are stale"
+}
+
 $objects = @(
     @{ Source = "src/boot/hwtest.s"; Object = "boot/hwtest.o" },
     @{ Source = "src/host/turbo.s"; Object = "host/turbo.o" },

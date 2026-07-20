@@ -104,6 +104,25 @@ return an explicit unsupported-instruction status. Instruction fetch uses one
 256-byte C64-RAM page backed by REU DMA; the byte-at-a-time fetch remains only
 as a bootstrap diagnostic path.
 
+The canonical register layout, flag masks, and implemented opcode metadata are
+in `config/cpu8088.json`. Regenerate the assembly contract and native smoke
+vector after changing that specification or its JSON vectors:
+
+```sh
+python tools/generate_cpu8088.py
+```
+
+Run the deterministic desktop reference model and print its instruction traces
+with:
+
+```sh
+python tools/ref8088/runner.py tests/vectors/cpu8088_smoke.json --json
+```
+
+The same `native_smoke` vector generates the byte stream and expected register
+values consumed by the cartridge diagnostic, preventing the desktop and native
+tests from silently drifting apart.
+
 ## PCem reference checkout
 
 PCem is reference material and is not linked into the target program. Fetch the
