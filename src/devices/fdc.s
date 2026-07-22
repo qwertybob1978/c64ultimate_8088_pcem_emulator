@@ -17,6 +17,18 @@ SECTORS_PER_TRACK = 9
 HEADS_PER_CYLINDER = 2
 SECTOR_SHIFT = 9
 
+.macro long_beq target
+    bne :+
+    jmp target
+:
+.endmacro
+
+.macro long_bcs target
+    bcc :+
+    jmp target
+:
+.endmacro
+
 .segment "BSS"
 fdc_dor:            .res 1
 fdc_command:        .res 1
@@ -133,6 +145,8 @@ fdc_write_data:
     beq @expect_eight
     cmp #$05
     beq @expect_eight
+    cmp #$0A
+    long_beq fdc_process_read_id
     jmp fdc_queue_invalid
 @expect_one:
     lda #$01
@@ -164,6 +178,8 @@ fdc_process_command:
     beq fdc_process_read_data
     cmp #$05
     beq fdc_process_read_data
+    cmp #$0A
+    long_beq fdc_process_read_id
     jmp fdc_queue_invalid
 
 fdc_process_specify:
@@ -219,7 +235,7 @@ fdc_process_sense:
 
 fdc_process_read_data:
     jsr fdc_compute_sector_source
-    bcs fdc_queue_not_found
+    long_bcs fdc_queue_not_found
     jsr dma_channel2_read_from_reu
     bcs fdc_queue_not_found
     lda #$20
@@ -234,6 +250,30 @@ fdc_process_read_data:
     lda fdc_params+3
     sta fdc_results+5
     lda fdc_params+4
+    sta fdc_results+6
+    lda #$07
+    sta fdc_result_count
+    lda #$00
+    sta fdc_result_index
+    lda #FDC_IRQ
+    jmp pic_request_irq
+
+; READ ID returns the current 360 KiB drive geometry without transferring
+; data.  BIOS uses this probe to verify that the selected head/media is ready.
+fdc_process_read_id:
+    lda #$20
+    sta fdc_results
+    lda #$00
+    sta fdc_results+1
+    sta fdc_results+2
+    lda fdc_current_cyl
+    sta fdc_results+3
+    lda fdc_params+0
+    and #$01
+    sta fdc_results+4
+    lda #$02
+    sta fdc_results+5
+    lda #$09
     sta fdc_results+6
     lda #$07
     sta fdc_result_count
