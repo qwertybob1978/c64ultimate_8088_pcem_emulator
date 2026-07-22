@@ -54,6 +54,7 @@ def generate(prg: Path, labels_path: Path, output: Path, media: Path | None = No
         "PAYLOAD_BSS_START": labels["__BSS_RUN__"],
         "PAYLOAD_BSS_SIZE": labels["__BSS_SIZE__"],
         "MEDIA_PRESENT": 1 if media_size else 0,
+        "MEDIA_BANKS": (media_size + BANK_SIZE - 1) // BANK_SIZE if media_size else 0,
         "MEDIA_ROM_BANK": payload_banks,
         "MEDIA_ROM_ADDRESS": 0x8000,
         "MEDIA_SIZE_LO": media_size & 0xFF,

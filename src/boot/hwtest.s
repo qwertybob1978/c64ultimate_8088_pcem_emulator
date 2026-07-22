@@ -211,9 +211,6 @@ boot_guest:
     long_bcc @boot_guest_loaded
     jmp @boot_failed
 @boot_guest_loaded:
-    jsr cartridge_stage_media
-    long_bcc @boot_media_ready
-    jmp @boot_failed
 @boot_media_ready:
     lda #$0D
     sta BORDER_COLOR

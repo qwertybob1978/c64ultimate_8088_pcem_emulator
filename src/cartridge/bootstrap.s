@@ -4,6 +4,16 @@
 .include "cartridge_payload.inc"
 D016 = $D016
 MAGIC_DESK_BANK = $DE00
+REU_COMMAND = $DF01
+REU_C64_ADDR_LO = $DF02
+REU_C64_ADDR_HI = $DF03
+REU_REU_ADDR_LO = $DF04
+REU_REU_ADDR_MI = $DF05
+REU_REU_ADDR_HI = $DF06
+REU_LENGTH_LO = $DF07
+REU_LENGTH_HI = $DF08
+REU_IRQ_MASK = $DF09
+REU_ADDR_CONTROL = $DF0A
 
 BANK_NUMBER = $F8
 BYTES_LEFT  = $F9
@@ -152,8 +162,48 @@ ram_loader:
     bne @clear_bss
 
 @bss_cleared:
+    ; Stage complete padded cartridge banks directly into REU before starting
+    ; the emulator. This keeps bank switching and bulk media DMA out of the
+    ; live guest CPU/device state.
+.if MEDIA_PRESENT
+    lda #MEDIA_ROM_BANK
+    sta BANK_NUMBER
+    lda #MEDIA_REU_ADDR_LO
+    sta REU_REU_ADDR_LO
+    lda #MEDIA_REU_ADDR_MI
+    sta REU_REU_ADDR_MI
+    lda #MEDIA_REU_ADDR_HI
+    sta REU_REU_ADDR_HI
+    ldx #MEDIA_BANKS
+@stage_media_bank:
+    lda BANK_NUMBER
+    sta MAGIC_DESK_BANK
     lda #$00
-    sta MAGIC_DESK_BANK                 ; leave bank 0 mapped for payload media staging
+    sta REU_C64_ADDR_LO
+    lda #$80
+    sta REU_C64_ADDR_HI
+    lda #$00
+    sta REU_LENGTH_LO
+    lda #$20
+    sta REU_LENGTH_HI
+    lda #$00
+    sta REU_IRQ_MASK
+    sta REU_ADDR_CONTROL
+    lda #$90
+    sta REU_COMMAND
+    inc BANK_NUMBER
+    clc
+    lda REU_REU_ADDR_MI
+    adc #$20
+    sta REU_REU_ADDR_MI
+    bcc :+
+    inc REU_REU_ADDR_HI
+:
+    dex
+    bne @stage_media_bank
+.endif
+    lda #$80
+    sta MAGIC_DESK_BANK                 ; disable cartridge before payload entry
     ; KERNAL screen output used by the diagnostic expects normal C64 IRQ
     ; servicing.  The XT loop masks IRQs again once diagnostic output is done.
     cli

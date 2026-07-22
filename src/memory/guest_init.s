@@ -72,7 +72,10 @@ guest_load_genxt:
     bne @copy_bios_chunk
     lda #$0E
     sta BORDER_COLOR
+    clc
+    rts
 @failed:
+    sec
     rts
 
 .segment "RODATA"
