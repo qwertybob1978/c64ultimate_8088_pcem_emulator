@@ -21,6 +21,8 @@ RAM_LOADER  = $0200
 cold_start:
 warm_start:
     sei
+    lda #$02
+    sta $D020                           ; loader entered
     ldx #$FF
     txs
     stx D016
@@ -28,6 +30,8 @@ warm_start:
     jsr $FD50                           ; initialize RAM
     jsr $FD15                           ; restore KERNAL vectors
     jsr $FF5B                           ; initialize screen
+    lda #$03
+    sta $D020                           ; KERNAL initialization complete
 
     ; Bank switching replaces the complete $8000-$9FFF window, including this
     ; bootstrap. Relocate the copier to RAM before selecting another bank.

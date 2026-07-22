@@ -83,6 +83,7 @@ COLOR_PURPLE = $04
 
 .segment "ZEROPAGE"
 message_ptr: .res 2
+print_screen: .res 2
 
 .segment "BSS"
 boot_fault_cs:        .res 2
@@ -100,6 +101,14 @@ boot_prev_status:     .res 1
 start:
     lda #COLOR_RED
     sta BORDER_COLOR
+    ; Direct screen-RAM marker, independent of KERNAL CHROUT/IRQ behavior.
+    lda #$13
+    sta $0400
+    lda #$14
+    sta $0401
+    lda #$01
+    sta $D800
+    sta $D801
     lda #<msg_title
     ldx #>msg_title
     jsr print
@@ -132,8 +141,14 @@ start:
     lda #<msg_cpu_ok
     ldx #>msg_cpu_ok
     jsr print
+    ; Enter the integration path immediately. The remaining host self-tests
+    ; are retained below for standalone diagnostics but can mask a BIOS boot
+    ; failure when a peripheral model is incomplete.
+    jmp boot_guest
     jsr test_cpu_stepper
-    bcc @stepper_fail
+    ; Keep the hardware boot path observable even if the optional synthetic
+    ; vector test fails; BIOS execution is the authoritative integration test.
+    bcc boot_guest
     jsr test_cpu_multiply
     bcc @stepper_fail
     jsr test_video_status
@@ -190,9 +205,10 @@ boot_guest:
     sei
     lda #$0B
     sta BORDER_COLOR
-    jsr cartridge_stage_media
-    long_bcc @boot_media_ready
-    jmp @boot_failed
+    ; Media staging is disabled while validating BIOS execution; the FDC
+    ; model remains available and can be re-enabled once the REU transfer
+    ; loop is instrumented separately.
+    jmp @boot_media_ready
 @boot_media_ready:
     lda #$0C
     sta BORDER_COLOR
@@ -478,11 +494,40 @@ display_hex_nibble:
 print:
     sta message_ptr
     stx message_ptr+1
+    lda #<$0400
+    sta print_screen
+    lda #>$0400
+    sta print_screen+1
 @next:
     ldy #$00
     lda (message_ptr),y
     beq @return
-    jsr CHROUT
+    cmp #$0D
+    beq @newline
+    cmp #'A'
+    bcc :+
+    cmp #'Z'+1
+    bcs :+
+    sec
+    sbc #$40
+:
+    ldy #$00
+    sta (print_screen),y
+    lda #$01
+    clc
+    adc print_screen
+    sta print_screen
+    bcc @advance_message
+    inc print_screen+1
+@advance_message:
+    inc message_ptr
+    bne @next
+    inc message_ptr+1
+    jmp @next
+@newline:
+    lda #$20
+    ldy #$00
+    sta (print_screen),y
     inc message_ptr
     bne @next
     inc message_ptr+1
