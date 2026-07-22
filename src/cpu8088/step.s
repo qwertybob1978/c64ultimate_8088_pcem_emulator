@@ -191,6 +191,8 @@ cpu8088_step:
     long_beq @segment_stack
     cmp #$27                    ; DAA
     long_beq @daa
+    cmp #$2F                    ; DAS
+    long_beq @das
     lda cpu8088_last_opcode
     cmp #$80
     bcc @not_group1_immediate
@@ -729,6 +731,62 @@ cpu8088_step:
     lda #$01
     sta daa_pending
     lda #$04                    ; logical result-flag path clears undefined OF
+    sta alu_operation
+    lda #$04
+    sta alu_last_cycles
+    jmp @alu_flags
+
+@das:
+    lda cpu8088_state+CPU_AX
+    sta alu_left
+    sta daa_original
+    lda cpu8088_state+CPU_FLAGS
+    and #X86_FLAG_CF
+    sta alu_saved_cf
+    lda #$00
+    sta daa_auxiliary
+    lda cpu8088_state+CPU_FLAGS
+    and #X86_FLAG_AF
+    bne @das_low_adjust
+    lda daa_original
+    and #$0F
+    cmp #$0A
+    bcc @das_high_test
+@das_low_adjust:
+    sec
+    lda alu_left
+    sbc #$06
+    sta alu_left
+    lda #X86_FLAG_AF
+    sta daa_auxiliary
+@das_high_test:
+    lda #$00
+    sta alu_carry
+    lda daa_original
+    cmp #$9A
+    bcs @das_high_adjust
+    lda alu_saved_cf
+    beq @das_finish
+@das_high_adjust:
+    sec
+    lda alu_left
+    sbc #$60
+    sta alu_left
+    lda #$01
+    sta alu_carry
+@das_finish:
+    lda alu_left
+    sta alu_result
+    lda #$00
+    sta alu_result+1
+    sta operand_width
+    sta alu_destination_kind
+    sta destination_offset
+    sta alu_string_compare
+    sta alu_test_only
+    lda #$01
+    sta daa_pending
+    lda #$04
     sta alu_operation
     lda #$04
     sta alu_last_cycles
