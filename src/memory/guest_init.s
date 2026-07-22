@@ -8,6 +8,8 @@
 .importzp reu_length
 .import cpu8088_mem_cache_invalidate
 
+BORDER_COLOR = $D020
+
 .export guest_load_genxt
 
 .segment "CODE"
@@ -16,12 +18,18 @@
 ; BIOS ROM at physical FE000h. The ROM is a local build input and is ignored by
 ; Git; tools/verify_roms.py validates its pinned hash before release builds.
 guest_load_genxt:
+    lda #$0B
+    sta BORDER_COLOR
     jsr cpu8088_mem_cache_invalidate
     jsr reu_clear_conventional
     bcs @failed
+    lda #$0C
+    sta BORDER_COLOR
     lda #$0B                    ; clear B0000-BFFFF, including CGA B8000
     jsr reu_clear_guest_page
     bcs @failed
+    lda #$0D
+    sta BORDER_COLOR
     lda #<guest_genxt_bios
     sta reu_c64_addr
     lda #>guest_genxt_bios
@@ -37,6 +45,9 @@ guest_load_genxt:
     lda #$20
     sta reu_length+1
     jsr reu_copy_to_reu
+    bcs @failed
+    lda #$0E
+    sta BORDER_COLOR
 @failed:
     rts
 
