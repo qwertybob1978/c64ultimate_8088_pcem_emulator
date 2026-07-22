@@ -15,6 +15,12 @@ if (-not (Test-Path -LiteralPath $vice) -or -not (Test-Path -LiteralPath $cartco
     & (Join-Path $PSScriptRoot "bootstrap_vice.ps1")
 }
 
+# VICE 3.10 exits before emulation if its per-user state directory does not
+# already exist (common on clean CI/workstation images). Create only the
+# narrow directory VICE needs; no machine-wide configuration is required.
+$viceUserState = Join-Path ([Environment]::GetFolderPath("ApplicationData")) "vice"
+New-Item -ItemType Directory -Force -Path $viceUserState | Out-Null
+
 if (-not $SkipBuild) {
     & (Join-Path $root "build_crt.ps1")
     if ($LASTEXITCODE -ne 0) {
