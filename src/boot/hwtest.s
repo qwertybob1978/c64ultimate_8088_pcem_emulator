@@ -290,7 +290,9 @@ boot_guest:
     jsr host_keyboard_poll
     inc boot_autokey_counter
     bne :+
-    lda #$1C                    ; XT set-1 Enter make code
+    ; "Y" satisfies the Generic XT POST "Continue?" prompt and also counts
+    ; as the arbitrary key requested before booting drive A.
+    lda #$15                    ; XT set-1 Y make code
     jsr io_keyboard_push
     lda #$01
     jsr pic_request_irq
@@ -303,6 +305,7 @@ boot_guest:
     jmp @boot_batch
 :
     jsr cga_render_text_40
+    jsr display_fdc_runtime
     jmp @boot_batch
 @boot_failed:
     jsr cga_render_text_40
@@ -514,7 +517,57 @@ display_boot_failure:
     jsr display_hex_byte
     rts
 
+; Keep a compact live FDC/PIC trace on the host's last screen row.  This is
+; intentionally outside the emulated CGA aperture so it remains visible when
+; the guest BIOS replaces its own screen with an error message.
+display_fdc_runtime:
+    lda #$46                    ; F
+    sta $07C0
+    lda #$44                    ; D
+    sta $07C1
+    lda #$43                    ; C
+    sta $07C2
+    lda #$3A
+    sta $07C3
+    lda fdc_last_command
+    ldx #$04
+    jsr display_hex_byte_at
+    lda fdc_read_count
+    ldx #$07
+    jsr display_hex_byte_at
+    lda #$50                    ; P
+    sta $07CA
+    lda #$49                    ; I
+    sta $07CB
+    lda #$43                    ; C
+    sta $07CC
+    lda #$3A
+    sta $07CD
+    lda pic_irq6_requests
+    ldx #$0E
+    jsr display_hex_byte_at
+    lda cpu8088_irq6_serviced
+    ldx #$11
+    jsr display_hex_byte_at
+    rts
+
 display_hex_byte:
+    pha
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0400,x
+    inx
+    pla
+    and #$0F
+    jsr display_hex_nibble
+    sta $0400,x
+    rts
+
+; Same conversion as display_hex_byte, but with an absolute screen offset.
+display_hex_byte_at:
     pha
     lsr a
     lsr a
