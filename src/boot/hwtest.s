@@ -25,6 +25,9 @@
 .import pic_service
 .import dma_reset
 .import fdc_reset
+.import fdc_last_command
+.import fdc_read_count
+.import fdc_dma_failures
 .import pit_reset
 .import pit_advance_cycles
 .import cpu8088_fetch_cache_invalidate
@@ -467,6 +470,15 @@ display_boot_failure:
     jsr display_hex_byte
     lda boot_prev2_ip
     ldx #$88
+    jsr display_hex_byte
+    lda fdc_last_command
+    ldx #$A0
+    jsr display_hex_byte
+    lda fdc_read_count
+    ldx #$A3
+    jsr display_hex_byte
+    lda fdc_dma_failures
+    ldx #$A6
     jsr display_hex_byte
     rts
 

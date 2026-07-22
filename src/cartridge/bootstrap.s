@@ -192,13 +192,7 @@ ram_loader:
     lda #$90
     sta REU_COMMAND
     inc BANK_NUMBER
-    clc
-    lda REU_REU_ADDR_MI
-    adc #$20
-    sta REU_REU_ADDR_MI
-    bcc :+
-    inc REU_REU_ADDR_HI
-:
+    ; REU hardware advances its own 24-bit address by the 8 KiB length.
     dex
     bne @stage_media_bank
 .endif

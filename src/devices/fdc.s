@@ -10,6 +10,9 @@
 .export fdc_read_digital_input
 .export fdc_write_dor
 .export fdc_write_data
+.export fdc_last_command
+.export fdc_read_count
+.export fdc_dma_failures
 
 FDC_IRQ = $06
 MEDIA_BASE_HI = $20
@@ -43,6 +46,9 @@ fdc_pending_cyl:    .res 1
 fdc_reset_senses:   .res 1
 fdc_current_cyl:    .res 1
 fdc_sector_index:   .res 2
+fdc_last_command:   .res 1
+fdc_read_count:     .res 1
+fdc_dma_failures:   .res 1
 
 .segment "CODE"
 
@@ -127,6 +133,7 @@ fdc_write_data:
     jmp fdc_process_command
 @new_command:
     sta fdc_command
+    sta fdc_last_command
     lda #$00
     sta fdc_param_index
     sta fdc_result_count
@@ -235,9 +242,16 @@ fdc_process_sense:
 
 fdc_process_read_data:
     jsr fdc_compute_sector_source
-    long_bcs fdc_queue_not_found
+    bcc :+
+    inc fdc_dma_failures
+    jmp fdc_queue_not_found
+:
     jsr dma_channel2_read_from_reu
-    bcs fdc_queue_not_found
+    bcc :+
+    inc fdc_dma_failures
+    jmp fdc_queue_not_found
+:
+    inc fdc_read_count
     lda #$20
     sta fdc_results
     lda #$00
