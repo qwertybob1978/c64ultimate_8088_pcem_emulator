@@ -150,7 +150,11 @@ ram_loader:
 @bss_cleared:
     lda #$00
     sta MAGIC_DESK_BANK                 ; leave bank 0 mapped for payload media staging
-    cli
+    ; Keep C64 IRQs masked while the payload owns the host CPU.  The
+    ; diagnostic/emulator does not install a resident C64 IRQ handler, so an
+    ; asynchronous CIA/KERNAL interrupt would run with the payload stack and
+    ; can corrupt its return addresses during the XT loop.
+    sei
     jsr PAYLOAD_ENTRY
 @halt:
     ; The diagnostic is also a normal PRG and therefore returns with RTS.
