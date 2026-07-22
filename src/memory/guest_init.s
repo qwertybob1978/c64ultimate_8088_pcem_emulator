@@ -14,6 +14,11 @@ BORDER_COLOR = $D020
 
 .segment "CODE"
 
+.segment "BSS"
+bios_chunks: .res 1
+
+.segment "CODE"
+
 ; Initialize deterministic XT RAM/CGA memory and map the verified Generic XT
 ; BIOS ROM at physical FE000h. The ROM is a local build input and is ignored by
 ; Git; tools/verify_roms.py validates its pinned hash before release builds.
@@ -40,12 +45,31 @@ guest_load_genxt:
     sta reu_ext_addr+1
     lda #$0F
     sta reu_ext_addr+2
+    lda #$20                    ; 32 x 256-byte transfers = 8 KiB BIOS
+    sta bios_chunks
+@copy_bios_chunk:
     lda #$00
     sta reu_length
-    lda #$20
+    lda #$01
     sta reu_length+1
     jsr reu_copy_to_reu
     bcs @failed
+    clc
+    lda reu_c64_addr
+    adc #$00
+    sta reu_c64_addr
+    lda reu_c64_addr+1
+    adc #$01
+    sta reu_c64_addr+1
+    clc
+    lda reu_ext_addr+1
+    adc #$01
+    sta reu_ext_addr+1
+    bcc :+
+    inc reu_ext_addr+2
+:
+    dec bios_chunks
+    bne @copy_bios_chunk
     lda #$0E
     sta BORDER_COLOR
 @failed:

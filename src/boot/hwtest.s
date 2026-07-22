@@ -205,17 +205,16 @@ boot_guest:
     sei
     lda #$0B
     sta BORDER_COLOR
-    ; Media staging is disabled while validating BIOS execution; the FDC
-    ; model remains available and can be re-enabled once the REU transfer
-    ; loop is instrumented separately.
-    jmp @boot_media_ready
-@boot_media_ready:
     lda #$0C
     sta BORDER_COLOR
     jsr guest_load_genxt
     long_bcc @boot_guest_loaded
     jmp @boot_failed
 @boot_guest_loaded:
+    jsr cartridge_stage_media
+    long_bcc @boot_media_ready
+    jmp @boot_failed
+@boot_media_ready:
     lda #$0D
     sta BORDER_COLOR
     jsr pic_reset
