@@ -185,6 +185,9 @@ diagnostic_done:
 ; are interleaved between bounded 8088 batches so C64 keyboard and screen I/O
 ; remain responsive even in Ultimate turbo mode.
 boot_guest:
+    ; From this point onward the payload no longer calls KERNAL output. Keep
+    ; asynchronous C64 IRQs out of the long-running host/emulator loop.
+    sei
     lda #$0B
     sta BORDER_COLOR
     jsr cartridge_stage_media
