@@ -12,7 +12,6 @@ MAGIC_DESK_TYPE = 19
 BANK_SIZE = 0x2000
 MINIMUM_BANKS = 4
 BOOTSTRAP_SIZE = 0x100
-MAX_PAYLOAD_SIZE = BANK_SIZE * MINIMUM_BANKS - BOOTSTRAP_SIZE
 AUTOSTART_SIGNATURE = bytes((0xC3, 0xC2, 0xCD, 0x38, 0x30))
 
 
@@ -31,6 +30,15 @@ def make_chip(bank: int, data: bytes) -> bytes:
     return b"CHIP" + struct.pack(">IHHHH", 0x2010, 0, bank, 0x8000, BANK_SIZE) + data
 
 
+def required_banks(payload_size: int) -> int:
+    if payload_size < 0:
+        raise ValueError("payload size must be non-negative")
+    first_bank_capacity = BANK_SIZE - BOOTSTRAP_SIZE
+    remaining = max(0, payload_size - first_bank_capacity)
+    extra_banks = (remaining + BANK_SIZE - 1) // BANK_SIZE
+    return max(MINIMUM_BANKS, 1 + extra_banks)
+
+
 def build(bootstrap_path: Path, payload_path: Path, output: Path) -> None:
     bootstrap = bootstrap_path.read_bytes()
     raw_payload = payload_path.read_bytes()
@@ -39,10 +47,8 @@ def build(bootstrap_path: Path, payload_path: Path, output: Path) -> None:
     if len(raw_payload) < 3:
         raise ValueError("payload PRG is too short")
     payload = raw_payload[2:]
-    if len(payload) > MAX_PAYLOAD_SIZE:
-        raise ValueError(f"payload exceeds {MAX_PAYLOAD_SIZE}-byte cartridge capacity")
-
-    banks = [bytearray([0xFF]) * BANK_SIZE for _ in range(MINIMUM_BANKS)]
+    bank_count = required_banks(len(payload))
+    banks = [bytearray([0xFF]) * BANK_SIZE for _ in range(bank_count)]
     banks[0][:BOOTSTRAP_SIZE] = bootstrap
     payload_offset = 0
     first_size = min(len(payload), BANK_SIZE - BOOTSTRAP_SIZE)
@@ -87,7 +93,7 @@ def validate(path: Path) -> dict[str, int | str]:
         banks.append(bank)
         offset += packet_length
 
-    if offset != len(data) or banks != list(range(MINIMUM_BANKS)):
+    if offset != len(data) or len(banks) < MINIMUM_BANKS or banks != list(range(len(banks))):
         raise ValueError("missing, duplicate, or unordered Magic Desk banks")
     if data[0x50 + 4:0x50 + 9] != AUTOSTART_SIGNATURE:
         # Bank zero begins after 64-byte CRT + 16-byte CHIP headers. Its first

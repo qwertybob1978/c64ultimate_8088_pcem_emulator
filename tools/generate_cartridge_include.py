@@ -8,7 +8,6 @@ ROOT = Path(__file__).resolve().parents[1]
 BANK_SIZE = 0x2000
 BOOTSTRAP_SIZE = 0x100
 CARTRIDGE_BANKS = 4
-MAX_PAYLOAD_SIZE = BANK_SIZE * CARTRIDGE_BANKS - BOOTSTRAP_SIZE
 
 
 def parse_labels(path: Path) -> dict[str, int]:
@@ -35,11 +34,6 @@ def generate(prg: Path, labels_path: Path, output: Path) -> None:
 
     # Bank zero reserves its first 256 bytes for the bootstrap. The RAM-resident
     # loader continues at $8000 in each following Magic Desk bank.
-    if payload_size > MAX_PAYLOAD_SIZE:
-        raise ValueError(
-            f"payload exceeds the {MAX_PAYLOAD_SIZE}-byte cartridge capacity"
-        )
-
     values = {
         "PAYLOAD_ROM_ADDRESS": 0x8100,
         "PAYLOAD_LOAD_ADDRESS": load_address,
