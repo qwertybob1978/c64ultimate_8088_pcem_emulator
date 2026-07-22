@@ -3,6 +3,7 @@
 .import turbo_detect
 .import turbo_enable_max
 .import turbo_restore
+.import cartridge_stage_media
 .import host_keyboard_translate
 .import host_keyboard_poll
 .import guest_load_genxt
@@ -19,7 +20,15 @@
 .import cpu8088_mul_u16
 .import cpu8088_mul_s16
 .import cpu8088_request_irq
+.import pic_reset
+.import pic_request_irq
+.import pic_service
+.import dma_reset
+.import fdc_reset
+.import pit_reset
+.import pit_advance_cycles
 .import cpu8088_fetch_cache_invalidate
+.import cpu8088_last_cycles
 .import io_debug_latch
 .import io_read_u8
 .import io_write_u8
@@ -55,6 +64,12 @@ COLOR_PURPLE = $04
 :
 .endmacro
 
+.macro long_beq target
+    bne :+
+    jmp target
+:
+.endmacro
+
 .segment "LOADADDR"
     .word $0801
 
@@ -68,6 +83,18 @@ COLOR_PURPLE = $04
 
 .segment "ZEROPAGE"
 message_ptr: .res 2
+
+.segment "BSS"
+boot_fault_cs:        .res 2
+boot_fault_ip:        .res 2
+boot_prev2_cs:        .res 2
+boot_prev2_ip:        .res 2
+boot_prev2_opcode:    .res 1
+boot_prev2_status:    .res 1
+boot_prev_cs:         .res 2
+boot_prev_ip:         .res 2
+boot_prev_opcode:     .res 1
+boot_prev_status:     .res 1
 
 .segment "CODE"
 start:
@@ -158,46 +185,89 @@ diagnostic_done:
 ; are interleaved between bounded 8088 batches so C64 keyboard and screen I/O
 ; remain responsive even in Ultimate turbo mode.
 boot_guest:
+    lda #$0B
+    sta BORDER_COLOR
+    jsr cartridge_stage_media
+    long_bcc @boot_media_ready
+    jmp @boot_failed
+@boot_media_ready:
+    lda #$0C
+    sta BORDER_COLOR
     jsr guest_load_genxt
-    bcs @boot_failed
+    long_bcc @boot_guest_loaded
+    jmp @boot_failed
+@boot_guest_loaded:
+    lda #$0D
+    sta BORDER_COLOR
+    jsr pic_reset
+    jsr dma_reset
+    jsr fdc_reset
+    jsr pit_reset
     jsr cpu8088_fetch_cache_invalidate
     jsr cpu8088_reset
     lda #$00
-    sta boot_timer_low
-    sta boot_timer_high
     sta boot_video_divider
 @boot_batch:
     lda #$40
     sta boot_steps_remaining
 @boot_step:
+    lda cpu8088_state+CPU_CS
+    sta boot_fault_cs
+    lda cpu8088_state+CPU_CS+1
+    sta boot_fault_cs+1
+    lda cpu8088_state+CPU_IP
+    sta boot_fault_ip
+    lda cpu8088_state+CPU_IP+1
+    sta boot_fault_ip+1
     jsr cpu8088_step
-    cmp #CPU_STEP_OK
-    beq @boot_step_done
-    cmp #CPU_STEP_HALTED
-    beq @boot_step_done
     sta boot_failure_status
+    cmp #CPU_STEP_OK
+    long_beq @boot_step_record
+    cmp #CPU_STEP_HALTED
+    long_beq @boot_step_record
     jmp @boot_failed
+@boot_step_record:
+    lda boot_prev_cs
+    sta boot_prev2_cs
+    lda boot_prev_cs+1
+    sta boot_prev2_cs+1
+    lda boot_prev_ip
+    sta boot_prev2_ip
+    lda boot_prev_ip+1
+    sta boot_prev2_ip+1
+    lda boot_prev_opcode
+    sta boot_prev2_opcode
+    lda boot_prev_status
+    sta boot_prev2_status
+    lda boot_fault_cs
+    sta boot_prev_cs
+    lda boot_fault_cs+1
+    sta boot_prev_cs+1
+    lda boot_fault_ip
+    sta boot_prev_ip
+    lda boot_fault_ip+1
+    sta boot_prev_ip+1
+    lda cpu8088_last_opcode
+    sta boot_prev_opcode
+    lda boot_failure_status
+    sta boot_prev_status
+    lda cpu8088_last_cycles
+    jsr pit_advance_cycles
 @boot_step_done:
     dec boot_steps_remaining
-    bne @boot_step
+    beq :+
+    jmp @boot_step
+:
 
     jsr host_keyboard_poll
+    jsr pic_service
     inc boot_video_divider
     lda boot_video_divider
     and #$0F
-    bne @boot_timer
+    beq :+
+    jmp @boot_batch
+:
     jsr cga_render_text_40
-@boot_timer:
-    inc boot_timer_low
-    bne @boot_batch
-    inc boot_timer_high
-    lda boot_timer_high
-    cmp #$80                    ; defer IRQ0 until late POST/PIC initialization
-    bcc @boot_batch
-    lda #$00
-    sta boot_timer_high
-    lda #$08                    ; XT PIC IRQ0 vector
-    jsr cpu8088_request_irq
     jmp @boot_batch
 @boot_failed:
     jsr cga_render_text_40
@@ -215,6 +285,64 @@ boot_guest:
     jmp diagnostic_done
 
 display_boot_failure:
+    lda #$01                    ; visible white text on failure screen
+    sta $D800
+    sta $D801
+    sta $D802
+    sta $D803
+    sta $D804
+    sta $D805
+    sta $D806
+    sta $D807
+    sta $D808
+    sta $D828
+    sta $D829
+    sta $D82A
+    sta $D82B
+    sta $D82C
+    sta $D82D
+    sta $D82E
+    sta $D82F
+    sta $D830
+    sta $D831
+    sta $D832
+    sta $D833
+    sta $D834
+    sta $D835
+    sta $D850
+    sta $D851
+    sta $D852
+    sta $D853
+    sta $D854
+    sta $D855
+    sta $D856
+    sta $D857
+    sta $D858
+    sta $D859
+    sta $D85A
+    sta $D85B
+    sta $D85C
+    sta $D85D
+    sta $D85E
+    sta $D85F
+    sta $D860
+    sta $D878
+    sta $D879
+    sta $D87A
+    sta $D87B
+    sta $D87C
+    sta $D87D
+    sta $D87E
+    sta $D87F
+    sta $D880
+    sta $D881
+    sta $D882
+    sta $D883
+    sta $D884
+    sta $D885
+    sta $D886
+    sta $D887
+    sta $D888
     lda #$02                    ; B
     sta $0400
     lda #$0F                    ; O
@@ -231,6 +359,90 @@ display_boot_failure:
     sta $0407
     lda cpu8088_last_opcode
     ldx #$08
+    jsr display_hex_byte
+    lda #$03                    ; C
+    sta $0428
+    lda #$13                    ; S
+    sta $0429
+    lda #$3A                    ; :
+    sta $042A
+    lda boot_fault_cs+1
+    ldx #$2B
+    jsr display_hex_byte
+    lda boot_fault_cs
+    ldx #$2D
+    jsr display_hex_byte
+    lda #$09                    ; I
+    sta $042F
+    lda #$10                    ; P
+    sta $0430
+    lda #$3A
+    sta $0431
+    lda boot_fault_ip+1
+    ldx #$32
+    jsr display_hex_byte
+    lda boot_fault_ip
+    ldx #$34
+    jsr display_hex_byte
+    lda #$10                    ; P
+    sta $0450
+    lda #$12                    ; R
+    sta $0451
+    lda #$3A
+    sta $0452
+    lda boot_prev_status
+    ldx #$53
+    jsr display_hex_byte
+    lda #$20
+    sta $0455
+    lda boot_prev_opcode
+    ldx #$56
+    jsr display_hex_byte
+    lda #$20
+    sta $0458
+    lda boot_prev_cs+1
+    ldx #$59
+    jsr display_hex_byte
+    lda boot_prev_cs
+    ldx #$5B
+    jsr display_hex_byte
+    lda #$20
+    sta $045D
+    lda boot_prev_ip+1
+    ldx #$5E
+    jsr display_hex_byte
+    lda boot_prev_ip
+    ldx #$60
+    jsr display_hex_byte
+    lda #$10                    ; P
+    sta $0478
+    lda #$32                    ; 2
+    sta $0479
+    lda #$3A
+    sta $047A
+    lda boot_prev2_status
+    ldx #$7B
+    jsr display_hex_byte
+    lda #$20
+    sta $047D
+    lda boot_prev2_opcode
+    ldx #$7E
+    jsr display_hex_byte
+    lda #$20
+    sta $0480
+    lda boot_prev2_cs+1
+    ldx #$81
+    jsr display_hex_byte
+    lda boot_prev2_cs
+    ldx #$83
+    jsr display_hex_byte
+    lda #$20
+    sta $0485
+    lda boot_prev2_ip+1
+    ldx #$86
+    jsr display_hex_byte
+    lda boot_prev2_ip
+    ldx #$88
     jsr display_hex_byte
     rts
 
@@ -611,8 +823,6 @@ stepper_saved: .res CPU_SMOKE_SAVE_SIZE
 stepper_result: .res 1
 stepper_steps_remaining: .res 1
 boot_steps_remaining: .res 1
-boot_timer_low: .res 1
-boot_timer_high: .res 1
 boot_video_divider: .res 1
 boot_failure_status: .res 1
 

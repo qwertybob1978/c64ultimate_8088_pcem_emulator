@@ -179,6 +179,8 @@ cpu8088_step:
     long_beq @segment_stack
     cmp #$0E
     long_beq @segment_stack
+    cmp #$0F                    ; original 8088 POP CS
+    long_beq @segment_stack
     cmp #$16
     long_beq @segment_stack
     cmp #$17

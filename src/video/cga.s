@@ -123,6 +123,8 @@ cga_render_text_40:
 
 ; Seed and verify a visible CGA text row without permanently changing guest RAM.
 cga_test_render:
+    jsr cpu8088_mem_cache_flush
+    long_bcs @test_failed
     lda #$00
     sta cga_test_error
     jsr cga_setup_b8000
@@ -172,19 +174,30 @@ cga_test_render:
     jsr cga_render_text_40
     bcs @restore_failed
 
+    lda #$03
+    sta cga_test_error
     lda C64_SCREEN
     cmp #$03                    ; C
     bne @restore_failed
+    lda #$04
+    sta cga_test_error
     lda C64_SCREEN+1
     cmp #$36                    ; 6
     bne @restore_failed
+    lda #$05
+    sta cga_test_error
     lda C64_SCREEN+2
     cmp #$34                    ; 4
     bne @restore_failed
+    lda #$06
+    sta cga_test_error
     lda C64_SCREEN+4
     cmp #$18                    ; X
     bne @restore_failed
+    lda #$07
+    sta cga_test_error
     lda C64_COLOR
+    and #$0F                    ; color RAM read high nibble is undefined
     cmp #$01                    ; CGA white -> C64 white
     bne @restore_failed
     lda #$01
@@ -192,8 +205,6 @@ cga_test_render:
     bne @restore
 
 @restore_failed:
-    lda #$09
-    sta cga_test_error
     lda #$00
     sta cga_source_index
 @restore:

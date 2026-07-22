@@ -11,7 +11,7 @@ CRT_VERSION = 0x0100
 MAGIC_DESK_TYPE = 19
 BANK_SIZE = 0x2000
 MINIMUM_BANKS = 4
-BOOTSTRAP_SIZE = 0x100
+BOOTSTRAP_SIZE = 0x200
 AUTOSTART_SIGNATURE = bytes((0xC3, 0xC2, 0xCD, 0x38, 0x30))
 
 
@@ -39,15 +39,27 @@ def required_banks(payload_size: int) -> int:
     return max(MINIMUM_BANKS, 1 + extra_banks)
 
 
-def build(bootstrap_path: Path, payload_path: Path, output: Path) -> None:
+def media_banks(media_size: int) -> int:
+    if media_size <= 0:
+        return 0
+    return (media_size + BANK_SIZE - 1) // BANK_SIZE
+
+
+def build(bootstrap_path: Path, payload_path: Path, output: Path, media_path: Path | None = None) -> None:
     bootstrap = bootstrap_path.read_bytes()
     raw_payload = payload_path.read_bytes()
-    if len(bootstrap) != BOOTSTRAP_SIZE:
-        raise ValueError("bootstrap must be exactly 256 bytes")
+    media = b""
+    if media_path is not None:
+        media = media_path.read_bytes()
+    if len(bootstrap) > BOOTSTRAP_SIZE:
+        raise ValueError(f"bootstrap must be at most {BOOTSTRAP_SIZE} bytes")
+    if len(bootstrap) < BOOTSTRAP_SIZE:
+        bootstrap = bootstrap + bytes([0xFF]) * (BOOTSTRAP_SIZE - len(bootstrap))
     if len(raw_payload) < 3:
         raise ValueError("payload PRG is too short")
     payload = raw_payload[2:]
-    bank_count = required_banks(len(payload))
+    payload_banks = required_banks(len(payload))
+    bank_count = payload_banks + media_banks(len(media))
     banks = [bytearray([0xFF]) * BANK_SIZE for _ in range(bank_count)]
     banks[0][:BOOTSTRAP_SIZE] = bootstrap
     payload_offset = 0
@@ -58,6 +70,11 @@ def build(bootstrap_path: Path, payload_path: Path, output: Path) -> None:
         chunk = payload[payload_offset:payload_offset + BANK_SIZE]
         bank[:len(chunk)] = chunk
         payload_offset += len(chunk)
+    media_offset = 0
+    for bank in banks[payload_banks:]:
+        chunk = media[media_offset:media_offset + BANK_SIZE]
+        bank[:len(chunk)] = chunk
+        media_offset += len(chunk)
     image = make_header("C64 x86 8088")
     for bank_number, bank in enumerate(banks):
         image += make_chip(bank_number, bytes(bank))
@@ -107,6 +124,7 @@ def main() -> int:
     parser.add_argument("--bootstrap", type=Path, default=ROOT / "build/cartridge-bootstrap.bin")
     parser.add_argument("--payload", type=Path, default=ROOT / "build/c64x86-hwtest.prg")
     parser.add_argument("--output", type=Path, default=ROOT / "build/c64x86.crt")
+    parser.add_argument("--media", type=Path)
     parser.add_argument("--check", type=Path)
     args = parser.parse_args()
     if args.check:
@@ -116,7 +134,7 @@ def main() -> int:
             f"({details['banks']} banks, {details['size']} bytes)"
         )
     else:
-        build(args.bootstrap, args.payload, args.output)
+        build(args.bootstrap, args.payload, args.output, args.media)
         details = validate(args.output)
         print(
             f"Built {args.output} "

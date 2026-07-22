@@ -36,7 +36,7 @@
     { "first": 8, "last": 11, "mnemonic": "OR", "handler": "alu_modrm", "operation": "or", "length": 2, "cycles": 3 },
     { "first": 12, "last": 12, "mnemonic": "OR AL,imm8", "handler": "alu_acc_imm8", "operation": "or", "length": 2, "cycles": 4 },
     { "first": 13, "last": 13, "mnemonic": "OR AX,imm16", "handler": "alu_acc_imm16", "operation": "or", "length": 3, "cycles": 4 },
-    { "first": 14, "last": 14, "mnemonic": "PUSH CS", "handler": "segment_stack", "length": 1, "cycles": 14 },
+    { "first": 14, "last": 15, "mnemonic": "PUSH/POP CS", "handler": "segment_stack", "length": 1, "cycles": 14 },
     { "first": 16, "last": 19, "mnemonic": "ADC", "handler": "alu_modrm", "operation": "adc", "length": 2, "cycles": 3 },
     { "first": 20, "last": 20, "mnemonic": "ADC AL,imm8", "handler": "alu_acc_imm8", "operation": "adc", "length": 2, "cycles": 4 },
     { "first": 21, "last": 21, "mnemonic": "ADC AX,imm16", "handler": "alu_acc_imm16", "operation": "adc", "length": 3, "cycles": 4 },

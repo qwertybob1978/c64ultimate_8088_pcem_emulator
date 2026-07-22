@@ -4,6 +4,7 @@ $ErrorActionPreference = "Stop"
 if ($LASTEXITCODE -ne 0) { throw "payload build failed with exit code $LASTEXITCODE" }
 
 $build = Join-Path $PSScriptRoot "build"
+$diskImage = Get-ChildItem (Join-Path $PSScriptRoot ".cache/media/msdos330") -Recurse -Filter DISK01.IMG -ErrorAction SilentlyContinue | Select-Object -First 1
 $portableToolchain = Join-Path $PSScriptRoot ".cache/cc65/bin"
 $assembler = Get-Command ca65 -ErrorAction SilentlyContinue
 $linker = Get-Command ld65 -ErrorAction SilentlyContinue
@@ -12,7 +13,9 @@ if (-not $linker) { $linker = Get-Item (Join-Path $portableToolchain "ld65.exe")
 $assemblerPath = if ($assembler.Source) { $assembler.Source } else { $assembler.FullName }
 $linkerPath = if ($linker.Source) { $linker.Source } else { $linker.FullName }
 
-python (Join-Path $PSScriptRoot "tools/generate_cartridge_include.py")
+$generateArgs = @((Join-Path $PSScriptRoot "tools/generate_cartridge_include.py"))
+if ($diskImage) { $generateArgs += @("--media", $diskImage.FullName) }
+python @generateArgs
 if ($LASTEXITCODE -ne 0) { throw "cartridge include generation failed" }
 
 $bootstrapObject = Join-Path $build "cartridge-bootstrap.o"
@@ -30,8 +33,9 @@ if ($LASTEXITCODE -ne 0) { throw "cartridge bootstrap assembly failed" }
     $bootstrapObject
 if ($LASTEXITCODE -ne 0) { throw "cartridge bootstrap link failed" }
 
-python (Join-Path $PSScriptRoot "tools/build_crt.py")
+$buildArgs = @((Join-Path $PSScriptRoot "tools/build_crt.py"))
+if ($diskImage) { $buildArgs += @("--media", $diskImage.FullName) }
+python @buildArgs
 if ($LASTEXITCODE -ne 0) { throw "CRT packaging failed" }
 python (Join-Path $PSScriptRoot "tools/build_crt.py") --check (Join-Path $build "c64x86.crt")
 if ($LASTEXITCODE -ne 0) { throw "CRT validation failed" }
-

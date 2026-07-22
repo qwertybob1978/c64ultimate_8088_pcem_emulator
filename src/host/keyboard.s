@@ -1,13 +1,13 @@
 .setcpu "6502"
 
 .import io_keyboard_push
-.import cpu8088_request_irq
+.import pic_request_irq
 
 .export host_keyboard_poll
 .export host_keyboard_translate
 
 GETIN = $FFE4
-XT_KEYBOARD_VECTOR = $09
+XT_KEYBOARD_IRQ = $01
 
 .segment "CODE"
 
@@ -20,8 +20,8 @@ host_keyboard_poll:
     jsr host_keyboard_translate
     bcc @none
     jsr io_keyboard_push
-    lda #XT_KEYBOARD_VECTOR
-    jsr cpu8088_request_irq
+    lda #XT_KEYBOARD_IRQ
+    jsr pic_request_irq
     sec
     rts
 @none:
@@ -45,6 +45,17 @@ host_keyboard_translate:
     beq @left
     cmp #$1D
     beq @right
+    cmp #$85
+    bcc @not_function
+    cmp #$8D
+    bcs @not_function
+    sec
+    sbc #$85
+    tax
+    lda function_scan_codes,x
+    sec
+    rts
+@not_function:
     cmp #$30
     bcc @punctuation
     cmp #$3A
@@ -124,6 +135,9 @@ letter_scan_codes:
     .byte $31,$18,$19,$10,$13,$1F,$14,$16,$2F,$11,$2D,$15,$2C
 digit_scan_codes:
     .byte $0B,$02,$03,$04,$05,$06,$07,$08,$09,$0A
+; C64 GETIN returns F1,F3,F5,F7,F2,F4,F6,F8 in codes 85h..8Ch.
+function_scan_codes:
+    .byte $3B,$3D,$3F,$41,$3C,$3E,$40,$42
 punctuation_chars:
     .byte $2D,$3D,$2C,$2E,$2F,$3B
 punctuation_scans:
