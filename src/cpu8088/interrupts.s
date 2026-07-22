@@ -20,6 +20,7 @@
 .export cpu8088_irq_pending
 .export cpu8088_nmi_pending
 .export cpu8088_interrupt_shadow
+.export cpu8088_irq6_serviced
 
 .segment "BSS"
 interrupt_vector: .res 1
@@ -30,6 +31,7 @@ cpu8088_irq_vector:       .res 1
 cpu8088_irq_pending:      .res 1
 cpu8088_nmi_pending:      .res 1
 cpu8088_interrupt_shadow: .res 1
+cpu8088_irq6_serviced:    .res 1
 
 .segment "CODE"
 
@@ -72,6 +74,11 @@ cpu8088_service_pending_interrupt:
 @service:
     jsr cpu8088_interrupt
     bcs @service_failed
+    lda interrupt_vector
+    cmp #$0E
+    bne :+
+    inc cpu8088_irq6_serviced
+:
     lda #$00
     sta cpu8088_halted
     lda #$01

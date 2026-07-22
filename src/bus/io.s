@@ -4,6 +4,7 @@
 .export io_write_u8
 .export io_debug_latch
 .export io_keyboard_push
+.export io_fdc_data_writes
 
 .import pic_read_command
 .import pic_read_data
@@ -25,6 +26,7 @@ io_write_value: .res 1
 io_video_status: .res 2
 io_ppi_port_b:   .res 1
 io_keyboard_data:.res 1
+io_fdc_data_writes:.res 1
 
 .segment "CODE"
 
@@ -196,6 +198,7 @@ io_write_u8:
     lda io_write_value
     jmp fdc_write_dor
 @write_fdc_data:
+    inc io_fdc_data_writes
     lda io_write_value
     jmp fdc_write_data
 

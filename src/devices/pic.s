@@ -10,6 +10,8 @@
 .export pic_write_data
 .export pic_request_irq
 .export pic_service
+.export pic_irq6_requests
+.export pic_irq6_deliveries
 
 .segment "BSS"
 pic_vector_base:  .res 1
@@ -20,6 +22,8 @@ pic_init_step:    .res 1
 pic_icw1:         .res 1
 pic_request_bit:  .res 1
 pic_request_irqn: .res 1
+pic_irq6_requests:  .res 1
+pic_irq6_deliveries:.res 1
 
 .segment "CODE"
 
@@ -114,6 +118,10 @@ pic_request_irq:
     and #$07
     sta pic_request_irqn
     tax
+    cpx #$06
+    bne :+
+    inc pic_irq6_requests
+:
     lda pic_irq_bits,x
     ora pic_pending
     sta pic_pending
@@ -151,6 +159,11 @@ pic_service:
     lda pic_request_bit
     ora pic_in_service
     sta pic_in_service
+    txa
+    cpx #$06
+    bne :+
+    inc pic_irq6_deliveries
+:
     txa
     clc
     adc pic_vector_base

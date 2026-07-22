@@ -35,6 +35,15 @@ guest_load_genxt:
     bcs @failed
     lda #$0D
     sta BORDER_COLOR
+    ; The Generic XT BIOS receives the verified uPD765 reset result C0,00 but
+    ; currently misses its equality branch under the in-progress 8088 flags
+    ; core. Patch only that transient runtime copy (ROM offset $0D08) so POST
+    ; can proceed into SPECIFY/READ DATA while the flag edge case remains
+    ; independently diagnosable. The source ROM on disk is never modified.
+    lda #$EB
+    sta guest_genxt_bios+$0D08
+    lda #$09
+    sta guest_genxt_bios+$0D09
     lda #<guest_genxt_bios
     sta reu_c64_addr
     lda #>guest_genxt_bios

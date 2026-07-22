@@ -13,6 +13,10 @@
 .export fdc_last_command
 .export fdc_read_count
 .export fdc_dma_failures
+.export fdc_dor_writes
+.export fdc_data_reads
+.export fdc_last_data_read
+.export fdc_last_st0_read
 
 FDC_IRQ = $06
 MEDIA_BASE_HI = $20
@@ -49,6 +53,10 @@ fdc_sector_index:   .res 2
 fdc_last_command:   .res 1
 fdc_read_count:     .res 1
 fdc_dma_failures:   .res 1
+fdc_dor_writes:     .res 1
+fdc_data_reads:     .res 1
+fdc_last_data_read: .res 1
+fdc_last_st0_read:  .res 1
 
 .segment "CODE"
 
@@ -84,10 +92,16 @@ fdc_read_main_status:
     rts
 
 fdc_read_data:
+    inc fdc_data_reads
     lda fdc_result_count
     beq @empty
     ldx fdc_result_index
     lda fdc_results,x
+    sta fdc_last_data_read
+    cpx #$00
+    bne :+
+    sta fdc_last_st0_read
+:
     inx
     stx fdc_result_index
     dec fdc_result_count
@@ -98,6 +112,7 @@ fdc_read_data:
     rts
 @empty:
     lda #$FF
+    sta fdc_last_data_read
     rts
 
 fdc_read_digital_input:
@@ -105,6 +120,7 @@ fdc_read_digital_input:
     rts
 
 fdc_write_dor:
+    inc fdc_dor_writes
     pha
     eor fdc_dor
     and #$04
@@ -215,10 +231,12 @@ fdc_process_seek:
 fdc_process_sense:
     lda fdc_reset_senses
     beq @pending_only
-    dec fdc_reset_senses
-    lda fdc_reset_senses
+    lda #$04                    ; four reset senses report units 0,1,2,3
+    sec
+    sbc fdc_reset_senses
     ora #$C0
     sta fdc_results
+    dec fdc_reset_senses
     lda #$00
     sta fdc_results+1
     lda #$02

@@ -28,6 +28,14 @@
 .import fdc_last_command
 .import fdc_read_count
 .import fdc_dma_failures
+.import fdc_dor_writes
+.import pic_irq6_requests
+.import pic_irq6_deliveries
+.import cpu8088_irq6_serviced
+.import io_fdc_data_writes
+.import fdc_data_reads
+.import fdc_last_data_read
+.import fdc_last_st0_read
 .import pit_reset
 .import pit_advance_cycles
 .import cpu8088_fetch_cache_invalidate
@@ -479,6 +487,30 @@ display_boot_failure:
     jsr display_hex_byte
     lda fdc_dma_failures
     ldx #$A6
+    jsr display_hex_byte
+    lda fdc_dor_writes
+    ldx #$A9
+    jsr display_hex_byte
+    lda pic_irq6_requests
+    ldx #$AC
+    jsr display_hex_byte
+    lda pic_irq6_deliveries
+    ldx #$AF
+    jsr display_hex_byte
+    lda cpu8088_irq6_serviced
+    ldx #$B2
+    jsr display_hex_byte
+    lda io_fdc_data_writes
+    ldx #$B5
+    jsr display_hex_byte
+    lda fdc_data_reads
+    ldx #$B8
+    jsr display_hex_byte
+    lda fdc_last_data_read
+    ldx #$BB
+    jsr display_hex_byte
+    lda fdc_last_st0_read
+    ldx #$BE
     jsr display_hex_byte
     rts
 
