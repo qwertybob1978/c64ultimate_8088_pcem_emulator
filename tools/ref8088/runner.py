@@ -457,13 +457,13 @@ class Reference8088:
                         zf = bool(self.registers["FLAGS"] & self.flags["ZF"])
                         if (repeat == 0xF3 and not zf) or (repeat == 0xF2 and zf):
                             break
-        elif handler == "alu_modrm":
+        elif handler in ("alu_modrm", "test_modrm"):
             width = 16 if opcode & 1 else 8
             rm_operand, reg_index = self.decode_modrm(width)
             reg_operand = {"kind": "register", "index": reg_index, "width": width}
             destination, source = (reg_operand, rm_operand) if opcode & 2 else (rm_operand, reg_operand)
             result = self.alu(metadata["operation"], self.read_operand(destination), self.read_operand(source), width)
-            if metadata["operation"] != "cmp":
+            if metadata["operation"] != "cmp" and handler != "test_modrm":
                 self.write_operand(destination, result)
         elif handler == "alu_rm_imm":
             width = 16 if opcode & 1 else 8

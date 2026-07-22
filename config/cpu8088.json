@@ -64,6 +64,7 @@
     { "first": 88, "last": 95, "mnemonic": "POP r16", "handler": "pop_reg16", "length": 1, "cycles": 12 },
     { "first": 112, "last": 127, "mnemonic": "Jcc rel8", "handler": "jcc_rel8", "length": 2, "cycles": 4 },
     { "first": 128, "last": 131, "mnemonic": "GRP1 immediate", "handler": "alu_rm_imm", "length": 3, "cycles": 4 },
+    { "first": 132, "last": 133, "mnemonic": "TEST r/m,reg", "handler": "test_modrm", "operation": "and", "length": 2, "cycles": 3 },
     { "first": 134, "last": 135, "mnemonic": "XCHG", "handler": "xchg_modrm", "length": 2, "cycles": 4 },
     { "first": 136, "last": 139, "mnemonic": "MOV", "handler": "mov_modrm", "length": 2, "cycles": 2 },
     { "first": 140, "last": 140, "mnemonic": "MOV r/m16,Sreg", "handler": "mov_segment", "length": 2, "cycles": 2 },

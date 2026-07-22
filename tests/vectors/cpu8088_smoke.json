@@ -637,6 +637,19 @@
       "expected": { "AX": 61680, "CS": 56192, "IP": 5, "FLAGS": 1606 }
     },
     {
+      "name": "test_modrm_byte_drives_zero_branch_without_store",
+      "initial": { "CS": 56224, "IP": 0, "AX": 255, "BX": 0, "ES": 47104, "FLAGS": 2 },
+      "program": "26840610007403bb1111f4",
+      "memory": [
+        { "segment": 47104, "offset": 16, "bytes": "00" }
+      ],
+      "statuses": ["ok", "ok", "halted"],
+      "expected": { "AX": 255, "BX": 0, "ES": 47104, "CS": 56224, "IP": 11, "FLAGS": 70 },
+      "expectedMemory": [
+        { "segment": 47104, "offset": 16, "bytes": "00" }
+      ]
+    },
+    {
       "name": "video_status_ports_toggle_display_enable",
       "initial": { "CS": 56256, "IP": 0, "FLAGS": 2 },
       "program": "baba03ececbada03ececf4",

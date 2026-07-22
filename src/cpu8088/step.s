@@ -200,6 +200,11 @@ cpu8088_step:
     long_bcc @alu_rm_immediate
 @not_group1_immediate:
     lda cpu8088_last_opcode
+    cmp #$84                    ; TEST r/m8,r8 and TEST r/m16,r16
+    long_beq @test_modrm
+    cmp #$85
+    long_beq @test_modrm
+    lda cpu8088_last_opcode
     and #$C4                    ; core ALU ModR/M forms: 00ooo0dw
     cmp #$00
     long_beq @alu_modrm
@@ -1017,6 +1022,11 @@ cpu8088_step:
     lsr a
     and #$07
     sta alu_operation
+    lda alu_test_only
+    beq :+
+    lda #$04                    ; TEST uses AND flags without storing
+    sta alu_operation
+:
     lda #$03
     sta alu_last_cycles
 
@@ -1048,6 +1058,11 @@ cpu8088_step:
     ldx source_offset
     jsr @read_register_to_right
     jmp @alu_execute
+
+@test_modrm:
+    lda #$01
+    sta alu_test_only
+    jmp @alu_modrm
 
 @shift_one:
     lda #$00
