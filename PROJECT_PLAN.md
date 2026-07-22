@@ -137,6 +137,12 @@ The initial manifest selects `genxt/pcxt.rom`. The `ibmxt` and `ibmpc` sets are
 alternate compatibility profiles. ROM filenames, sizes, mappings, and hashes
 must come from `config/roms.json`, not hard-coded assumptions in the emulator.
 
+For older-firmware experiments, the [Minus Zero Degrees IBM BIOS archive](https://minuszerodegrees.net/bios/bios.htm)
+confirms that its 27-Oct-1982 IBM 5150 U33 image is an 8 KiB BIOS. It is identical
+to the pinned `ibmpc/pc102782.bin`; optional Cassette BASIC is not required for
+disk boot. Keep Generic XT as the active profile unless IBM-PC-specific PPI switch
+emulation proves cheaper than continuing the already-working Generic XT boot path.
+
 | Asset | Required? | Mapping/use | Distribution policy |
 |---|---:|---|---|
 | Generic XT BIOS (`genxt/pcxt.rom`, 8 KiB) | Yes for the recommended profile | `$FE000-$FFFFF`, confirmed against pinned PCem | Acquire from the PCem-ROMs checkout for local development, or build an open-source [pcxtbios](https://github.com/virtualxt/pcxtbios) alternative; never bundle without verified redistribution rights |

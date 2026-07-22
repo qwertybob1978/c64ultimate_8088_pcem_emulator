@@ -43,18 +43,6 @@
           "sha256": "3700c345f3dcb76039986429ade9ff0cffbc2f0cae535b987b95a5de8aa0094f"
         }
       ]
-    },
-    "ibmpc_1982_u33": {
-      "description": "IBM 5150 27-Oct-1982 U33 ROM (single 8 KiB device; companion U34 is required for a complete set)",
-      "source_url": "https://minuszerodegrees.net/bios/BIOS_IBM5150_27OCT82_1501476_U33.BIN",
-      "files": [
-        {
-          "path": "ibmpc/BIOS_IBM5150_27OCT82_1501476_U33.BIN",
-          "size": 8192,
-          "guest_address": "0xFE000"
-        }
-      ],
-      "status": "reference-only-incomplete"
     }
   }
 }
