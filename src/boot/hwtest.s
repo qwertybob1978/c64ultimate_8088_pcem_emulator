@@ -32,6 +32,7 @@
 .import io_debug_latch
 .import io_read_u8
 .import io_write_u8
+.import io_keyboard_push
 .import cga_test_render
 .import cga_render_text_40
 .import cga_test_error
@@ -222,6 +223,7 @@ boot_guest:
     jsr cpu8088_reset
     lda #$00
     sta boot_video_divider
+    sta boot_autokey_counter
 @boot_batch:
     lda #$40
     sta boot_steps_remaining
@@ -275,6 +277,13 @@ boot_guest:
 :
 
     jsr host_keyboard_poll
+    inc boot_autokey_counter
+    bne :+
+    lda #$1C                    ; XT set-1 Enter make code
+    jsr io_keyboard_push
+    lda #$01
+    jsr pic_request_irq
+:
     jsr pic_service
     inc boot_video_divider
     lda boot_video_divider
@@ -868,6 +877,7 @@ stepper_result: .res 1
 stepper_steps_remaining: .res 1
 boot_steps_remaining: .res 1
 boot_video_divider: .res 1
+boot_autokey_counter: .res 1
 boot_failure_status: .res 1
 
 .segment "RODATA"

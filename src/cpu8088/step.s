@@ -342,6 +342,8 @@ cpu8088_step:
     long_beq @shift_one
     cmp #$D3                    ; SHL/SAL/SHR/SAR r/m16,CL
     long_beq @shift_one
+    cmp #$D7                    ; XLAT byte ptr [BX+AL]
+    long_beq @xlat
     cmp #$E0                    ; LOOPNE/LOOPE/LOOP/JCXZ
     long_beq @loop_rel8
     cmp #$E1
@@ -1903,6 +1905,8 @@ cpu8088_step:
     lsr a
     and #$07
     cmp #$02
+    bcc @group5_inc_dec
+    cmp #$02
     beq @group5_extension_ok
     cmp #$04
     long_bne @invalid
@@ -1955,6 +1959,52 @@ cpu8088_step:
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts
+
+@group5_inc_dec:
+    sta source_offset
+    lda #$00
+    sta alu_string_compare
+    lda source_offset
+    beq :+
+    lda #$05                    ; DEC uses SUB 1
+    bne @group5_inc_dec_operation
+:
+    lda #$00                    ; INC uses ADD 1
+@group5_inc_dec_operation:
+    sta alu_operation
+    lda #$01
+    sta alu_preserve_cf
+    lda cpu8088_state+CPU_FLAGS
+    and #X86_FLAG_CF
+    sta alu_saved_cf
+    lda modrm_byte
+    jsr cpu8088_decode_ea
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @group5_inc_dec_register
+    lda #$01
+    sta alu_destination_kind
+    jsr @read_ea_to_left
+    long_bcs @memory_error
+    lda #$17
+    sta alu_last_cycles
+    jmp @group5_inc_dec_execute
+@group5_inc_dec_register:
+    lda #$00
+    sta alu_destination_kind
+    lda cpu8088_ea_rm_index
+    jsr @register_offset
+    stx destination_offset
+    jsr @read_register_to_left
+    lda #$03
+    sta alu_last_cycles
+@group5_inc_dec_execute:
+    lda #$01
+    sta alu_right
+    lda #$00
+    sta alu_right+1
+    jmp @alu_execute
 
 @load_far_pointer:
     lda #$01
@@ -2848,6 +2898,32 @@ cpu8088_step:
     lda #$02
     sta cpu8088_last_cycles
     lda #CPU_STEP_HALTED
+    rts
+
+@xlat:
+    ldx cpu8088_segment_override
+    cpx #$FF
+    bne :+
+    ldx #CPU_DS
+:
+    lda cpu8088_state,x
+    sta cpu8088_segment
+    lda cpu8088_state+1,x
+    sta cpu8088_segment+1
+    clc
+    lda cpu8088_state+CPU_BX
+    adc cpu8088_state+CPU_AX
+    sta cpu8088_offset
+    lda cpu8088_state+CPU_BX+1
+    adc #$00
+    sta cpu8088_offset+1
+    jsr cpu8088_segment_offset_physical
+    jsr cpu8088_mem_read_u8
+    long_bcs @memory_error
+    sta cpu8088_state+CPU_AX
+    lda #$0B
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
     rts
 
 @jmp_rel8:
