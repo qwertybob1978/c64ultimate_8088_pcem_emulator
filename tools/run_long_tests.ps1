@@ -49,11 +49,11 @@ try {
                 $skipBuild = $true
             }
 
-            $args = @("-CycleLimit", $CycleLimit)
+            $testArgs = @{ CycleLimit = $CycleLimit }
             if ($skipBuild -and -not $RebuildEachRun) {
-                $args += "-SkipBuild"
+                $testArgs.SkipBuild = $true
             }
-            & $testScript @args
+            & $testScript @testArgs
             if ($LASTEXITCODE -ne 0) {
                 throw "VICE gate failed with exit code $LASTEXITCODE"
             }
