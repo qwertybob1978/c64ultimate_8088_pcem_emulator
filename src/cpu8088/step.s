@@ -33,6 +33,7 @@
 .import cpu8088_segment_override
 .import cpu8088_repeat_prefix
 .import cpu8088_segment_offset_physical
+.importzp cpu8088_phys_addr
 .importzp cpu8088_segment
 .importzp cpu8088_offset
 
@@ -212,6 +213,8 @@ cpu8088_step:
 
     cmp #$90                    ; NOP
     long_beq @nop
+    cmp #$98                    ; CBW - Convert Byte to Word
+    long_beq @cbw
     cmp #$9C                    ; PUSHF
     long_beq @pushf
     cmp #$9D                    ; POPF
@@ -251,6 +254,10 @@ cpu8088_step:
     long_beq @string_instruction
     cmp #$AF
     long_beq @string_instruction
+    cmp #$8D                    ; LEA r16,m - Load Effective Address
+    long_beq @lea_modrm
+    cmp #$8F                    ; POP r/m16 - Pop memory operand
+    long_beq @pop_rm16
     cmp #$88                    ; MOV r/m,reg and MOV reg,r/m
     long_bcc @check_mov_imm8
     cmp #$8C
@@ -2903,6 +2910,134 @@ cpu8088_step:
 
 @nop:
     lda #$03
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@cbw:
+    ; Convert Byte to Word - sign-extend AL into AX
+    ; If bit 7 of AL is set, AH = $FF; else AH = $00
+    lda cpu8088_state+CPU_AX          ; load AL
+    asl a                             ; shift bit 7 into Carry Flag
+    bcc @cbw_positive                 ; if clear → AL was non-negative
+    lda #$FF                          ; otherwise sign-extend with $FF
+    bne @cbw_store_ah
+@cbw_positive:
+    lda #$00
+@cbw_store_ah:
+    sta cpu8088_state+CPU_AX+1        ; store AH
+    lda #$04
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@lea_modrm:
+    ; Load Effective Address (LEA r16,m)
+    ; Like MOV but treats ModR/M as memory address calculation only,
+    ; then stores the resulting effective address directly into the register.
+    and #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    jsr @register_offset
+    stx destination_offset              ; destination is the reg field
+    lda modrm_byte
+    jsr cpu8088_decode_ea               ; compute EA in cpu8088_ea_rm_index
+    cmp #$FE
+    long_beq @invalid                   ; invalid EA encoding for LEA
+    cmp #$01
+    beq @lea_register_mode
+    ; Memory mode: EA points to memory, we need the computed offset value
+    ldx source_offset
+    cpx #CPU_SS
+    bne @lea_ss_default
+    lda #$01
+    sta cpu8088_segment_override
+@lea_ss_default:
+    jsr cpu8088_ea_recompute            ; recompute physical addr from EA
+    lda cpu8088_phys_addr
+    sta immediate_low
+    lda cpu8088_phys_addr+1
+    sta relative_high
+    lda cpu8088_phys_addr+2
+    sta alu_left                        ; high byte not used for 16-bit
+    jmp @lea_write_dest
+@lea_register_mode:
+    ; Register mode: just use the decoded register index as the "address"
+    ; For LEA, when Mod=11, we treat the EA computation result as the value
+    ldx source_offset
+    lda cpu8088_state,x
+    sta immediate_low
+    lda cpu8088_state+1,x
+    sta relative_high
+@lea_write_dest:
+    ldx destination_offset
+    lda immediate_low
+    sta cpu8088_state,x
+    lda operand_width
+    beq @lea_done
+    lda relative_high
+    sta cpu8088_state+1,x
+@lea_done:
+    lda #$04
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@pop_rm16:
+    ; Pop r/m16 - pop word from stack into memory/register operand
+    ; Same ModR/M decoding as POP r16 but writes to r/m instead of reading reg field
+    and #$01
+    sta operand_width
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta modrm_byte
+    lsr a
+    lsr a
+    lsr a
+    and #$07
+    jsr @register_offset
+    stx source_offset                   ; unused for pop (but keep pattern)
+    jsr cpu8088_pop_u16                 ; pop value from stack
+    long_bcs @memory_error
+    sta immediate_low                   ; low byte in immediate_low
+    stx relative_high                   ; high byte in relative_high
+    lda modrm_byte
+    jsr cpu8088_decode_ea               ; decode target address
+    cmp #$FE
+    long_beq @memory_error
+    cmp #$01
+    beq @pop_rm16_register
+    ; Memory write: store popped value at effective address
+    lda #$01
+    sta alu_destination_kind
+    jsr cpu8088_ea_recompute            ; recompute physical addr before writing
+    lda immediate_low
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    lda operand_width
+    beq @pop_rm16_done
+    jsr cpu8088_ea_next_byte
+    lda relative_high
+    jsr cpu8088_mem_write_u8
+    long_bcs @memory_error
+    jmp @pop_rm16_done
+@pop_rm16_register:
+    ; Register write: store popped value directly into register
+    ldx source_offset
+    lda immediate_low
+    sta cpu8088_state,x
+    lda operand_width
+    beq @pop_rm16_done
+    lda relative_high
+    sta cpu8088_state+1,x
+@pop_rm16_done:
+    lda #$0C
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts

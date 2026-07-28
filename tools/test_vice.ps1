@@ -56,11 +56,51 @@ $process = Start-Process `
     -FilePath $vice `
     -ArgumentList $arguments `
     -WorkingDirectory (Split-Path $vice) `
-    -WindowStyle Hidden `
-    -Wait `
+    -WindowStyle Normal `
     -PassThru
 
-# VICE intentionally exits with status 1 when -limitcycles ends the run.
+# VICE 3.10 on Windows logs the cycle-limit event but can leave its GTK
+# window open instead of terminating. Poll the shared log, then close the
+# window normally so -exitscreenshot is written and no stale VICE remains.
+$deadline = (Get-Date).AddMinutes(10)
+$cycleLimitReached = $false
+while (-not $process.HasExited -and (Get-Date) -lt $deadline) {
+    if (Test-Path -LiteralPath $log) {
+        try {
+            $stream = [System.IO.File]::Open(
+                $log,
+                [System.IO.FileMode]::Open,
+                [System.IO.FileAccess]::Read,
+                [System.IO.FileShare]::ReadWrite
+            )
+            $reader = [System.IO.StreamReader]::new($stream)
+            try {
+                $cycleLimitReached = $reader.ReadToEnd() -match "cycle limit reached"
+            } finally {
+                $reader.Dispose()
+                $stream.Dispose()
+            }
+        } catch [System.IO.IOException] {
+            # The GTK logger may briefly hold the file exclusively at startup.
+        }
+    }
+    if ($cycleLimitReached) {
+        [void]$process.CloseMainWindow()
+        break
+    }
+    Start-Sleep -Milliseconds 250
+    $process.Refresh()
+}
+
+if (-not $process.WaitForExit(5000)) {
+    Stop-Process -Id $process.Id -Force
+    if (-not $cycleLimitReached) {
+        throw "VICE did not reach the $CycleLimit-cycle limit within ten minutes"
+    }
+}
+$process.Refresh()
+
+# VICE intentionally uses status 1 for some cycle-limit exits.
 if ($process.ExitCode -notin @(0, 1)) {
     throw "VICE exited unexpectedly with code $($process.ExitCode)"
 }

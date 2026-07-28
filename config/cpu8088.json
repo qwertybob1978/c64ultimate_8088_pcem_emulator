@@ -1,20 +1,76 @@
 {
   "schema": 1,
   "state": [
-    { "name": "AX", "offset": 0, "width": 2 },
-    { "name": "CX", "offset": 2, "width": 2 },
-    { "name": "DX", "offset": 4, "width": 2 },
-    { "name": "BX", "offset": 6, "width": 2 },
-    { "name": "SP", "offset": 8, "width": 2 },
-    { "name": "BP", "offset": 10, "width": 2 },
-    { "name": "SI", "offset": 12, "width": 2 },
-    { "name": "DI", "offset": 14, "width": 2 },
-    { "name": "ES", "offset": 16, "width": 2 },
-    { "name": "CS", "offset": 18, "width": 2 },
-    { "name": "SS", "offset": 20, "width": 2 },
-    { "name": "DS", "offset": 22, "width": 2 },
-    { "name": "IP", "offset": 24, "width": 2 },
-    { "name": "FLAGS", "offset": 26, "width": 2 }
+    {
+      "name": "AX",
+      "offset": 0,
+      "width": 2
+    },
+    {
+      "name": "CX",
+      "offset": 2,
+      "width": 2
+    },
+    {
+      "name": "DX",
+      "offset": 4,
+      "width": 2
+    },
+    {
+      "name": "BX",
+      "offset": 6,
+      "width": 2
+    },
+    {
+      "name": "SP",
+      "offset": 8,
+      "width": 2
+    },
+    {
+      "name": "BP",
+      "offset": 10,
+      "width": 2
+    },
+    {
+      "name": "SI",
+      "offset": 12,
+      "width": 2
+    },
+    {
+      "name": "DI",
+      "offset": 14,
+      "width": 2
+    },
+    {
+      "name": "ES",
+      "offset": 16,
+      "width": 2
+    },
+    {
+      "name": "CS",
+      "offset": 18,
+      "width": 2
+    },
+    {
+      "name": "SS",
+      "offset": 20,
+      "width": 2
+    },
+    {
+      "name": "DS",
+      "offset": 22,
+      "width": 2
+    },
+    {
+      "name": "IP",
+      "offset": 24,
+      "width": 2
+    },
+    {
+      "name": "FLAGS",
+      "offset": 26,
+      "width": 2
+    }
   ],
   "flags": {
     "CF": 1,
@@ -29,92 +85,752 @@
     "OF": 2048
   },
   "opcodes": [
-    { "first": 0, "last": 3, "mnemonic": "ADD", "handler": "alu_modrm", "operation": "add", "length": 2, "cycles": 3 },
-    { "first": 4, "last": 4, "mnemonic": "ADD AL,imm8", "handler": "alu_acc_imm8", "operation": "add", "length": 2, "cycles": 4 },
-    { "first": 5, "last": 5, "mnemonic": "ADD AX,imm16", "handler": "alu_acc_imm16", "operation": "add", "length": 3, "cycles": 4 },
-    { "first": 6, "last": 7, "mnemonic": "PUSH/POP ES", "handler": "segment_stack", "length": 1, "cycles": 14 },
-    { "first": 8, "last": 11, "mnemonic": "OR", "handler": "alu_modrm", "operation": "or", "length": 2, "cycles": 3 },
-    { "first": 12, "last": 12, "mnemonic": "OR AL,imm8", "handler": "alu_acc_imm8", "operation": "or", "length": 2, "cycles": 4 },
-    { "first": 13, "last": 13, "mnemonic": "OR AX,imm16", "handler": "alu_acc_imm16", "operation": "or", "length": 3, "cycles": 4 },
-    { "first": 14, "last": 15, "mnemonic": "PUSH/POP CS", "handler": "segment_stack", "length": 1, "cycles": 14 },
-    { "first": 16, "last": 19, "mnemonic": "ADC", "handler": "alu_modrm", "operation": "adc", "length": 2, "cycles": 3 },
-    { "first": 20, "last": 20, "mnemonic": "ADC AL,imm8", "handler": "alu_acc_imm8", "operation": "adc", "length": 2, "cycles": 4 },
-    { "first": 21, "last": 21, "mnemonic": "ADC AX,imm16", "handler": "alu_acc_imm16", "operation": "adc", "length": 3, "cycles": 4 },
-    { "first": 22, "last": 23, "mnemonic": "PUSH/POP SS", "handler": "segment_stack", "length": 1, "cycles": 14 },
-    { "first": 24, "last": 27, "mnemonic": "SBB", "handler": "alu_modrm", "operation": "sbb", "length": 2, "cycles": 3 },
-    { "first": 28, "last": 28, "mnemonic": "SBB AL,imm8", "handler": "alu_acc_imm8", "operation": "sbb", "length": 2, "cycles": 4 },
-    { "first": 29, "last": 29, "mnemonic": "SBB AX,imm16", "handler": "alu_acc_imm16", "operation": "sbb", "length": 3, "cycles": 4 },
-    { "first": 30, "last": 31, "mnemonic": "PUSH/POP DS", "handler": "segment_stack", "length": 1, "cycles": 14 },
-    { "first": 39, "last": 39, "mnemonic": "DAA", "handler": "daa", "length": 1, "cycles": 4 },
-    { "first": 32, "last": 35, "mnemonic": "AND", "handler": "alu_modrm", "operation": "and", "length": 2, "cycles": 3 },
-    { "first": 36, "last": 36, "mnemonic": "AND AL,imm8", "handler": "alu_acc_imm8", "operation": "and", "length": 2, "cycles": 4 },
-    { "first": 37, "last": 37, "mnemonic": "AND AX,imm16", "handler": "alu_acc_imm16", "operation": "and", "length": 3, "cycles": 4 },
-    { "first": 40, "last": 43, "mnemonic": "SUB", "handler": "alu_modrm", "operation": "sub", "length": 2, "cycles": 3 },
-    { "first": 44, "last": 44, "mnemonic": "SUB AL,imm8", "handler": "alu_acc_imm8", "operation": "sub", "length": 2, "cycles": 4 },
-    { "first": 45, "last": 45, "mnemonic": "SUB AX,imm16", "handler": "alu_acc_imm16", "operation": "sub", "length": 3, "cycles": 4 },
-    { "first": 48, "last": 51, "mnemonic": "XOR", "handler": "alu_modrm", "operation": "xor", "length": 2, "cycles": 3 },
-    { "first": 52, "last": 52, "mnemonic": "XOR AL,imm8", "handler": "alu_acc_imm8", "operation": "xor", "length": 2, "cycles": 4 },
-    { "first": 53, "last": 53, "mnemonic": "XOR AX,imm16", "handler": "alu_acc_imm16", "operation": "xor", "length": 3, "cycles": 4 },
-    { "first": 56, "last": 59, "mnemonic": "CMP", "handler": "alu_modrm", "operation": "cmp", "length": 2, "cycles": 3 },
-    { "first": 60, "last": 60, "mnemonic": "CMP AL,imm8", "handler": "alu_acc_imm8", "operation": "cmp", "length": 2, "cycles": 4 },
-    { "first": 61, "last": 61, "mnemonic": "CMP AX,imm16", "handler": "alu_acc_imm16", "operation": "cmp", "length": 3, "cycles": 4 },
-    { "first": 64, "last": 71, "mnemonic": "INC r16", "handler": "inc_reg16", "length": 1, "cycles": 3 },
-    { "first": 72, "last": 79, "mnemonic": "DEC r16", "handler": "dec_reg16", "length": 1, "cycles": 3 },
-    { "first": 80, "last": 87, "mnemonic": "PUSH r16", "handler": "push_reg16", "length": 1, "cycles": 15 },
-    { "first": 88, "last": 95, "mnemonic": "POP r16", "handler": "pop_reg16", "length": 1, "cycles": 12 },
-    { "first": 112, "last": 127, "mnemonic": "Jcc rel8", "handler": "jcc_rel8", "length": 2, "cycles": 4 },
-    { "first": 128, "last": 131, "mnemonic": "GRP1 immediate", "handler": "alu_rm_imm", "length": 3, "cycles": 4 },
-    { "first": 132, "last": 133, "mnemonic": "TEST r/m,reg", "handler": "test_modrm", "operation": "and", "length": 2, "cycles": 3 },
-    { "first": 134, "last": 135, "mnemonic": "XCHG", "handler": "xchg_modrm", "length": 2, "cycles": 4 },
-    { "first": 136, "last": 139, "mnemonic": "MOV", "handler": "mov_modrm", "length": 2, "cycles": 2 },
-    { "first": 140, "last": 140, "mnemonic": "MOV r/m16,Sreg", "handler": "mov_segment", "length": 2, "cycles": 2 },
-    { "first": 142, "last": 142, "mnemonic": "MOV Sreg,r/m16", "handler": "mov_segment", "length": 2, "cycles": 2 },
-    { "first": 144, "last": 144, "mnemonic": "NOP", "handler": "nop", "length": 1, "cycles": 3 },
-    { "first": 154, "last": 154, "mnemonic": "CALL ptr16:16", "handler": "call_far", "length": 5, "cycles": 28 },
-    { "first": 156, "last": 156, "mnemonic": "PUSHF", "handler": "pushf", "length": 1, "cycles": 14 },
-    { "first": 157, "last": 157, "mnemonic": "POPF", "handler": "popf", "length": 1, "cycles": 12 },
-    { "first": 158, "last": 158, "mnemonic": "SAHF", "handler": "sahf", "length": 1, "cycles": 4 },
-    { "first": 159, "last": 159, "mnemonic": "LAHF", "handler": "lahf", "length": 1, "cycles": 4 },
-    { "first": 160, "last": 163, "mnemonic": "MOV moffs", "handler": "mov_moffs", "length": 3, "cycles": 10 },
-    { "first": 164, "last": 165, "mnemonic": "MOVS", "handler": "movs", "length": 1, "cycles": 18 },
-    { "first": 166, "last": 167, "mnemonic": "CMPS", "handler": "cmps", "length": 1, "cycles": 22 },
-    { "first": 168, "last": 168, "mnemonic": "TEST AL,imm8", "handler": "test_acc_imm8", "operation": "and", "length": 2, "cycles": 4 },
-    { "first": 169, "last": 169, "mnemonic": "TEST AX,imm16", "handler": "test_acc_imm16", "operation": "and", "length": 3, "cycles": 4 },
-    { "first": 170, "last": 171, "mnemonic": "STOS", "handler": "stos", "length": 1, "cycles": 11 },
-    { "first": 172, "last": 173, "mnemonic": "LODS", "handler": "lods", "length": 1, "cycles": 12 },
-    { "first": 174, "last": 175, "mnemonic": "SCAS", "handler": "scas", "length": 1, "cycles": 15 },
-    { "first": 176, "last": 183, "mnemonic": "MOV r8,imm8", "handler": "mov_r8_imm8", "length": 2, "cycles": 4 },
-    { "first": 184, "last": 191, "mnemonic": "MOV r16,imm16", "handler": "mov_r16_imm16", "length": 3, "cycles": 4 },
-    { "first": 198, "last": 199, "mnemonic": "MOV r/m,imm", "handler": "mov_rm_imm", "length": 3, "cycles": 4 },
-    { "first": 194, "last": 194, "mnemonic": "RET imm16", "handler": "ret_near_imm", "length": 3, "cycles": 24 },
-    { "first": 195, "last": 195, "mnemonic": "RET", "handler": "ret_near", "length": 1, "cycles": 20 },
-    { "first": 196, "last": 197, "mnemonic": "LES/LDS r16,m16:16", "handler": "load_far_pointer", "length": 2, "cycles": 16 },
-    { "first": 202, "last": 202, "mnemonic": "RETF imm16", "handler": "ret_far_imm", "length": 3, "cycles": 33 },
-    { "first": 203, "last": 203, "mnemonic": "RETF", "handler": "ret_far", "length": 1, "cycles": 34 },
-    { "first": 204, "last": 204, "mnemonic": "INT3", "handler": "int3", "length": 1, "cycles": 72 },
-    { "first": 205, "last": 205, "mnemonic": "INT imm8", "handler": "int_imm8", "length": 2, "cycles": 71 },
-    { "first": 206, "last": 206, "mnemonic": "INTO", "handler": "into", "length": 1, "cycles": 4 },
-    { "first": 207, "last": 207, "mnemonic": "IRET", "handler": "iret", "length": 1, "cycles": 44 },
-    { "first": 208, "last": 211, "mnemonic": "ROL/ROR/RCL/RCR/SHL/SHR/SAR r/m", "handler": "shift", "length": 2, "cycles": 2 },
-    { "first": 224, "last": 227, "mnemonic": "LOOP/JCXZ rel8", "handler": "loop_rel8", "length": 2, "cycles": 5 },
-    { "first": 232, "last": 232, "mnemonic": "CALL rel16", "handler": "call_rel16", "length": 3, "cycles": 23 },
-    { "first": 233, "last": 233, "mnemonic": "JMP rel16", "handler": "jmp_rel16", "length": 3, "cycles": 15 },
-    { "first": 234, "last": 234, "mnemonic": "JMP ptr16:16", "handler": "jmp_far", "length": 5, "cycles": 15 },
-    { "first": 235, "last": 235, "mnemonic": "JMP rel8", "handler": "jmp_rel8", "length": 2, "cycles": 15 },
-    { "first": 228, "last": 229, "mnemonic": "IN acc,imm8", "handler": "in_imm", "length": 2, "cycles": 10 },
-    { "first": 230, "last": 231, "mnemonic": "OUT imm8,acc", "handler": "out_imm", "length": 2, "cycles": 10 },
-    { "first": 236, "last": 237, "mnemonic": "IN acc,DX", "handler": "in_dx", "length": 1, "cycles": 8 },
-    { "first": 238, "last": 239, "mnemonic": "OUT DX,acc", "handler": "out_dx", "length": 1, "cycles": 8 },
-    { "first": 244, "last": 244, "mnemonic": "HLT", "handler": "hlt", "length": 1, "cycles": 2 },
-    { "first": 245, "last": 245, "mnemonic": "CMC", "handler": "complement_cf", "length": 1, "cycles": 2 },
-    { "first": 246, "last": 247, "mnemonic": "GRP3", "handler": "group3", "length": 2, "cycles": 80 },
-    { "first": 248, "last": 248, "mnemonic": "CLC", "handler": "clear_cf", "length": 1, "cycles": 2 },
-    { "first": 249, "last": 249, "mnemonic": "STC", "handler": "set_cf", "length": 1, "cycles": 2 },
-    { "first": 250, "last": 250, "mnemonic": "CLI", "handler": "clear_if", "length": 1, "cycles": 2 },
-    { "first": 251, "last": 251, "mnemonic": "STI", "handler": "set_if", "length": 1, "cycles": 2 },
-    { "first": 252, "last": 252, "mnemonic": "CLD", "handler": "clear_df", "length": 1, "cycles": 2 },
-    { "first": 253, "last": 253, "mnemonic": "STD", "handler": "set_df", "length": 1, "cycles": 2 },
-    { "first": 254, "last": 254, "mnemonic": "INC/DEC r/m8", "handler": "group4", "length": 2, "cycles": 3 },
-    { "first": 255, "last": 255, "mnemonic": "GRP5", "handler": "group5", "length": 2, "cycles": 11 }
+    {
+      "first": 0,
+      "last": 3,
+      "mnemonic": "ADD",
+      "handler": "alu_modrm",
+      "operation": "add",
+      "length": 2,
+      "cycles": 3
+    },
+    {
+      "first": 4,
+      "last": 4,
+      "mnemonic": "ADD AL,imm8",
+      "handler": "alu_acc_imm8",
+      "operation": "add",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 5,
+      "last": 5,
+      "mnemonic": "ADD AX,imm16",
+      "handler": "alu_acc_imm16",
+      "operation": "add",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 6,
+      "last": 7,
+      "mnemonic": "PUSH/POP ES",
+      "handler": "segment_stack",
+      "length": 1,
+      "cycles": 14
+    },
+    {
+      "first": 8,
+      "last": 11,
+      "mnemonic": "OR",
+      "handler": "alu_modrm",
+      "operation": "or",
+      "length": 2,
+      "cycles": 3
+    },
+    {
+      "first": 12,
+      "last": 12,
+      "mnemonic": "OR AL,imm8",
+      "handler": "alu_acc_imm8",
+      "operation": "or",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 13,
+      "last": 13,
+      "mnemonic": "OR AX,imm16",
+      "handler": "alu_acc_imm16",
+      "operation": "or",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 14,
+      "last": 15,
+      "mnemonic": "PUSH/POP CS",
+      "handler": "segment_stack",
+      "length": 1,
+      "cycles": 14
+    },
+    {
+      "first": 16,
+      "last": 19,
+      "mnemonic": "ADC",
+      "handler": "alu_modrm",
+      "operation": "adc",
+      "length": 2,
+      "cycles": 3
+    },
+    {
+      "first": 20,
+      "last": 20,
+      "mnemonic": "ADC AL,imm8",
+      "handler": "alu_acc_imm8",
+      "operation": "adc",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 21,
+      "last": 21,
+      "mnemonic": "ADC AX,imm16",
+      "handler": "alu_acc_imm16",
+      "operation": "adc",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 22,
+      "last": 23,
+      "mnemonic": "PUSH/POP SS",
+      "handler": "segment_stack",
+      "length": 1,
+      "cycles": 14
+    },
+    {
+      "first": 24,
+      "last": 27,
+      "mnemonic": "SBB",
+      "handler": "alu_modrm",
+      "operation": "sbb",
+      "length": 2,
+      "cycles": 3
+    },
+    {
+      "first": 28,
+      "last": 28,
+      "mnemonic": "SBB AL,imm8",
+      "handler": "alu_acc_imm8",
+      "operation": "sbb",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 29,
+      "last": 29,
+      "mnemonic": "SBB AX,imm16",
+      "handler": "alu_acc_imm16",
+      "operation": "sbb",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 30,
+      "last": 31,
+      "mnemonic": "PUSH/POP DS",
+      "handler": "segment_stack",
+      "length": 1,
+      "cycles": 14
+    },
+    {
+      "first": 39,
+      "last": 39,
+      "mnemonic": "DAA",
+      "handler": "daa",
+      "length": 1,
+      "cycles": 4
+    },
+    {
+      "first": 32,
+      "last": 35,
+      "mnemonic": "AND",
+      "handler": "alu_modrm",
+      "operation": "and",
+      "length": 2,
+      "cycles": 3
+    },
+    {
+      "first": 36,
+      "last": 36,
+      "mnemonic": "AND AL,imm8",
+      "handler": "alu_acc_imm8",
+      "operation": "and",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 37,
+      "last": 37,
+      "mnemonic": "AND AX,imm16",
+      "handler": "alu_acc_imm16",
+      "operation": "and",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 40,
+      "last": 43,
+      "mnemonic": "SUB",
+      "handler": "alu_modrm",
+      "operation": "sub",
+      "length": 2,
+      "cycles": 3
+    },
+    {
+      "first": 44,
+      "last": 44,
+      "mnemonic": "SUB AL,imm8",
+      "handler": "alu_acc_imm8",
+      "operation": "sub",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 45,
+      "last": 45,
+      "mnemonic": "SUB AX,imm16",
+      "handler": "alu_acc_imm16",
+      "operation": "sub",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 48,
+      "last": 51,
+      "mnemonic": "XOR",
+      "handler": "alu_modrm",
+      "operation": "xor",
+      "length": 2,
+      "cycles": 3
+    },
+    {
+      "first": 52,
+      "last": 52,
+      "mnemonic": "XOR AL,imm8",
+      "handler": "alu_acc_imm8",
+      "operation": "xor",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 53,
+      "last": 53,
+      "mnemonic": "XOR AX,imm16",
+      "handler": "alu_acc_imm16",
+      "operation": "xor",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 56,
+      "last": 59,
+      "mnemonic": "CMP",
+      "handler": "alu_modrm",
+      "operation": "cmp",
+      "length": 2,
+      "cycles": 3
+    },
+    {
+      "first": 60,
+      "last": 60,
+      "mnemonic": "CMP AL,imm8",
+      "handler": "alu_acc_imm8",
+      "operation": "cmp",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 61,
+      "last": 61,
+      "mnemonic": "CMP AX,imm16",
+      "handler": "alu_acc_imm16",
+      "operation": "cmp",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 64,
+      "last": 71,
+      "mnemonic": "INC r16",
+      "handler": "inc_reg16",
+      "length": 1,
+      "cycles": 3
+    },
+    {
+      "first": 72,
+      "last": 79,
+      "mnemonic": "DEC r16",
+      "handler": "dec_reg16",
+      "length": 1,
+      "cycles": 3
+    },
+    {
+      "first": 80,
+      "last": 87,
+      "mnemonic": "PUSH r16",
+      "handler": "push_reg16",
+      "length": 1,
+      "cycles": 15
+    },
+    {
+      "first": 88,
+      "last": 95,
+      "mnemonic": "POP r16",
+      "handler": "pop_reg16",
+      "length": 1,
+      "cycles": 12
+    },
+    {
+      "first": 141,
+      "last": 141,
+      "mnemonic": "LEA r16,m",
+      "handler": "lea_modrm",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 143,
+      "last": 143,
+      "mnemonic": "POP r/m16",
+      "handler": "pop_rm16",
+      "length": 2,
+      "cycles": 12
+    },
+    {
+      "first": 112,
+      "last": 127,
+      "mnemonic": "Jcc rel8",
+      "handler": "jcc_rel8",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 128,
+      "last": 131,
+      "mnemonic": "GRP1 immediate",
+      "handler": "alu_rm_imm",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 132,
+      "last": 133,
+      "mnemonic": "TEST r/m,reg",
+      "handler": "test_modrm",
+      "operation": "and",
+      "length": 2,
+      "cycles": 3
+    },
+    {
+      "first": 134,
+      "last": 135,
+      "mnemonic": "XCHG",
+      "handler": "xchg_modrm",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 136,
+      "last": 139,
+      "mnemonic": "MOV",
+      "handler": "mov_modrm",
+      "length": 2,
+      "cycles": 2
+    },
+    {
+      "first": 140,
+      "last": 140,
+      "mnemonic": "MOV r/m16,Sreg",
+      "handler": "mov_segment",
+      "length": 2,
+      "cycles": 2
+    },
+    {
+      "first": 142,
+      "last": 142,
+      "mnemonic": "MOV Sreg,r/m16",
+      "handler": "mov_segment",
+      "length": 2,
+      "cycles": 2
+    },
+    {
+      "first": 144,
+      "last": 144,
+      "mnemonic": "NOP",
+      "handler": "nop",
+      "length": 1,
+      "cycles": 3
+    },
+    {
+      "first": 152,
+      "last": 152,
+      "mnemonic": "CBW",
+      "handler": "cbw",
+      "length": 1,
+      "cycles": 4
+    },
+    {
+      "first": 154,
+      "last": 154,
+      "mnemonic": "CALL ptr16:16",
+      "handler": "call_far",
+      "length": 5,
+      "cycles": 28
+    },
+    {
+      "first": 156,
+      "last": 156,
+      "mnemonic": "PUSHF",
+      "handler": "pushf",
+      "length": 1,
+      "cycles": 14
+    },
+    {
+      "first": 157,
+      "last": 157,
+      "mnemonic": "POPF",
+      "handler": "popf",
+      "length": 1,
+      "cycles": 12
+    },
+    {
+      "first": 158,
+      "last": 158,
+      "mnemonic": "SAHF",
+      "handler": "sahf",
+      "length": 1,
+      "cycles": 4
+    },
+    {
+      "first": 159,
+      "last": 159,
+      "mnemonic": "LAHF",
+      "handler": "lahf",
+      "length": 1,
+      "cycles": 4
+    },
+    {
+      "first": 160,
+      "last": 163,
+      "mnemonic": "MOV moffs",
+      "handler": "mov_moffs",
+      "length": 3,
+      "cycles": 10
+    },
+    {
+      "first": 164,
+      "last": 165,
+      "mnemonic": "MOVS",
+      "handler": "movs",
+      "length": 1,
+      "cycles": 18
+    },
+    {
+      "first": 166,
+      "last": 167,
+      "mnemonic": "CMPS",
+      "handler": "cmps",
+      "length": 1,
+      "cycles": 22
+    },
+    {
+      "first": 168,
+      "last": 168,
+      "mnemonic": "TEST AL,imm8",
+      "handler": "test_acc_imm8",
+      "operation": "and",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 169,
+      "last": 169,
+      "mnemonic": "TEST AX,imm16",
+      "handler": "test_acc_imm16",
+      "operation": "and",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 170,
+      "last": 171,
+      "mnemonic": "STOS",
+      "handler": "stos",
+      "length": 1,
+      "cycles": 11
+    },
+    {
+      "first": 172,
+      "last": 173,
+      "mnemonic": "LODS",
+      "handler": "lods",
+      "length": 1,
+      "cycles": 12
+    },
+    {
+      "first": 174,
+      "last": 175,
+      "mnemonic": "SCAS",
+      "handler": "scas",
+      "length": 1,
+      "cycles": 15
+    },
+    {
+      "first": 176,
+      "last": 183,
+      "mnemonic": "MOV r8,imm8",
+      "handler": "mov_r8_imm8",
+      "length": 2,
+      "cycles": 4
+    },
+    {
+      "first": 184,
+      "last": 191,
+      "mnemonic": "MOV r16,imm16",
+      "handler": "mov_r16_imm16",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 198,
+      "last": 199,
+      "mnemonic": "MOV r/m,imm",
+      "handler": "mov_rm_imm",
+      "length": 3,
+      "cycles": 4
+    },
+    {
+      "first": 194,
+      "last": 194,
+      "mnemonic": "RET imm16",
+      "handler": "ret_near_imm",
+      "length": 3,
+      "cycles": 24
+    },
+    {
+      "first": 195,
+      "last": 195,
+      "mnemonic": "RET",
+      "handler": "ret_near",
+      "length": 1,
+      "cycles": 20
+    },
+    {
+      "first": 196,
+      "last": 197,
+      "mnemonic": "LES/LDS r16,m16:16",
+      "handler": "load_far_pointer",
+      "length": 2,
+      "cycles": 16
+    },
+    {
+      "first": 202,
+      "last": 202,
+      "mnemonic": "RETF imm16",
+      "handler": "ret_far_imm",
+      "length": 3,
+      "cycles": 33
+    },
+    {
+      "first": 203,
+      "last": 203,
+      "mnemonic": "RETF",
+      "handler": "ret_far",
+      "length": 1,
+      "cycles": 34
+    },
+    {
+      "first": 204,
+      "last": 204,
+      "mnemonic": "INT3",
+      "handler": "int3",
+      "length": 1,
+      "cycles": 72
+    },
+    {
+      "first": 205,
+      "last": 205,
+      "mnemonic": "INT imm8",
+      "handler": "int_imm8",
+      "length": 2,
+      "cycles": 71
+    },
+    {
+      "first": 206,
+      "last": 206,
+      "mnemonic": "INTO",
+      "handler": "into",
+      "length": 1,
+      "cycles": 4
+    },
+    {
+      "first": 207,
+      "last": 207,
+      "mnemonic": "IRET",
+      "handler": "iret",
+      "length": 1,
+      "cycles": 44
+    },
+    {
+      "first": 208,
+      "last": 211,
+      "mnemonic": "ROL/ROR/RCL/RCR/SHL/SHR/SAR r/m",
+      "handler": "shift",
+      "length": 2,
+      "cycles": 2
+    },
+    {
+      "first": 224,
+      "last": 227,
+      "mnemonic": "LOOP/JCXZ rel8",
+      "handler": "loop_rel8",
+      "length": 2,
+      "cycles": 5
+    },
+    {
+      "first": 232,
+      "last": 232,
+      "mnemonic": "CALL rel16",
+      "handler": "call_rel16",
+      "length": 3,
+      "cycles": 23
+    },
+    {
+      "first": 233,
+      "last": 233,
+      "mnemonic": "JMP rel16",
+      "handler": "jmp_rel16",
+      "length": 3,
+      "cycles": 15
+    },
+    {
+      "first": 234,
+      "last": 234,
+      "mnemonic": "JMP ptr16:16",
+      "handler": "jmp_far",
+      "length": 5,
+      "cycles": 15
+    },
+    {
+      "first": 235,
+      "last": 235,
+      "mnemonic": "JMP rel8",
+      "handler": "jmp_rel8",
+      "length": 2,
+      "cycles": 15
+    },
+    {
+      "first": 228,
+      "last": 229,
+      "mnemonic": "IN acc,imm8",
+      "handler": "in_imm",
+      "length": 2,
+      "cycles": 10
+    },
+    {
+      "first": 230,
+      "last": 231,
+      "mnemonic": "OUT imm8,acc",
+      "handler": "out_imm",
+      "length": 2,
+      "cycles": 10
+    },
+    {
+      "first": 236,
+      "last": 237,
+      "mnemonic": "IN acc,DX",
+      "handler": "in_dx",
+      "length": 1,
+      "cycles": 8
+    },
+    {
+      "first": 238,
+      "last": 239,
+      "mnemonic": "OUT DX,acc",
+      "handler": "out_dx",
+      "length": 1,
+      "cycles": 8
+    },
+    {
+      "first": 244,
+      "last": 244,
+      "mnemonic": "HLT",
+      "handler": "hlt",
+      "length": 1,
+      "cycles": 2
+    },
+    {
+      "first": 245,
+      "last": 245,
+      "mnemonic": "CMC",
+      "handler": "complement_cf",
+      "length": 1,
+      "cycles": 2
+    },
+    {
+      "first": 246,
+      "last": 247,
+      "mnemonic": "GRP3",
+      "handler": "group3",
+      "length": 2,
+      "cycles": 80
+    },
+    {
+      "first": 248,
+      "last": 248,
+      "mnemonic": "CLC",
+      "handler": "clear_cf",
+      "length": 1,
+      "cycles": 2
+    },
+    {
+      "first": 249,
+      "last": 249,
+      "mnemonic": "STC",
+      "handler": "set_cf",
+      "length": 1,
+      "cycles": 2
+    },
+    {
+      "first": 250,
+      "last": 250,
+      "mnemonic": "CLI",
+      "handler": "clear_if",
+      "length": 1,
+      "cycles": 2
+    },
+    {
+      "first": 251,
+      "last": 251,
+      "mnemonic": "STI",
+      "handler": "set_if",
+      "length": 1,
+      "cycles": 2
+    },
+    {
+      "first": 252,
+      "last": 252,
+      "mnemonic": "CLD",
+      "handler": "clear_df",
+      "length": 1,
+      "cycles": 2
+    },
+    {
+      "first": 253,
+      "last": 253,
+      "mnemonic": "STD",
+      "handler": "set_df",
+      "length": 1,
+      "cycles": 2
+    },
+    {
+      "first": 254,
+      "last": 254,
+      "mnemonic": "INC/DEC r/m8",
+      "handler": "group4",
+      "length": 2,
+      "cycles": 3
+    },
+    {
+      "first": 255,
+      "last": 255,
+      "mnemonic": "GRP5",
+      "handler": "group5",
+      "length": 2,
+      "cycles": 11
+    }
   ]
 }
