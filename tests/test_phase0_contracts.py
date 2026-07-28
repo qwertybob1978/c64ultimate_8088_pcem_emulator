@@ -173,6 +173,48 @@ class Phase0Contracts(unittest.TestCase):
         details = load_dos_media_module().validate(candidates[0])
         self.assertEqual(details["size"], 368640)
 
+    def test_xt_high_page_io_preserves_fdc_routes(self):
+        source = (ROOT / "src/bus/io.s").read_text()
+        read_dispatch = source.split("@high_page_03:", 1)[1].split(
+            "@video_status_03:", 1
+        )[0]
+        write_dispatch = source.split("@write_high_page_03:", 1)[1].split(
+            "@write_fdc_dor:", 1
+        )[0]
+        for port, target in (
+            ("#$F3", "@fdc_density_config"),
+            ("#$F4", "@fdc_main_status"),
+            ("#$F5", "@fdc_data"),
+            ("#$F7", "@fdc_digital_input"),
+        ):
+            self.assertRegex(
+                read_dispatch,
+                rf"cmp\s+{re.escape(port)}\s+beq\s+{re.escape(target)}",
+            )
+        for port, target in (
+            ("#$F2", "@write_fdc_dor"),
+            ("#$F5", "@write_fdc_data"),
+        ):
+            self.assertRegex(
+                write_dispatch,
+                rf"cpx\s+{re.escape(port)}\s+beq\s+{re.escape(target)}",
+            )
+
+    def test_fdc_read_id_consumes_drive_head_parameter(self):
+        source = (ROOT / "src/devices/fdc.s").read_text()
+        command_decode = source.split("@new_command:", 1)[1].split(
+            "@expect_one:", 1
+        )[0]
+        self.assertRegex(command_decode, r"cmp\s+#\$0A\s+beq\s+@expect_one")
+
+    def test_fdc_read_id_reports_sector_one_with_512_byte_size(self):
+        source = (ROOT / "src/devices/fdc.s").read_text()
+        read_id = source.split("fdc_process_read_id:", 1)[1].split(
+            "fdc_queue_invalid:", 1
+        )[0]
+        self.assertRegex(read_id, r"lda\s+#\$01[^\n]*\n\s*sta\s+fdc_results\+5")
+        self.assertRegex(read_id, r"lda\s+#\$02[^\n]*\n\s*sta\s+fdc_results\+6")
+
 
 if __name__ == "__main__":
     unittest.main()

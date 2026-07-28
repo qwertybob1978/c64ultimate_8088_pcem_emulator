@@ -169,7 +169,7 @@ fdc_write_data:
     cmp #$05
     beq @expect_eight
     cmp #$0A
-    long_beq fdc_process_read_id
+    beq @expect_one
     jmp fdc_queue_invalid
 @expect_one:
     lda #$01
@@ -303,9 +303,9 @@ fdc_process_read_id:
     lda fdc_params+0
     and #$01
     sta fdc_results+4
-    lda #$02
+    lda #$01                    ; first addressable sector ID
     sta fdc_results+5
-    lda #$09
+    lda #$02                    ; N=2 means 512-byte sectors
     sta fdc_results+6
     lda #$07
     sta fdc_result_count

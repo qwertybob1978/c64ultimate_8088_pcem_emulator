@@ -84,6 +84,8 @@ io_read_u8:
 @high_page_03:
     cmp #$DA
     beq @video_status_03
+    cmp #$F3
+    beq @fdc_density_config
     cmp #$F4
     beq @fdc_main_status
     cmp #$F5
@@ -94,6 +96,9 @@ io_read_u8:
 @video_status_03:
     ldx #$01
     jmp @toggle_video_status
+@fdc_density_config:
+    lda #$20                    ; non-enhanced 5.25-inch drive type
+    rts
 @fdc_main_status:
     jmp fdc_read_main_status
 @fdc_data:

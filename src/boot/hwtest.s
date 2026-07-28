@@ -215,6 +215,12 @@ boot_guest:
     ; From this point onward the payload no longer calls KERNAL output. Keep
     ; asynchronous C64 IRQs out of the long-running host/emulator loop.
     sei
+    ; Host-side breadcrumb: proves the cartridge reached the guest runner even
+    ; if the CGA projection has not produced a frame yet.
+    lda #$58                    ; X
+    sta $0400
+    lda #$01
+    sta $D800
     lda #$0B
     sta BORDER_COLOR
     lda #$0C
@@ -299,13 +305,10 @@ boot_guest:
 :
     jsr pic_service
     inc boot_video_divider
-    lda boot_video_divider
-    and #$0F
-    beq :+
-    jmp @boot_batch
-:
+    bne @skip_video
     jsr cga_render_text_40
     jsr display_fdc_runtime
+@skip_video:
     jmp @boot_batch
 @boot_failed:
     jsr cga_render_text_40
@@ -521,11 +524,21 @@ display_boot_failure:
 ; intentionally outside the emulated CGA aperture so it remains visible when
 ; the guest BIOS replaces its own screen with an error message.
 display_fdc_runtime:
-    lda #$46                    ; F
+    ; Make the diagnostic row visible even when the guest CGA attributes are
+    ; black-on-black during an early BIOS failure.
+    ldx #$00
+    lda #$01
+@color:
+    sta $DB98,x
+    sta $DBC0,x
+    inx
+    cpx #$28
+    bne @color
+    lda #$06                    ; F
     sta $07C0
-    lda #$44                    ; D
+    lda #$04                    ; D
     sta $07C1
-    lda #$43                    ; C
+    lda #$03                    ; C
     sta $07C2
     lda #$3A
     sta $07C3
@@ -535,11 +548,11 @@ display_fdc_runtime:
     lda fdc_read_count
     ldx #$07
     jsr display_hex_byte_at
-    lda #$50                    ; P
+    lda #$10                    ; P
     sta $07CA
-    lda #$49                    ; I
+    lda #$09                    ; I
     sta $07CB
-    lda #$43                    ; C
+    lda #$03                    ; C
     sta $07CC
     lda #$3A
     sta $07CD
@@ -549,6 +562,48 @@ display_fdc_runtime:
     lda cpu8088_irq6_serviced
     ldx #$11
     jsr display_hex_byte_at
+    lda #$10                    ; P
+    sta $0798
+    lda #$03                    ; C
+    sta $0799
+    lda #$3A
+    sta $079A
+    lda boot_fault_cs+1
+    ldx #$03
+    jsr display_hex_byte_row23
+    lda boot_fault_cs
+    ldx #$05
+    jsr display_hex_byte_row23
+    lda #$3A
+    sta $079F
+    lda boot_fault_ip+1
+    ldx #$08
+    jsr display_hex_byte_row23
+    lda boot_fault_ip
+    ldx #$0A
+    jsr display_hex_byte_row23
+    lda #$0F                    ; O
+    sta $07A5
+    lda #$3A
+    sta $07A6
+    lda cpu8088_last_opcode
+    ldx #$0F
+    jsr display_hex_byte_row23
+    rts
+
+display_hex_byte_row23:
+    pha
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0798,x
+    inx
+    pla
+    and #$0F
+    jsr display_hex_nibble
+    sta $0798,x
     rts
 
 display_hex_byte:
@@ -574,12 +629,12 @@ display_hex_byte_at:
     lsr a
     lsr a
     jsr display_hex_nibble
-    sta $0400,x
+    sta $07C0,x
     inx
     pla
     and #$0F
     jsr display_hex_nibble
-    sta $0400,x
+    sta $07C0,x
     rts
 display_hex_nibble:
     cmp #$0A
