@@ -323,6 +323,7 @@ boot_guest:
     and #$0F
     sta $D021
     jsr display_boot_failure
+    jsr display_fdc_runtime
     jmp diagnostic_done
 
 display_boot_failure:

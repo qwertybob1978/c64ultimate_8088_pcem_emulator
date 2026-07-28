@@ -3,6 +3,7 @@
 .import reu_copy_from_reu
 .import reu_copy_to_reu
 .import cpu8088_mem_cache_invalidate
+.import cpu8088_mem_cache_flush
 .import cpu8088_fetch_cache_invalidate
 .importzp reu_c64_addr
 .importzp reu_ext_addr
@@ -172,12 +173,18 @@ dma_channel2_read_from_reu:
     jmp @failed
 :
 @count_ok:
+    ; Preserve the FDC source pointer because cache flush reuses REU address
+    ; registers. Then flush dirty guest RAM before direct DMA bypasses cache.
     lda reu_ext_addr
     sta dma_source_addr
     lda reu_ext_addr+1
     sta dma_source_addr+1
     lda reu_ext_addr+2
     sta dma_source_addr+2
+    jsr cpu8088_mem_cache_flush
+    bcc :+
+    jmp @failed
+:
     lda dma_channel2_addr
     sta dma_guest_addr
     lda dma_channel2_addr+1

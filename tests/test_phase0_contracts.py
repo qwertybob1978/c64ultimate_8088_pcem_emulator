@@ -200,6 +200,15 @@ class Phase0Contracts(unittest.TestCase):
                 rf"cpx\s+{re.escape(port)}\s+beq\s+{re.escape(target)}",
             )
 
+    def test_dma_flushes_cpu_cache_before_direct_transfer(self):
+        source = (ROOT / "src/devices/dma.s").read_text()
+        self.assertIn(".import cpu8088_mem_cache_flush", source)
+        save = source.index("sta dma_source_addr+2")
+        flush = source.index("jsr cpu8088_mem_cache_flush")
+        transfer = source.index("jsr reu_copy_from_reu")
+        self.assertLess(save, flush)
+        self.assertLess(flush, transfer)
+
     def test_fdc_read_id_consumes_drive_head_parameter(self):
         source = (ROOT / "src/devices/fdc.s").read_text()
         command_decode = source.split("@new_command:", 1)[1].split(
