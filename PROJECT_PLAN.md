@@ -28,6 +28,13 @@ the Generic XT BIOS to a usable DOS prompt in the packaged CRT/VICE path,
 then exercise keyboard input and a read-only DOS command before expanding the
 scope of the floppy workload.
 
+Current status (2026-08-01): POST now bypasses the actual Generic XT BIOS
+speaker-delay entry at `F000:F9D4`, fixing the previously observed native loop
+at `F000:F9E8`. The earlier `F000:F78D` theory was disproven: that address is
+normal CGA CRTC setup code. Host contracts, CRT packaging, and the existing
+2.2-billion-cycle VICE smoke gate pass, but full SvarDOS boot to a usable DOS
+prompt is still unverified.
+
 ## 2. Feasibility statement
 
 This is technically plausible as a **functional** simulator, but real-time

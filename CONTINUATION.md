@@ -7,6 +7,39 @@ user-facing instructions.
 
 ## 1. Current checkpoint
 
+### Verified native-boot state (2026-08-01)
+
+The current verified commit is:
+
+```text
+aa6accc fix: bypass actual BIOS speaker delay
+```
+
+The packaged media target is `third_party/svardos/svdos-360K-disk-1.img`.
+The BIOS helper at `F000:F78D` was investigated and is normal Generic XT BIOS
+CGA CRTC code; it is not a hardware stall and must not be patched without new
+evidence.
+
+The native run was instead observed looping in the BIOS speaker delay at
+`F000:F9E8` (`LOOP`), with no FDC command or IRQ6 activity. The existing
+runtime patch had targeted `F000:F97F`; commit `aa6accc` moves it to the actual
+delay entry `F000:F9D4`, where it safely replaces the routine entry with `RET`.
+
+Verified after that change:
+
+- `python -m unittest tests.test_cpu8088_reference tests.test_phase0_contracts`
+   passes all 41 tests.
+- `build_crt.ps1` succeeds and produces a valid 49-bank CRT.
+- `tools/test_vice.ps1 -SkipBuild -CycleLimit 2200000000` reaches the existing
+   green-border smoke gate.
+
+The green-border smoke gate is not yet proof of a usable DOS prompt. The next
+acceptance step remains running SvarDOS through its complete boot and recording
+either a real CPU/device fault or a stable DOS prompt. Live diagnostic capture
+uses `tools/capture_diag_dump.py` and `tools/parse_fault_dump.py`; the immutable
+`build/guest-genxt.reu` image must not be used as a substitute for live REU
+state.
+
 Repository root on the current machine:
 
 ```text
