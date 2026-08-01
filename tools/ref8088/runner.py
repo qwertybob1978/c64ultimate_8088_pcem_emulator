@@ -313,6 +313,8 @@ class Reference8088:
             self.set_register(index, 16, accumulator)
         elif handler == "cwd":
             self.registers["DX"] = 0xFFFF if self.registers["AX"] & 0x8000 else 0
+        elif handler == "wait":
+            pass
         elif handler == "hlt":
             self.halted = True
             status = 1

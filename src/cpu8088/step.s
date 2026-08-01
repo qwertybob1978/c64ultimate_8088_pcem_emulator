@@ -241,6 +241,8 @@ cpu8088_step:
     long_beq @lahf
     cmp #$9A                    ; CALL ptr16:16
     long_beq @call_far
+    cmp #$9B                    ; WAIT - no coprocessor attached
+    long_beq @wait
     cmp #$A0                    ; MOV AL/AX,moffs and MOV moffs,AL/AX
     bcc @check_string_opcodes
     cmp #$A4
@@ -2996,6 +2998,12 @@ cpu8088_step:
     rts
 
 @nop:
+    lda #$03
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@wait:
     lda #$03
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK

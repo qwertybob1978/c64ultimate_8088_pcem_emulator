@@ -558,6 +558,13 @@
       "expected": { "AX": 32767, "DX": 0, "CS": 54976, "IP": 2, "FLAGS": 2051 }
     },
     {
+      "name": "wait_without_coprocessor_is_noop",
+      "initial": { "CS": 55040, "IP": 0, "AX": 4660, "FLAGS": 2051 },
+      "program": "9bf4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 4660, "CS": 55040, "IP": 2, "FLAGS": 2051 }
+    },
+    {
       "name": "xchg_word_registers",
       "initial": { "CS": 55040, "IP": 0, "AX": 4660, "BX": 43981, "FLAGS": 2051 },
       "program": "87d8f4",

@@ -479,6 +479,14 @@
       "cycles": 28
     },
     {
+      "first": 155,
+      "last": 155,
+      "mnemonic": "WAIT",
+      "handler": "wait",
+      "length": 1,
+      "cycles": 3
+    },
+    {
       "first": 156,
       "last": 156,
       "mnemonic": "PUSHF",
