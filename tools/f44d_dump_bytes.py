@@ -1,7 +1,7 @@
 """Dump raw ROM bytes around FF44D stall point with inline x86 decoding."""
 from pathlib import Path
 
-rom_path = Path("third_party/pcem-roms/genxt/pcxt.rom")
+rom_path = Path("third_party/roms/genxt/pcxt.rom")
 rom = bytearray(rom_path.read_bytes())
 
 def phys(addr):

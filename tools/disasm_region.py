@@ -3,7 +3,7 @@
 import sys
 from capstone import Cs, CS_ARCH_X86, CS_MODE_16
 
-ROM = open("third_party/pcem-roms/genxt/pcxt.rom", "rb").read()
+ROM = open("third_party/roms/genxt/pcxt.rom", "rb").read()
 BASE = 0xE000  # ROM byte 0 maps to F000:E000
 
 

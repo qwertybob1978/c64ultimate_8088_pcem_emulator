@@ -1,7 +1,7 @@
 """Trace backward from FF44A to find MOV DX,#imm or similar."""
 from pathlib import Path
 
-rom = bytearray(Path("third_party/pcem-roms/genxt/pcxt.rom").read_bytes())
+rom = bytearray(Path("third_party/roms/genxt/pcxt.rom").read_bytes())
 
 def phys(off):
     return off + 0xFE000

@@ -43,7 +43,7 @@ def parse_hex_constant(source: str, name: str) -> int:
 
 class Phase0Contracts(unittest.TestCase):
     def test_genxt_runtime_patch_bypasses_only_fdc_reset_status_check(self):
-        rom = (ROOT / "third_party/pcem-roms/genxt/pcxt.rom").read_bytes()
+        rom = (ROOT / "third_party/roms/genxt/pcxt.rom").read_bytes()
         self.assertEqual(rom[0x0D08:0x0D0A], bytes((0x3C, 0xC0)))
         self.assertEqual(rom[0x197F], 0x50)
         self.assertEqual(rom[0x0507:0x050B], bytes((0xCD, 0x19, 0x07, 0x26)))
@@ -145,7 +145,7 @@ class Phase0Contracts(unittest.TestCase):
 
     def test_rom_manifest_matches_local_inputs(self):
         manifest = json.loads((ROOT / "config/roms.json").read_text())
-        rom_root = ROOT / "third_party/pcem-roms"
+        rom_root = ROOT / "third_party/roms"
         for profile in manifest["profiles"].values():
             for entry in profile["files"]:
                 path = rom_root / entry["path"]
@@ -162,17 +162,17 @@ class Phase0Contracts(unittest.TestCase):
         self.assertEqual(physical(0x1234, 0x5678), 0x179B8)
 
     @unittest.skipUnless(
-        (ROOT / "third_party/pcem-roms/genxt/pcxt.rom").exists(),
+        (ROOT / "third_party/roms/genxt/pcxt.rom").exists(),
         "local PCem ROM checkout not present",
     )
     def test_genxt_guest_image_maps_reset_vector_rom(self):
         module = load_guest_image_module()
         image = module.build_image(
             ROOT / "config/roms.json",
-            ROOT / "third_party/pcem-roms",
+            ROOT / "third_party/roms",
             "genxt",
         )
-        rom = (ROOT / "third_party/pcem-roms/genxt/pcxt.rom").read_bytes()
+        rom = (ROOT / "third_party/roms/genxt/pcxt.rom").read_bytes()
         self.assertEqual(len(image), 0x100000)
         self.assertEqual(image[0xFE000:0x100000], rom)
         self.assertEqual(image[0xFFFF0:0x100000], rom[-16:])

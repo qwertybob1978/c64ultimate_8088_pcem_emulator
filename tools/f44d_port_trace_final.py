@@ -1,7 +1,7 @@
 """Final analysis of F44D stall - classify root cause precisely."""
 from pathlib import Path
 
-rom_path = Path("third_party/pcem-roms/genxt/pcxt.rom")
+rom_path = Path("third_party/roms/genxt/pcxt.rom")
 rom = bytearray(rom_path.read_bytes())
 
 print("=" * 80)

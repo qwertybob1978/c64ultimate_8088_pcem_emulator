@@ -1,15 +1,20 @@
-# C64 x86 implementation continuation guide - Part 2 (Milestones C+)
+# C64 x86 implementation continuation guide - Part 2 (Historical diagnostics)
 
-This file supplements CONTINUATION.md with post-Milestone-B findings and next tasks.
-Read this entire file before editing anything beyond what's documented here.
+This file supplements CONTINUATION.md with dated diagnostic findings. The
+Milestone B/C plan below is historical; follow the current checkpoint and next
+task in CONTINUATION.md when starting new work.
 
 ## Current checkpoint
 
-All baseline gates GREEN as of 2026-07-28:
+Current repository checkpoint:
 
-- All 17 host tests pass consistently across multiple runs
+- The default target is SvarDOS 360 KiB, not MS-DOS.
+- `3ef8b06 docs: document SvarDOS boot milestones` is the latest pushed commit.
+- The focused host suite previously passed 41 tests during the native boot work.
 - VICE 3.10 CRT smoke test passes with 16 MiB REU in warp mode
 - Cartridge builds successfully: build/c64x86.crt (49 banks, 402256 bytes)
+
+These gates do not prove that the packaged run reaches a stable SvarDOS prompt.
 
 ## Milestone B — Port $3F2/$3F3 fix (completed 2026-07-27)
 
@@ -107,8 +112,8 @@ flow reached BIOS data at `F000:E003`; the displayed `OP:04` was stale. The
 next diagnostic should identify the preceding jump/return or IVT target that
 lands in the `$E000` banner region.
 
-The active acceptance target is now explicit in `PROJECT_PLAN.md`: boot the
-supplied Sv a rDOS 360K image to a usable DOS prompt in the packaged CRT/VICE
+The active acceptance target is to boot the supplied SvarDOS 360 KiB image to a
+usable DOS prompt in the packaged CRT/VICE
 path. The next probe captures IVT vector 9 (`00024h`) at failure to distinguish
 an incorrect keyboard IRQ target from a later BIOS jump/return into `$E000`.
 
@@ -139,10 +144,10 @@ alternating `$00/$09` reads; it is not an FDC MSR or digital-input poll. The
 F78D label is also a trace-script error: that region performs CRTC writes at
 `$3B4/$3B5` and `$3D4/$3D5`. Do not modify FDC behavior for either address.
 
-Current work resumes at the later 2-billion-cycle native failure documented in
-`QWEN_EXECUTION_PLAN.md`: approximate `CS:IP=0000:7351`, opcode `$C0`.
-Capture fresh status, prior instructions, SS:SP bytes, media bytes, DMA state,
-and cache state before implementing a fix.
+The old `CS:IP=0000:7351`, opcode `$C0` probe is historical and superseded by
+the later IRQ6/boot-handoff findings below. Capture fresh status, prior
+instructions, SS:SP bytes, media bytes, DMA state, and cache state before
+implementing a new fix.
 
 After confirming Milestone C allows POST progress past F78D stall:
 
@@ -160,12 +165,12 @@ Continue tracing one unsupported opcode family at a time using methodology from 
 
 ### Priority device handlers if not yet resolved by video fixes
 
-Per QWEN_EXECUTION_PLAN.md section 8 work-after-CPU-blockers ordering:
+Current device-work ordering after a fresh trace:
 
 1. **PIT channel 0 programming** (port $40) → generates deterministic timer IRQ every ~1ms guest time
 2. **PIC ICW initialization** ($20/$21) → masks/unmasks interrupts, sets base vectors  
 3. **DMA channel 2/FDC commands** → CHS sector reads, terminal count, IRQ6 delivery
-4. **Boot-media integration** → expose DISK01.IMG as drive A via INT 19h
+4. **Boot-media integration** → expose the SvarDOS image as drive A via INT 19h
 
 ## Build/test commands reference
 
@@ -464,7 +469,9 @@ These are legitimate BIOS POST instructions, not data.
 ## POST boot-loop fix (2026-08-01)
 
 ### Symptom
-"SYSTEM ERROR #00, CONTINUE?" reappeared endlessly; floppy never booted. Switching disk image (MS-DOS 3.30 -> SvarDOS `svdos-360K-disk-1.img`) changed nothing.
+"SYSTEM ERROR #00, CONTINUE?" reappeared endlessly; floppy never booted. An
+earlier MS-DOS 3.30 comparison run and the SvarDOS
+`svdos-360K-disk-1.img` run behaved the same at that stage.
 
 ### Root cause (three layered POST bugs, all before disk read)
 FDC counters were all zero (`fdc_read_count=0`) and guest PC sampled in the `F000:E259` POST delay loop -> disk never reached. POST was resetting in a loop:

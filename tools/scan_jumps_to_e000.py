@@ -2,7 +2,7 @@
 """Scan pcxt.rom for direct jumps/calls whose target is F000:E000."""
 from pathlib import Path
 
-ROM = Path(__file__).resolve().parent.parent / "third_party/pcem-roms/genxt/pcxt.rom"
+ROM = Path(__file__).resolve().parent.parent / "third_party/roms/genxt/pcxt.rom"
 rom = ROM.read_bytes()
 BASE_SEG = 0xF000
 BASE_PHYS = 0xFE000

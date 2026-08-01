@@ -1,7 +1,7 @@
 """Simple backward trace from FF44D."""
 from pathlib import Path
 
-rom_path = Path("third_party/pcem-roms/genxt/pcxt.rom")
+rom_path = Path("third_party/roms/genxt/pcxt.rom")
 rom = bytearray(rom_path.read_bytes())
 
 ROM_OFFSET = lambda phys: phys - 0xFE000

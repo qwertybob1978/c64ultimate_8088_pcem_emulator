@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
-rom = Path("third_party/pcem-roms/genxt/pcxt.rom").read_bytes()
+rom = Path("third_party/roms/genxt/pcxt.rom").read_bytes()
 
 # FFFF:0000 = physical 0xFFFF0
 # But ROM is 8KB loaded at physical 0xFE000-0xFFFFF (0xFE000 + 0x2000 - 1 = 0xFFFF)

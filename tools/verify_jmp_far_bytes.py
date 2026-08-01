@@ -54,7 +54,7 @@ print(f"\nDifference: E05B - E003 = 0x{0xE05B - 0xE003:04X} = {0xE05B - 0xE003} 
 # Check what's at E05B in the ROM
 import sys
 from pathlib import Path
-rom = Path("third_party/pcem-roms/genxt/pcxt.rom").read_bytes()
+rom = Path("third_party/roms/genxt/pcxt.rom").read_bytes()
 e05b_offset = 0x5B
 if e05b_offset < len(rom):
     print(f"\nBytes at E05B (offset 0x{e05b_offset:04X}) in ROM:")

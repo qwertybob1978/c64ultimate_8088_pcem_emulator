@@ -235,7 +235,7 @@ def disasm_8088(rom_bytes, start_offset):
 
 
 def main():
-    rom_path = sys.argv[1] if len(sys.argv) > 1 else "third_party/pcem-roms/genxt/pcxt.rom"
+    rom_path = sys.argv[1] if len(sys.argv) > 1 else "third_party/roms/genxt/pcxt.rom"
     try:
         with open(rom_path, 'rb') as f:
             rom = bytearray(f.read())

@@ -3,7 +3,7 @@
 import sys
 
 def main():
-    with open("third_party/pcem-roms/genxt/pcxt.rom", 'rb') as f:
+    with open("third_party/roms/genxt/pcxt.rom", 'rb') as f:
         rom = bytearray(f.read())
     
     print(f"ROM size: {len(rom)} bytes")

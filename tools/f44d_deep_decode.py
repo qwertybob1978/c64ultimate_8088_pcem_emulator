@@ -1,7 +1,7 @@
 """Deep decode of x86 code around FF44D with full MODRM/displacement handling."""
 from pathlib import Path
 
-rom_path = Path("third_party/pcem-roms/genxt/pcxt.rom")
+rom_path = Path("third_party/roms/genxt/pcxt.rom")
 rom = bytearray(rom_path.read_bytes())
 offset = 0x144D  # Physical FF44D - FE000
 

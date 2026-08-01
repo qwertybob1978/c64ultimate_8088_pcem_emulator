@@ -6,8 +6,6 @@ This project is a retro-computing experiment inspired by the spirit of pushing v
 
 No FPGAs. No external processors. Just pure 6502 assembly squeezing out x86 semantics one cycle at a time.
 
-This emulator boots svardos but it takes ages, and desperately needs optimization. Join. fork, do whatever you want - just keep in mind this is a GNU GPL3.0 Open Source project so please reshare again.
-
 For an exact implementation checkpoint and step-by-step continuation handoff,
 see [`CONTINUATION.md`](CONTINUATION.md).
 
@@ -166,15 +164,15 @@ pinned revision with:
 
 The checkout lives at `third_party/pcem` and is ignored by this repository.
 
-Fetch and validate the user-requested development ROM collection with:
+I can not and will not supply any ROMs that may be copyrighted. Provide any
+lawfully obtained ROM files locally under `third_party/roms` and validate them
+with:
 
 ```powershell
-./tools/fetch_roms.ps1
 python ./tools/verify_roms.py
 ```
 
-The ROM checkout is also ignored. Its upstream repository has no license file,
-so ROM binaries must not be committed or packaged with releases.
+ROM binaries must not be committed or packaged with releases.
 
 Create a raw 1 MiB REU guest-memory image with the selected BIOS mapped into
 place:

@@ -1,7 +1,7 @@
 """Trace backwards from FF44D to find where DX port value originates."""
 from pathlib import Path
 
-rom_path = Path("third_party/pcem-roms/genxt/pcxt.rom")
+rom_path = Path("third_party/roms/genxt/pcxt.rom")
 rom = bytearray(rom_path.read_bytes())
 
 def read_byte(addr):

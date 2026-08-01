@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 # Read GenXT ROM bytes around offset 0x144D (physical FF44D)
-rom_path = Path("third_party/pcem-roms/genxt/pcxt.rom")
+rom_path = Path("third_party/roms/genxt/pcxt.rom")
 if not rom_path.exists():
     print(f"ERROR: {rom_path} not found", file=sys.stderr)
     sys.exit(1)

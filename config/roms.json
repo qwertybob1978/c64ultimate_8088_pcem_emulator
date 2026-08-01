@@ -1,9 +1,6 @@
 {
   "schema": 1,
-  "source": {
-    "repository": "https://github.com/BaRRaKudaRain/PCem-ROMs.git",
-    "commit": "75bd118dd86378cac1d9d55e29e26ef82d6d57ef"
-  },
+  "notice": "I can not and will not supply any ROMs that may be copyrighted",
   "profiles": {
     "genxt": {
       "description": "Generic Turbo XT; initial development profile",

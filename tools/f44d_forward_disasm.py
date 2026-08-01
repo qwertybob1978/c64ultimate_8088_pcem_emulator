@@ -4,7 +4,7 @@ Focuses on finding WHERE DX register gets loaded with port numbers."""
 
 from pathlib import Path
 
-rom_path = Path("third_party/pcem-roms/genxt/pcxt.rom")
+rom_path = Path("third_party/roms/genxt/pcxt.rom")
 rom = bytearray(rom_path.read_bytes())
 
 def phys_to_rom(addr):

@@ -154,4 +154,4 @@ genxt_bootstrap_patch:
 genxt_bootstrap_patch_size = *-genxt_bootstrap_patch
 
 guest_genxt_bios:
-    .incbin "third_party/pcem-roms/genxt/pcxt.rom"
+    .incbin "third_party/roms/genxt/pcxt.rom"
