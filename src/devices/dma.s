@@ -13,6 +13,12 @@
 .export dma_read_u8
 .export dma_write_u8
 .export dma_channel2_read_from_reu
+.export dma_last_failure
+.export dma_channel2_addr
+.export dma_channel2_page
+.export dma_last_byte
+.export dma_first_addr_hi
+.export dma_first_page
 
 .segment "BSS"
 dma_channel2_addr:      .res 2
@@ -24,6 +30,11 @@ dma_flipflop:           .res 1
 dma_buffer:             .res 256
 dma_source_addr:        .res 3
 dma_guest_addr:         .res 3
+dma_last_failure:       .res 1
+dma_last_byte:          .res 1
+dma_first_addr_hi:      .res 1
+dma_first_page:         .res 1
+dma_first_seen:         .res 1
 
 .segment "CODE"
 
@@ -35,6 +46,11 @@ dma_reset:
     sta dma_channel2_count+1
     sta dma_channel2_page
     sta dma_channel2_mode
+    sta dma_last_failure
+    sta dma_last_byte
+    sta dma_first_addr_hi
+    sta dma_first_page
+    sta dma_first_seen
     sta dma_flipflop
     lda #$01
     sta dma_channel2_masked
@@ -157,19 +173,34 @@ dma_write_u8:
 ; Source REU address is supplied in reu_ext_addr. Copy one 512-byte sector into
 ; the current channel-2 guest physical address and advance the DMA registers.
 dma_channel2_read_from_reu:
+    lda dma_first_seen
+    bne :+
+    lda dma_channel2_addr+1
+    sta dma_first_addr_hi
+    lda dma_channel2_page
+    sta dma_first_page
+    lda #$01
+    sta dma_first_seen
+:
     lda dma_channel2_masked
     beq :+
+    lda #$01
+    sta dma_last_failure
     jmp @failed
 :
     lda dma_channel2_count+1
     cmp #$01
     bcs :+
+    lda #$02
+    sta dma_last_failure
     jmp @failed
 :
     bne @count_ok
     lda dma_channel2_count
     cmp #$FF
     bcs :+
+    lda #$02
+    sta dma_last_failure
     jmp @failed
 :
 @count_ok:
@@ -183,6 +214,8 @@ dma_channel2_read_from_reu:
     sta dma_source_addr+2
     jsr cpu8088_mem_cache_flush
     bcc :+
+    lda #$03
+    sta dma_last_failure
     jmp @failed
 :
     lda dma_channel2_addr
@@ -209,7 +242,13 @@ dma_channel2_read_from_reu:
     lda dma_source_addr+2
     sta reu_ext_addr+2
     jsr reu_copy_from_reu
-    bcs @failed
+    bcc :+
+    lda #$04
+    sta dma_last_failure
+    jmp @failed
+:
+    lda dma_buffer
+    sta dma_last_byte
 
     lda dma_guest_addr
     sta reu_ext_addr
@@ -218,7 +257,11 @@ dma_channel2_read_from_reu:
     lda dma_guest_addr+2
     sta reu_ext_addr+2
     jsr reu_copy_to_reu
-    bcs @failed
+    bcc :+
+    lda #$05
+    sta dma_last_failure
+    jmp @failed
+:
 
     inc dma_source_addr+1
     bne :+
@@ -236,7 +279,11 @@ dma_channel2_read_from_reu:
     lda dma_source_addr+2
     sta reu_ext_addr+2
     jsr reu_copy_from_reu
-    bcs @failed
+    bcc :+
+    lda #$04
+    sta dma_last_failure
+    jmp @failed
+:
 
     lda dma_guest_addr
     sta reu_ext_addr
@@ -245,7 +292,11 @@ dma_channel2_read_from_reu:
     lda dma_guest_addr+2
     sta reu_ext_addr+2
     jsr reu_copy_to_reu
-    bcs @failed
+    bcc :+
+    lda #$05
+    sta dma_last_failure
+    jmp @failed
+:
 
     clc
     lda dma_channel2_addr

@@ -3,746 +3,2459 @@
   "vectors": [
     {
       "name": "native_smoke",
-      "initial": { "CS": 0, "IP": 0 },
+      "initial": {
+        "CS": 0,
+        "IP": 0
+      },
       "program": "b034b412bb785688e18ad904cc14002d01003d0012c7060005efbe8b1e0005c60602057a8a0e0205be0005bb1000c7400534128b50050150052b400533d239c2bc000250b800005be86d01b978563d01007403bbffffc70600032211c70602034433be0003bf2003b90400f3a4be2003b90400f3acb90300bf3003b07af3aac606220399be0003bf2003b90400f3a6c606300300b90300bf3003b07af2aec70600028003c70602020000c7068003b834c706820312cfcd80c70604028403c70606020000c7068403ba78c706860356cffb90b83412bb3400f6f33d59207401ffb8d4febbf900f6fb3d2afa7401ffb80000ba0100bb0001f7f33d00017401ff09d27401ffb8d4febaffffbbf9fff7fb8bf08bfa3d2a007401ff8bc23dfaff7401ffc70600009003c70602000000c706900341cfb83412bb0100f6f3b4d59e9cfaf89d9fc706000643cb9a00006000ea54010000ffb834128ed81e33c0078cc03d34127401ff0e583d00007401ffb834128ed083c30383fb057401ff81eb010080c3fc83fb007401ffb05ae680b000e4803c5a7401ffba8000b83412efb80000ed3d34127401ffb80140d1e07001ff7301ff3d02807401fff440c3",
       "preserveBytes": 1538,
       "pendingIrq": 129,
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 32770, "CX": 2, "DX": 128, "BX": 0, "SP": 512, "SI": 42, "DI": 65530, "ES": 4660, "CS": 0, "SS": 4660, "DS": 4660, "IP": 440, "FLAGS": 582 },
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 32770,
+        "CX": 2,
+        "DX": 128,
+        "BX": 0,
+        "SP": 512,
+        "SI": 42,
+        "DI": 65530,
+        "ES": 4660,
+        "CS": 0,
+        "SS": 4660,
+        "DS": 4660,
+        "IP": 440,
+        "FLAGS": 582
+      },
       "expectedPorts": [
-        { "port": 128, "value": 52 },
-        { "port": 129, "value": 18 }
+        {
+          "port": 128,
+          "value": 52
+        },
+        {
+          "port": 129,
+          "value": 18
+        }
       ]
     },
     {
       "name": "flags_and_short_jump",
-      "initial": { "CS": 4096, "IP": 256 },
+      "initial": {
+        "CS": 4096,
+        "IP": 256
+      },
       "program": "f9fbfdeb03b8fffff8fafc90f4",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 0, "IP": 269, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 0,
+        "IP": 269,
+        "FLAGS": 2
+      }
     },
     {
       "name": "near_jump_backwards",
-      "initial": { "CS": 8192, "IP": 512 },
+      "initial": {
+        "CS": 8192,
+        "IP": 512
+      },
       "program": "e90300909090e9f7fff4",
       "maxSteps": 4,
-      "statuses": ["ok", "ok", "ok", "ok"],
-      "expected": { "IP": 512, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok"
+      ],
+      "expected": {
+        "IP": 512,
+        "FLAGS": 2
+      }
     },
     {
       "name": "register_moves",
-      "initial": { "CS": 12288, "IP": 0 },
+      "initial": {
+        "CS": 12288,
+        "IP": 0
+      },
       "program": "b034b45688e18ad9c7c27856c6c6aaf4",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 22068, "CX": 86, "BX": 86, "DX": 43640, "IP": 16, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 22068,
+        "CX": 86,
+        "BX": 86,
+        "DX": 43640,
+        "IP": 16,
+        "FLAGS": 2
+      }
     },
     {
       "name": "modrm_memory_and_moffs",
-      "initial": { "CS": 12288, "IP": 256, "DS": 4096, "SS": 8192, "BX": 16, "SI": 4, "BP": 32 },
+      "initial": {
+        "CS": 12288,
+        "IP": 256,
+        "DS": 4096,
+        "SS": 8192,
+        "BX": 16,
+        "SI": 4,
+        "BP": 32
+      },
       "program": "b834128940058b5efec60634127fa03412a34012f4",
       "memory": [
-        { "segment": 8192, "offset": 30, "bytes": "cdab" }
+        {
+          "segment": 8192,
+          "offset": 30,
+          "bytes": "cdab"
+        }
       ],
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 4735, "BX": 43981, "IP": 277, "FLAGS": 2 },
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 4735,
+        "BX": 43981,
+        "IP": 277,
+        "FLAGS": 2
+      },
       "expectedMemory": [
-        { "segment": 4096, "offset": 25, "bytes": "3412" },
-        { "segment": 4096, "offset": 4660, "bytes": "7f" },
-        { "segment": 4096, "offset": 4672, "bytes": "7f12" }
+        {
+          "segment": 4096,
+          "offset": 25,
+          "bytes": "3412"
+        },
+        {
+          "segment": 4096,
+          "offset": 4660,
+          "bytes": "7f"
+        },
+        {
+          "segment": 4096,
+          "offset": 4672,
+          "bytes": "7f12"
+        }
       ]
     },
     {
       "name": "word_alu_flags",
-      "initial": { "CS": 16384, "IP": 0 },
+      "initial": {
+        "CS": 16384,
+        "IP": 0
+      },
       "program": "b8ff7fbb010001d829d839c0f4",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 32767, "BX": 1, "IP": 13, "FLAGS": 70 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 32767,
+        "BX": 1,
+        "IP": 13,
+        "FLAGS": 70
+      }
     },
     {
       "name": "byte_alu_carry_and_logic",
-      "initial": { "CS": 20480, "IP": 0 },
+      "initial": {
+        "CS": 20480,
+        "IP": 0
+      },
       "program": "b0ff040114001c02240f0c8034ff3c70f4",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 112, "IP": 17, "FLAGS": 70 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 112,
+        "IP": 17,
+        "FLAGS": 70
+      }
     },
     {
       "name": "stack_call_and_return",
-      "initial": { "CS": 24576, "IP": 0, "SS": 8192, "SP": 256 },
+      "initial": {
+        "CS": 24576,
+        "IP": 0,
+        "SS": 8192,
+        "SP": 256
+      },
       "program": "b8341250b800005be80400b97856f440c3",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 1, "BX": 4660, "CX": 22136, "SP": 256, "IP": 15, "FLAGS": 2 },
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 1,
+        "BX": 4660,
+        "CX": 22136,
+        "SP": 256,
+        "IP": 15,
+        "FLAGS": 2
+      },
       "expectedMemory": [
-        { "segment": 8192, "offset": 254, "bytes": "0b00" }
+        {
+          "segment": 8192,
+          "offset": 254,
+          "bytes": "0b00"
+        }
       ]
     },
     {
       "name": "conditional_branches",
-      "initial": { "CS": 28672, "IP": 0 },
+      "initial": {
+        "CS": 28672,
+        "IP": 0
+      },
       "program": "b800003d00007403b8ffff40487500f4",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 0, "IP": 16, "FLAGS": 70 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 0,
+        "IP": 16,
+        "FLAGS": 70
+      }
     },
     {
       "name": "repeat_string_operations",
-      "initial": { "CS": 32768, "IP": 0, "DS": 4096, "ES": 8192, "SI": 16, "DI": 32, "CX": 4 },
+      "initial": {
+        "CS": 32768,
+        "IP": 0,
+        "DS": 4096,
+        "ES": 8192,
+        "SI": 16,
+        "DI": 32,
+        "CX": 4
+      },
       "program": "f3a4be1000bf2000b90400f3a6b90300bf3000b07af2aaf4",
       "memory": [
-        { "segment": 4096, "offset": 16, "bytes": "11223344" }
+        {
+          "segment": 4096,
+          "offset": 16,
+          "bytes": "11223344"
+        }
       ],
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 122, "CX": 0, "SI": 20, "DI": 51, "IP": 24, "FLAGS": 70 },
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 122,
+        "CX": 0,
+        "SI": 20,
+        "DI": 51,
+        "IP": 24,
+        "FLAGS": 70
+      },
       "expectedMemory": [
-        { "segment": 8192, "offset": 32, "bytes": "11223344" },
-        { "segment": 8192, "offset": 48, "bytes": "7a7a7a" }
+        {
+          "segment": 8192,
+          "offset": 32,
+          "bytes": "11223344"
+        },
+        {
+          "segment": 8192,
+          "offset": 48,
+          "bytes": "7a7a7a"
+        }
       ]
     },
     {
       "name": "segment_override_string_source",
-      "initial": { "CS": 36864, "IP": 0, "DS": 4096, "ES": 8192, "SI": 16, "DI": 32, "CX": 2 },
+      "initial": {
+        "CS": 36864,
+        "IP": 0,
+        "DS": 4096,
+        "ES": 8192,
+        "SI": 16,
+        "DI": 32,
+        "CX": 2
+      },
       "program": "26f3a4f4",
       "memory": [
-        { "segment": 8192, "offset": 16, "bytes": "aabb" }
+        {
+          "segment": 8192,
+          "offset": 16,
+          "bytes": "aabb"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "CX": 0, "SI": 18, "DI": 34, "IP": 4, "FLAGS": 2 },
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CX": 0,
+        "SI": 18,
+        "DI": 34,
+        "IP": 4,
+        "FLAGS": 2
+      },
       "expectedMemory": [
-        { "segment": 8192, "offset": 32, "bytes": "aabb" }
+        {
+          "segment": 8192,
+          "offset": 32,
+          "bytes": "aabb"
+        }
       ]
     },
     {
       "name": "software_interrupt_and_iret",
-      "initial": { "CS": 16384, "IP": 0, "SS": 8192, "SP": 256, "FLAGS": 771 },
+      "initial": {
+        "CS": 16384,
+        "IP": 0,
+        "SS": 8192,
+        "SP": 256,
+        "FLAGS": 771
+      },
       "program": "ccf4",
       "memory": [
-        { "segment": 0, "offset": 12, "bytes": "00000050" },
-        { "segment": 20480, "offset": 0, "bytes": "b83412cf" }
+        {
+          "segment": 0,
+          "offset": 12,
+          "bytes": "00000050"
+        },
+        {
+          "segment": 20480,
+          "offset": 0,
+          "bytes": "b83412cf"
+        }
       ],
-      "statuses": ["ok", "ok", "ok", "halted"],
-      "expected": { "AX": 4660, "SP": 256, "CS": 16384, "IP": 2, "FLAGS": 771 },
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 4660,
+        "SP": 256,
+        "CS": 16384,
+        "IP": 2,
+        "FLAGS": 771
+      },
       "expectedMemory": [
-        { "segment": 8192, "offset": 250, "bytes": "0100004003f3" }
+        {
+          "segment": 8192,
+          "offset": 250,
+          "bytes": "0100004003f3"
+        }
       ]
     },
     {
       "name": "interrupt_immediate_vector",
-      "initial": { "CS": 24576, "IP": 0, "SS": 12288, "SP": 512, "FLAGS": 515 },
+      "initial": {
+        "CS": 24576,
+        "IP": 0,
+        "SS": 12288,
+        "SP": 512,
+        "FLAGS": 515
+      },
       "program": "cd21f4",
       "memory": [
-        { "segment": 0, "offset": 132, "bytes": "10000070" },
-        { "segment": 28672, "offset": 16, "bytes": "b8efbecf" }
+        {
+          "segment": 0,
+          "offset": 132,
+          "bytes": "10000070"
+        },
+        {
+          "segment": 28672,
+          "offset": 16,
+          "bytes": "b8efbecf"
+        }
       ],
-      "statuses": ["ok", "ok", "ok", "halted"],
-      "expected": { "AX": 48879, "SP": 512, "CS": 24576, "IP": 3, "FLAGS": 515 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 48879,
+        "SP": 512,
+        "CS": 24576,
+        "IP": 3,
+        "FLAGS": 515
+      }
     },
     {
       "name": "into_taken_and_returned",
-      "initial": { "CS": 32768, "IP": 0, "SS": 16384, "SP": 768, "FLAGS": 2562 },
+      "initial": {
+        "CS": 32768,
+        "IP": 0,
+        "SS": 16384,
+        "SP": 768,
+        "FLAGS": 2562
+      },
       "program": "cef4",
       "memory": [
-        { "segment": 0, "offset": 16, "bytes": "20000090" },
-        { "segment": 36864, "offset": 32, "bytes": "b8fecacf" }
+        {
+          "segment": 0,
+          "offset": 16,
+          "bytes": "20000090"
+        },
+        {
+          "segment": 36864,
+          "offset": 32,
+          "bytes": "b8fecacf"
+        }
       ],
-      "statuses": ["ok", "ok", "ok", "halted"],
-      "expected": { "AX": 51966, "SP": 768, "CS": 32768, "IP": 2, "FLAGS": 2562 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 51966,
+        "SP": 768,
+        "CS": 32768,
+        "IP": 2,
+        "FLAGS": 2562
+      }
     },
     {
       "name": "into_not_taken",
-      "initial": { "CS": 40960, "IP": 0, "FLAGS": 2 },
+      "initial": {
+        "CS": 40960,
+        "IP": 0,
+        "FLAGS": 2
+      },
       "program": "cef4",
-      "statuses": ["ok", "halted"],
-      "expected": { "CS": 40960, "IP": 2, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CS": 40960,
+        "IP": 2,
+        "FLAGS": 2
+      }
     },
     {
       "name": "halt_wakes_on_pending_irq",
-      "initial": { "CS": 45056, "IP": 0, "SS": 20480, "SP": 256, "FLAGS": 2 },
+      "initial": {
+        "CS": 45056,
+        "IP": 0,
+        "SS": 20480,
+        "SP": 256,
+        "FLAGS": 2
+      },
       "program": "fbf4f4",
       "pendingIrq": 32,
       "memory": [
-        { "segment": 0, "offset": 128, "bytes": "000000c0" },
-        { "segment": 49152, "offset": 0, "bytes": "cf" }
+        {
+          "segment": 0,
+          "offset": 128,
+          "bytes": "000000c0"
+        },
+        {
+          "segment": 49152,
+          "offset": 0,
+          "bytes": "cf"
+        }
       ],
-      "statuses": ["ok", "halted", "ok", "ok", "halted"],
-      "expected": { "SP": 256, "CS": 45056, "IP": 3, "FLAGS": 514 }
+      "statuses": [
+        "ok",
+        "halted",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "SP": 256,
+        "CS": 45056,
+        "IP": 3,
+        "FLAGS": 514
+      }
     },
     {
       "name": "nmi_bypasses_interrupt_mask",
-      "initial": { "CS": 53248, "IP": 0, "SS": 24576, "SP": 256, "FLAGS": 2 },
+      "initial": {
+        "CS": 53248,
+        "IP": 0,
+        "SS": 24576,
+        "SP": 256,
+        "FLAGS": 2
+      },
       "program": "90f4",
       "pendingNmi": true,
       "memory": [
-        { "segment": 0, "offset": 8, "bytes": "000000e0" },
-        { "segment": 57344, "offset": 0, "bytes": "b855aacf" }
+        {
+          "segment": 0,
+          "offset": 8,
+          "bytes": "000000e0"
+        },
+        {
+          "segment": 57344,
+          "offset": 0,
+          "bytes": "b855aacf"
+        }
       ],
-      "statuses": ["ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 43605, "SP": 256, "CS": 53248, "IP": 2, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 43605,
+        "SP": 256,
+        "CS": 53248,
+        "IP": 2,
+        "FLAGS": 2
+      }
     },
     {
       "name": "unsigned_byte_divide",
-      "initial": { "CS": 4096, "IP": 0, "AX": 4660, "BX": 52, "FLAGS": 2 },
+      "initial": {
+        "CS": 4096,
+        "IP": 0,
+        "AX": 4660,
+        "BX": 52,
+        "FLAGS": 2
+      },
       "program": "f6f3f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 8281, "BX": 52, "CS": 4096, "IP": 3, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 8281,
+        "BX": 52,
+        "CS": 4096,
+        "IP": 3,
+        "FLAGS": 2
+      }
     },
     {
       "name": "signed_byte_divide",
-      "initial": { "CS": 8192, "IP": 0, "AX": 65236, "BX": 249, "FLAGS": 2 },
+      "initial": {
+        "CS": 8192,
+        "IP": 0,
+        "AX": 65236,
+        "BX": 249,
+        "FLAGS": 2
+      },
       "program": "f6fbf4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 64042, "BX": 249, "CS": 8192, "IP": 3, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 64042,
+        "BX": 249,
+        "CS": 8192,
+        "IP": 3,
+        "FLAGS": 2
+      }
     },
     {
       "name": "unsigned_word_divide",
-      "initial": { "CS": 12288, "IP": 0, "AX": 0, "DX": 1, "BX": 256, "FLAGS": 2 },
+      "initial": {
+        "CS": 12288,
+        "IP": 0,
+        "AX": 0,
+        "DX": 1,
+        "BX": 256,
+        "FLAGS": 2
+      },
       "program": "f7f3f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 256, "DX": 0, "BX": 256, "CS": 12288, "IP": 3, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 256,
+        "DX": 0,
+        "BX": 256,
+        "CS": 12288,
+        "IP": 3,
+        "FLAGS": 2
+      }
     },
     {
       "name": "divide_by_zero_uses_8088_return_ip",
-      "initial": { "CS": 16384, "IP": 0, "SS": 8192, "SP": 256, "AX": 4660, "BX": 0, "FLAGS": 2 },
+      "initial": {
+        "CS": 16384,
+        "IP": 0,
+        "SS": 8192,
+        "SP": 256,
+        "AX": 4660,
+        "BX": 0,
+        "FLAGS": 2
+      },
       "program": "f6f3f4",
       "memory": [
-        { "segment": 0, "offset": 0, "bytes": "00000050" },
-        { "segment": 20480, "offset": 0, "bytes": "b8addebaefbecf" }
+        {
+          "segment": 0,
+          "offset": 0,
+          "bytes": "00000050"
+        },
+        {
+          "segment": 20480,
+          "offset": 0,
+          "bytes": "b8addebaefbecf"
+        }
       ],
-      "statuses": ["ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 57005, "DX": 48879, "SP": 256, "CS": 16384, "IP": 3, "FLAGS": 2 },
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 57005,
+        "DX": 48879,
+        "SP": 256,
+        "CS": 16384,
+        "IP": 3,
+        "FLAGS": 2
+      },
       "expectedMemory": [
-        { "segment": 8192, "offset": 250, "bytes": "0200004002f0" }
+        {
+          "segment": 8192,
+          "offset": 250,
+          "bytes": "0200004002f0"
+        }
       ]
     },
     {
       "name": "divide_quotient_overflow",
-      "initial": { "CS": 24576, "IP": 0, "SS": 12288, "SP": 512, "AX": 4660, "BX": 1, "FLAGS": 2 },
+      "initial": {
+        "CS": 24576,
+        "IP": 0,
+        "SS": 12288,
+        "SP": 512,
+        "AX": 4660,
+        "BX": 1,
+        "FLAGS": 2
+      },
       "program": "f6f3f4",
       "memory": [
-        { "segment": 0, "offset": 0, "bytes": "00000070" },
-        { "segment": 28672, "offset": 0, "bytes": "ba7856cf" }
+        {
+          "segment": 0,
+          "offset": 0,
+          "bytes": "00000070"
+        },
+        {
+          "segment": 28672,
+          "offset": 0,
+          "bytes": "ba7856cf"
+        }
       ],
-      "statuses": ["ok", "ok", "ok", "halted"],
-      "expected": { "AX": 4660, "DX": 22136, "SP": 512, "CS": 24576, "IP": 3, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 4660,
+        "DX": 22136,
+        "SP": 512,
+        "CS": 24576,
+        "IP": 3,
+        "FLAGS": 2
+      }
     },
     {
       "name": "signed_word_divide",
-      "initial": { "CS": 28672, "IP": 0, "AX": 65236, "DX": 65535, "BX": 65529, "FLAGS": 2 },
+      "initial": {
+        "CS": 28672,
+        "IP": 0,
+        "AX": 65236,
+        "DX": 65535,
+        "BX": 65529,
+        "FLAGS": 2
+      },
       "program": "f7fbf4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 42, "DX": 65530, "BX": 65529, "CS": 28672, "IP": 3, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 42,
+        "DX": 65530,
+        "BX": 65529,
+        "CS": 28672,
+        "IP": 3,
+        "FLAGS": 2
+      }
     },
     {
       "name": "flags_stack_and_ah_transfer",
-      "initial": { "CS": 32768, "IP": 0, "SS": 8192, "SP": 256, "FLAGS": 514 },
+      "initial": {
+        "CS": 32768,
+        "IP": 0,
+        "SS": 8192,
+        "SP": 256,
+        "FLAGS": 514
+      },
       "program": "b4d59e9cfaf89d9ff4",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 55040, "SP": 256, "CS": 32768, "IP": 9, "FLAGS": 727 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 55040,
+        "SP": 256,
+        "CS": 32768,
+        "IP": 9,
+        "FLAGS": 727
+      }
     },
     {
       "name": "far_call_jump_and_return",
-      "initial": { "CS": 4096, "IP": 0, "SS": 8192, "SP": 256, "FLAGS": 2 },
+      "initial": {
+        "CS": 4096,
+        "IP": 0,
+        "SS": 8192,
+        "SP": 256,
+        "FLAGS": 2
+      },
       "program": "9a00000030ea0b000010fff4",
       "memory": [
-        { "segment": 12288, "offset": 0, "bytes": "bb3412cb" }
+        {
+          "segment": 12288,
+          "offset": 0,
+          "bytes": "bb3412cb"
+        }
       ],
-      "statuses": ["ok", "ok", "ok", "ok", "halted"],
-      "expected": { "BX": 4660, "SP": 256, "CS": 4096, "IP": 12, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "BX": 4660,
+        "SP": 256,
+        "CS": 4096,
+        "IP": 12,
+        "FLAGS": 2
+      }
     },
     {
       "name": "far_return_with_stack_adjustment",
-      "initial": { "CS": 16384, "IP": 0, "SS": 20480, "SP": 256, "FLAGS": 2 },
+      "initial": {
+        "CS": 16384,
+        "IP": 0,
+        "SS": 20480,
+        "SP": 256,
+        "FLAGS": 2
+      },
       "program": "ca0200",
       "memory": [
-        { "segment": 20480, "offset": 256, "bytes": "030000600000" },
-        { "segment": 24576, "offset": 3, "bytes": "f4" }
+        {
+          "segment": 20480,
+          "offset": 256,
+          "bytes": "030000600000"
+        },
+        {
+          "segment": 24576,
+          "offset": 3,
+          "bytes": "f4"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "SP": 262, "CS": 24576, "IP": 4, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "SP": 262,
+        "CS": 24576,
+        "IP": 4,
+        "FLAGS": 2
+      }
     },
     {
       "name": "segment_register_setup",
-      "initial": { "CS": 32768, "IP": 0, "SS": 4096, "SP": 256, "FLAGS": 2 },
+      "initial": {
+        "CS": 32768,
+        "IP": 0,
+        "SS": 4096,
+        "SP": 256,
+        "FLAGS": 2
+      },
       "program": "b834128ed81e33c0078cc00e5b8ed0f4",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 4660, "BX": 32768, "SP": 256, "ES": 4660, "CS": 32768, "SS": 4660, "DS": 4660, "IP": 16, "FLAGS": 70 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 4660,
+        "BX": 32768,
+        "SP": 256,
+        "ES": 4660,
+        "CS": 32768,
+        "SS": 4660,
+        "DS": 4660,
+        "IP": 16,
+        "FLAGS": 70
+      }
     },
     {
       "name": "group1_sign_extended_immediate",
-      "initial": { "CS": 36864, "IP": 0, "FLAGS": 2 },
+      "initial": {
+        "CS": 36864,
+        "IP": 0,
+        "FLAGS": 2
+      },
       "program": "bb010083c3ff83fb007401fff4",
-      "statuses": ["ok", "ok", "ok", "ok", "halted"],
-      "expected": { "BX": 0, "CS": 36864, "IP": 13, "FLAGS": 70 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "BX": 0,
+        "CS": 36864,
+        "IP": 13,
+        "FLAGS": 70
+      }
     },
     {
       "name": "group1_memory_immediate",
-      "initial": { "CS": 40960, "IP": 0, "DS": 8192, "FLAGS": 2 },
+      "initial": {
+        "CS": 40960,
+        "IP": 0,
+        "DS": 8192,
+        "FLAGS": 2
+      },
       "program": "832e100001f4",
       "memory": [
-        { "segment": 8192, "offset": 16, "bytes": "0200" }
+        {
+          "segment": 8192,
+          "offset": 16,
+          "bytes": "0200"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "CS": 40960, "IP": 6, "FLAGS": 2 },
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CS": 40960,
+        "IP": 6,
+        "FLAGS": 2
+      },
       "expectedMemory": [
-        { "segment": 8192, "offset": 16, "bytes": "0100" }
+        {
+          "segment": 8192,
+          "offset": 16,
+          "bytes": "0100"
+        }
       ]
     },
     {
       "name": "port_io_immediate_and_dx",
-      "initial": { "CS": 45056, "IP": 0, "FLAGS": 2 },
+      "initial": {
+        "CS": 45056,
+        "IP": 0,
+        "FLAGS": 2
+      },
       "program": "b05ae680b000e4803c5a7401ffba8000b83412efb80000ed3d34127401fff4",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 4660, "DX": 128, "CS": 45056, "IP": 31, "FLAGS": 70 },
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 4660,
+        "DX": 128,
+        "CS": 45056,
+        "IP": 31,
+        "FLAGS": 70
+      },
       "expectedIo": [
-        { "direction": "out", "port": 128, "value": 90 },
-        { "direction": "in", "port": 128, "value": 90 },
-        { "direction": "out", "port": 128, "value": 52 },
-        { "direction": "out", "port": 129, "value": 18 },
-        { "direction": "in", "port": 128, "value": 52 },
-        { "direction": "in", "port": 129, "value": 18 }
+        {
+          "direction": "out",
+          "port": 128,
+          "value": 90
+        },
+        {
+          "direction": "in",
+          "port": 128,
+          "value": 90
+        },
+        {
+          "direction": "out",
+          "port": 128,
+          "value": 52
+        },
+        {
+          "direction": "out",
+          "port": 129,
+          "value": 18
+        },
+        {
+          "direction": "in",
+          "port": 128,
+          "value": 52
+        },
+        {
+          "direction": "in",
+          "port": 129,
+          "value": 18
+        }
       ]
     },
     {
       "name": "single_bit_shift_left_flags",
-      "initial": { "CS": 49152, "IP": 0, "AX": 16385, "FLAGS": 2 },
+      "initial": {
+        "CS": 49152,
+        "IP": 0,
+        "AX": 16385,
+        "FLAGS": 2
+      },
       "program": "d1e0f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 32770, "CS": 49152, "IP": 3, "FLAGS": 2178 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 32770,
+        "CS": 49152,
+        "IP": 3,
+        "FLAGS": 2178
+      }
     },
     {
       "name": "single_bit_shift_left_memory",
-      "initial": { "CS": 49408, "IP": 0, "DS": 4096, "FLAGS": 2 },
+      "initial": {
+        "CS": 49408,
+        "IP": 0,
+        "DS": 4096,
+        "FLAGS": 2
+      },
       "program": "d0263412f4",
       "memory": [
-        { "segment": 4096, "offset": 4660, "bytes": "81" }
+        {
+          "segment": 4096,
+          "offset": 4660,
+          "bytes": "81"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "CS": 49408, "IP": 5, "FLAGS": 2051 },
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CS": 49408,
+        "IP": 5,
+        "FLAGS": 2051
+      },
       "expectedMemory": [
-        { "segment": 4096, "offset": 4660, "bytes": "02" }
+        {
+          "segment": 4096,
+          "offset": 4660,
+          "bytes": "02"
+        }
       ]
     },
     {
       "name": "group3_not_word_preserves_flags",
-      "initial": { "CS": 49664, "IP": 0, "AX": 21845, "FLAGS": 2263 },
+      "initial": {
+        "CS": 49664,
+        "IP": 0,
+        "AX": 21845,
+        "FLAGS": 2263
+      },
       "program": "f7d0f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 43690, "CS": 49664, "IP": 3, "FLAGS": 2263 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 43690,
+        "CS": 49664,
+        "IP": 3,
+        "FLAGS": 2263
+      }
     },
     {
       "name": "group3_not_byte_memory",
-      "initial": { "CS": 49920, "IP": 0, "DS": 8192, "FLAGS": 71 },
+      "initial": {
+        "CS": 49920,
+        "IP": 0,
+        "DS": 8192,
+        "FLAGS": 71
+      },
       "program": "f6163412f4",
       "memory": [
-        { "segment": 8192, "offset": 4660, "bytes": "a5" }
+        {
+          "segment": 8192,
+          "offset": 4660,
+          "bytes": "a5"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "CS": 49920, "IP": 5, "FLAGS": 71 },
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CS": 49920,
+        "IP": 5,
+        "FLAGS": 71
+      },
       "expectedMemory": [
-        { "segment": 8192, "offset": 4660, "bytes": "5a" }
+        {
+          "segment": 8192,
+          "offset": 4660,
+          "bytes": "5a"
+        }
       ]
     },
     {
       "name": "group4_inc_byte_overflow_preserves_carry",
-      "initial": { "CS": 50176, "IP": 0, "AX": 4735, "FLAGS": 3 },
+      "initial": {
+        "CS": 50176,
+        "IP": 0,
+        "AX": 4735,
+        "FLAGS": 3
+      },
       "program": "fec0f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 4736, "CS": 50176, "IP": 3, "FLAGS": 2195 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 4736,
+        "CS": 50176,
+        "IP": 3,
+        "FLAGS": 2195
+      }
     },
     {
       "name": "group4_dec_byte_memory_preserves_carry",
-      "initial": { "CS": 50432, "IP": 0, "DS": 12288, "FLAGS": 2 },
+      "initial": {
+        "CS": 50432,
+        "IP": 0,
+        "DS": 12288,
+        "FLAGS": 2
+      },
       "program": "fe0e3412f4",
       "memory": [
-        { "segment": 12288, "offset": 4660, "bytes": "00" }
+        {
+          "segment": 12288,
+          "offset": 4660,
+          "bytes": "00"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "CS": 50432, "IP": 5, "FLAGS": 150 },
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CS": 50432,
+        "IP": 5,
+        "FLAGS": 150
+      },
       "expectedMemory": [
-        { "segment": 12288, "offset": 4660, "bytes": "ff" }
+        {
+          "segment": 12288,
+          "offset": 4660,
+          "bytes": "ff"
+        }
       ]
     },
     {
       "name": "single_bit_shift_right_word_flags",
-      "initial": { "CS": 50688, "IP": 0, "BX": 32769, "FLAGS": 18 },
+      "initial": {
+        "CS": 50688,
+        "IP": 0,
+        "BX": 32769,
+        "FLAGS": 18
+      },
       "program": "d1ebf4",
-      "statuses": ["ok", "halted"],
-      "expected": { "BX": 16384, "CS": 50688, "IP": 3, "FLAGS": 2055 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "BX": 16384,
+        "CS": 50688,
+        "IP": 3,
+        "FLAGS": 2055
+      }
     },
     {
       "name": "single_bit_arithmetic_shift_right_memory",
-      "initial": { "CS": 50944, "IP": 0, "DS": 16384, "FLAGS": 2050 },
+      "initial": {
+        "CS": 50944,
+        "IP": 0,
+        "DS": 16384,
+        "FLAGS": 2050
+      },
       "program": "d03e3412f4",
       "memory": [
-        { "segment": 16384, "offset": 4660, "bytes": "81" }
+        {
+          "segment": 16384,
+          "offset": 4660,
+          "bytes": "81"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "CS": 50944, "IP": 5, "FLAGS": 135 },
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CS": 50944,
+        "IP": 5,
+        "FLAGS": 135
+      },
       "expectedMemory": [
-        { "segment": 16384, "offset": 4660, "bytes": "c0" }
+        {
+          "segment": 16384,
+          "offset": 4660,
+          "bytes": "c0"
+        }
       ]
     },
     {
       "name": "cl_count_shift_right_matches_bios_helper",
-      "initial": { "CS": 51200, "IP": 0, "AX": 45056, "CX": 6, "FLAGS": 19 },
+      "initial": {
+        "CS": 51200,
+        "IP": 0,
+        "AX": 45056,
+        "CX": 6,
+        "FLAGS": 19
+      },
       "program": "d3e8f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 704, "CX": 6, "CS": 51200, "IP": 3, "FLAGS": 6 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 704,
+        "CX": 6,
+        "CS": 51200,
+        "IP": 3,
+        "FLAGS": 6
+      }
     },
     {
       "name": "zero_count_shift_preserves_operand_and_flags",
-      "initial": { "CS": 51456, "IP": 0, "AX": 4660, "CX": 0, "FLAGS": 2631 },
+      "initial": {
+        "CS": 51456,
+        "IP": 0,
+        "AX": 4660,
+        "CX": 0,
+        "FLAGS": 2631
+      },
       "program": "d3e0f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 4660, "CX": 0, "CS": 51456, "IP": 3, "FLAGS": 2631 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 4660,
+        "CX": 0,
+        "CS": 51456,
+        "IP": 3,
+        "FLAGS": 2631
+      }
     },
     {
       "name": "ror_al_cl_matches_bios_video_helper",
-      "initial": { "CS": 51584, "IP": 0, "AX": 6, "CX": 3, "FLAGS": 8775 },
+      "initial": {
+        "CS": 51584,
+        "IP": 0,
+        "AX": 6,
+        "CX": 3,
+        "FLAGS": 8775
+      },
       "program": "d2c8f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 192, "CX": 3, "CS": 51584, "IP": 3, "FLAGS": 8775 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 192,
+        "CX": 3,
+        "CS": 51584,
+        "IP": 3,
+        "FLAGS": 8775
+      }
     },
     {
       "name": "rol_byte_sets_carry_and_overflow_only",
-      "initial": { "CS": 51648, "IP": 0, "AX": 129, "FLAGS": 214 },
+      "initial": {
+        "CS": 51648,
+        "IP": 0,
+        "AX": 129,
+        "FLAGS": 214
+      },
       "program": "d0c0f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 3, "CS": 51648, "IP": 3, "FLAGS": 2263 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 3,
+        "CS": 51648,
+        "IP": 3,
+        "FLAGS": 2263
+      }
     },
     {
       "name": "ror_word_sets_carry_and_overflow_only",
-      "initial": { "CS": 51776, "IP": 0, "BX": 1, "FLAGS": 214 },
+      "initial": {
+        "CS": 51776,
+        "IP": 0,
+        "BX": 1,
+        "FLAGS": 214
+      },
       "program": "d1cbf4",
-      "statuses": ["ok", "halted"],
-      "expected": { "BX": 32768, "CS": 51776, "IP": 3, "FLAGS": 2263 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "BX": 32768,
+        "CS": 51776,
+        "IP": 3,
+        "FLAGS": 2263
+      }
     },
     {
       "name": "rcl_word_uses_input_carry",
-      "initial": { "CS": 51840, "IP": 0, "AX": 32768, "FLAGS": 215 },
+      "initial": {
+        "CS": 51840,
+        "IP": 0,
+        "AX": 32768,
+        "FLAGS": 215
+      },
       "program": "d1d0f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 1, "CS": 51840, "IP": 3, "FLAGS": 2263 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 1,
+        "CS": 51840,
+        "IP": 3,
+        "FLAGS": 2263
+      }
     },
     {
       "name": "rcr_byte_memory_uses_input_carry",
-      "initial": { "CS": 51904, "IP": 0, "DS": 20480, "FLAGS": 215 },
+      "initial": {
+        "CS": 51904,
+        "IP": 0,
+        "DS": 20480,
+        "FLAGS": 215
+      },
       "program": "d01e3412f4",
       "memory": [
-        { "segment": 20480, "offset": 4660, "bytes": "02" }
+        {
+          "segment": 20480,
+          "offset": 4660,
+          "bytes": "02"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "CS": 51904, "IP": 5, "FLAGS": 2262 },
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CS": 51904,
+        "IP": 5,
+        "FLAGS": 2262
+      },
       "expectedMemory": [
-        { "segment": 20480, "offset": 4660, "bytes": "81" }
+        {
+          "segment": 20480,
+          "offset": 4660,
+          "bytes": "81"
+        }
       ]
     },
     {
       "name": "zero_count_rotate_preserves_operand_and_flags",
-      "initial": { "CS": 51936, "IP": 0, "DX": 42330, "CX": 0, "FLAGS": 2775 },
+      "initial": {
+        "CS": 51936,
+        "IP": 0,
+        "DX": 42330,
+        "CX": 0,
+        "FLAGS": 2775
+      },
       "program": "d3caf4",
-      "statuses": ["ok", "halted"],
-      "expected": { "CX": 0, "DX": 42330, "CS": 51936, "IP": 3, "FLAGS": 2775 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CX": 0,
+        "DX": 42330,
+        "CS": 51936,
+        "IP": 3,
+        "FLAGS": 2775
+      }
     },
     {
       "name": "loop_decrements_cx_until_zero",
-      "initial": { "CS": 51712, "IP": 0, "FLAGS": 135 },
+      "initial": {
+        "CS": 51712,
+        "IP": 0,
+        "FLAGS": 135
+      },
       "program": "b90300e2fef4",
-      "statuses": ["ok", "ok", "ok", "ok", "halted"],
-      "expected": { "CX": 0, "CS": 51712, "IP": 6, "FLAGS": 135 }
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CX": 0,
+        "CS": 51712,
+        "IP": 6,
+        "FLAGS": 135
+      }
     },
     {
       "name": "jcxz_takes_without_decrementing",
-      "initial": { "CS": 51968, "IP": 0, "CX": 0, "FLAGS": 2 },
+      "initial": {
+        "CS": 51968,
+        "IP": 0,
+        "CX": 0,
+        "FLAGS": 2
+      },
       "program": "e301fff4",
-      "statuses": ["ok", "halted"],
-      "expected": { "CX": 0, "CS": 51968, "IP": 4, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CX": 0,
+        "CS": 51968,
+        "IP": 4,
+        "FLAGS": 2
+      }
     },
     {
       "name": "loopne_uses_zero_flag",
-      "initial": { "CS": 52224, "IP": 0, "CX": 2, "FLAGS": 2 },
+      "initial": {
+        "CS": 52224,
+        "IP": 0,
+        "CX": 2,
+        "FLAGS": 2
+      },
       "program": "e001fff4",
-      "statuses": ["ok", "halted"],
-      "expected": { "CX": 1, "CS": 52224, "IP": 4, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CX": 1,
+        "CS": 52224,
+        "IP": 4,
+        "FLAGS": 2
+      }
     },
     {
       "name": "loope_uses_zero_flag",
-      "initial": { "CS": 52480, "IP": 0, "CX": 2, "FLAGS": 66 },
+      "initial": {
+        "CS": 52480,
+        "IP": 0,
+        "CX": 2,
+        "FLAGS": 66
+      },
       "program": "e101fff4",
-      "statuses": ["ok", "halted"],
-      "expected": { "CX": 1, "CS": 52480, "IP": 4, "FLAGS": 66 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CX": 1,
+        "CS": 52480,
+        "IP": 4,
+        "FLAGS": 66
+      }
     },
     {
       "name": "group5_near_jump_register",
-      "initial": { "CS": 53248, "IP": 0, "AX": 4, "FLAGS": 135 },
+      "initial": {
+        "CS": 53248,
+        "IP": 0,
+        "AX": 4,
+        "FLAGS": 135
+      },
       "program": "ffe0fff4f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 4, "CS": 53248, "IP": 5, "FLAGS": 135 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 4,
+        "CS": 53248,
+        "IP": 5,
+        "FLAGS": 135
+      }
     },
     {
       "name": "group5_near_jump_cs_override_bios_shape",
-      "initial": { "CS": 53504, "IP": 0, "DS": 4096, "BX": 0, "FLAGS": 2 },
+      "initial": {
+        "CS": 53504,
+        "IP": 0,
+        "DS": 4096,
+        "BX": 0,
+        "FLAGS": 2
+      },
       "program": "2effa74500f4",
       "memory": [
-        { "segment": 53504, "offset": 69, "bytes": "0500" },
-        { "segment": 4096, "offset": 69, "bytes": "ffff" }
+        {
+          "segment": 53504,
+          "offset": 69,
+          "bytes": "0500"
+        },
+        {
+          "segment": 4096,
+          "offset": 69,
+          "bytes": "ffff"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "CS": 53504, "DS": 4096, "IP": 6, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CS": 53504,
+        "DS": 4096,
+        "IP": 6,
+        "FLAGS": 2
+      }
     },
     {
       "name": "group5_near_call_register_and_return",
-      "initial": { "CS": 53760, "IP": 0, "SS": 8192, "SP": 256, "AX": 4, "FLAGS": 2 },
+      "initial": {
+        "CS": 53760,
+        "IP": 0,
+        "SS": 8192,
+        "SP": 256,
+        "AX": 4,
+        "FLAGS": 2
+      },
       "program": "ffd0f49040c3",
-      "statuses": ["ok", "ok", "ok", "halted"],
-      "expected": { "AX": 5, "CS": 53760, "SS": 8192, "SP": 256, "IP": 3, "FLAGS": 6 },
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 5,
+        "CS": 53760,
+        "SS": 8192,
+        "SP": 256,
+        "IP": 3,
+        "FLAGS": 6
+      },
       "expectedMemory": [
-        { "segment": 8192, "offset": 254, "bytes": "0200" }
+        {
+          "segment": 8192,
+          "offset": 254,
+          "bytes": "0200"
+        }
       ]
     },
     {
       "name": "les_bios_direct_pointer",
-      "initial": { "CS": 54016, "IP": 0, "DS": 0, "SI": 65535, "ES": 43690, "FLAGS": 71 },
+      "initial": {
+        "CS": 54016,
+        "IP": 0,
+        "DS": 0,
+        "SI": 65535,
+        "ES": 43690,
+        "FLAGS": 71
+      },
       "program": "c4367400f4",
       "memory": [
-        { "segment": 0, "offset": 116, "bytes": "34127856" }
+        {
+          "segment": 0,
+          "offset": 116,
+          "bytes": "34127856"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "SI": 4660, "ES": 22136, "CS": 54016, "DS": 0, "IP": 5, "FLAGS": 71 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "SI": 4660,
+        "ES": 22136,
+        "CS": 54016,
+        "DS": 0,
+        "IP": 5,
+        "FLAGS": 71
+      }
     },
     {
       "name": "lds_bp_uses_ss_default",
-      "initial": { "CS": 54272, "IP": 0, "DS": 4096, "SS": 8192, "BP": 256, "CX": 0, "FLAGS": 2 },
+      "initial": {
+        "CS": 54272,
+        "IP": 0,
+        "DS": 4096,
+        "SS": 8192,
+        "BP": 256,
+        "CX": 0,
+        "FLAGS": 2
+      },
       "program": "c54e02f4",
       "memory": [
-        { "segment": 8192, "offset": 258, "bytes": "cdab2222" },
-        { "segment": 4096, "offset": 258, "bytes": "ffffeeee" }
+        {
+          "segment": 8192,
+          "offset": 258,
+          "bytes": "cdab2222"
+        },
+        {
+          "segment": 4096,
+          "offset": 258,
+          "bytes": "ffffeeee"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "CX": 43981, "DS": 8738, "SS": 8192, "BP": 256, "CS": 54272, "IP": 4, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CX": 43981,
+        "DS": 8738,
+        "SS": 8192,
+        "BP": 256,
+        "CS": 54272,
+        "IP": 4,
+        "FLAGS": 2
+      }
     },
     {
       "name": "lds_explicit_es_source_override",
-      "initial": { "CS": 54528, "IP": 0, "DS": 4096, "ES": 12288, "AX": 0, "FLAGS": 135 },
+      "initial": {
+        "CS": 54528,
+        "IP": 0,
+        "DS": 4096,
+        "ES": 12288,
+        "AX": 0,
+        "FLAGS": 135
+      },
       "program": "26c5063412f4",
       "memory": [
-        { "segment": 12288, "offset": 4660, "bytes": "efbe0040" },
-        { "segment": 4096, "offset": 4660, "bytes": "11112222" }
+        {
+          "segment": 12288,
+          "offset": 4660,
+          "bytes": "efbe0040"
+        },
+        {
+          "segment": 4096,
+          "offset": 4660,
+          "bytes": "11112222"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 48879, "DS": 16384, "ES": 12288, "CS": 54528, "IP": 6, "FLAGS": 135 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 48879,
+        "DS": 16384,
+        "ES": 12288,
+        "CS": 54528,
+        "IP": 6,
+        "FLAGS": 135
+      }
     },
     {
       "name": "xchg_bios_al_ah",
-      "initial": { "CS": 54784, "IP": 0, "AX": 97, "FLAGS": 71 },
+      "initial": {
+        "CS": 54784,
+        "IP": 0,
+        "AX": 97,
+        "FLAGS": 71
+      },
       "program": "86c4f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 24832, "CS": 54784, "IP": 3, "FLAGS": 71 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 24832,
+        "CS": 54784,
+        "IP": 3,
+        "FLAGS": 71
+      }
     },
     {
       "name": "xchg_accumulator_register",
-      "initial": { "CS": 54848, "IP": 0, "AX": 4660, "CX": 43981, "FLAGS": 2051 },
+      "initial": {
+        "CS": 54848,
+        "IP": 0,
+        "AX": 4660,
+        "CX": 43981,
+        "FLAGS": 2051
+      },
       "program": "91f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 43981, "CX": 4660, "CS": 54848, "IP": 2, "FLAGS": 2051 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 43981,
+        "CX": 4660,
+        "CS": 54848,
+        "IP": 2,
+        "FLAGS": 2051
+      }
     },
     {
       "name": "cwd_sign_extends_ax_into_dx",
-      "initial": { "CS": 54912, "IP": 0, "AX": 32769, "DX": 4660, "FLAGS": 2 },
+      "initial": {
+        "CS": 54912,
+        "IP": 0,
+        "AX": 32769,
+        "DX": 4660,
+        "FLAGS": 2
+      },
       "program": "99f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 32769, "DX": 65535, "CS": 54912, "IP": 2, "FLAGS": 2 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 32769,
+        "DX": 65535,
+        "CS": 54912,
+        "IP": 2,
+        "FLAGS": 2
+      }
     },
     {
       "name": "cwd_zero_extends_positive_ax",
-      "initial": { "CS": 54976, "IP": 0, "AX": 32767, "DX": 65535, "FLAGS": 2051 },
+      "initial": {
+        "CS": 54976,
+        "IP": 0,
+        "AX": 32767,
+        "DX": 65535,
+        "FLAGS": 2051
+      },
       "program": "99f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 32767, "DX": 0, "CS": 54976, "IP": 2, "FLAGS": 2051 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 32767,
+        "DX": 0,
+        "CS": 54976,
+        "IP": 2,
+        "FLAGS": 2051
+      }
     },
     {
       "name": "wait_without_coprocessor_is_noop",
-      "initial": { "CS": 55040, "IP": 0, "AX": 4660, "FLAGS": 2051 },
+      "initial": {
+        "CS": 55040,
+        "IP": 0,
+        "AX": 4660,
+        "FLAGS": 2051
+      },
       "program": "9bf4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 4660, "CS": 55040, "IP": 2, "FLAGS": 2051 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 4660,
+        "CS": 55040,
+        "IP": 2,
+        "FLAGS": 2051
+      }
     },
     {
       "name": "aam_splits_al_into_ah_and_al",
-      "initial": { "CS": 55040, "IP": 0, "AX": 154, "FLAGS": 2051 },
+      "initial": {
+        "CS": 55040,
+        "IP": 0,
+        "AX": 154,
+        "FLAGS": 2051
+      },
       "program": "d40af4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 3844, "CS": 55040, "IP": 3 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 3844,
+        "CS": 55040,
+        "IP": 3
+      }
     },
     {
       "name": "aad_combines_ah_and_al",
-      "initial": { "CS": 55040, "IP": 0, "AX": 772, "FLAGS": 2051 },
+      "initial": {
+        "CS": 55040,
+        "IP": 0,
+        "AX": 772,
+        "FLAGS": 2051
+      },
       "program": "d50af4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 34, "CS": 55040, "IP": 3 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 34,
+        "CS": 55040,
+        "IP": 3
+      }
     },
     {
       "name": "xchg_word_registers",
-      "initial": { "CS": 55040, "IP": 0, "AX": 4660, "BX": 43981, "FLAGS": 2051 },
+      "initial": {
+        "CS": 55040,
+        "IP": 0,
+        "AX": 4660,
+        "BX": 43981,
+        "FLAGS": 2051
+      },
       "program": "87d8f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 43981, "BX": 4660, "CS": 55040, "IP": 3, "FLAGS": 2051 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 43981,
+        "BX": 4660,
+        "CS": 55040,
+        "IP": 3,
+        "FLAGS": 2051
+      }
     },
     {
       "name": "xchg_word_memory_es_override",
-      "initial": { "CS": 55296, "IP": 0, "DS": 4096, "ES": 12288, "BX": 51966, "FLAGS": 2 },
+      "initial": {
+        "CS": 55296,
+        "IP": 0,
+        "DS": 4096,
+        "ES": 12288,
+        "BX": 51966,
+        "FLAGS": 2
+      },
       "program": "26871e3412f4",
       "memory": [
-        { "segment": 12288, "offset": 4660, "bytes": "3412" },
-        { "segment": 4096, "offset": 4660, "bytes": "ffff" }
+        {
+          "segment": 12288,
+          "offset": 4660,
+          "bytes": "3412"
+        },
+        {
+          "segment": 4096,
+          "offset": 4660,
+          "bytes": "ffff"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "BX": 4660, "DS": 4096, "ES": 12288, "CS": 55296, "IP": 6, "FLAGS": 2 },
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "BX": 4660,
+        "DS": 4096,
+        "ES": 12288,
+        "CS": 55296,
+        "IP": 6,
+        "FLAGS": 2
+      },
       "expectedMemory": [
-        { "segment": 12288, "offset": 4660, "bytes": "feca" }
+        {
+          "segment": 12288,
+          "offset": 4660,
+          "bytes": "feca"
+        }
       ]
     },
     {
       "name": "complement_carry_twice_preserves_other_flags",
-      "initial": { "CS": 55552, "IP": 0, "FLAGS": 2247 },
+      "initial": {
+        "CS": 55552,
+        "IP": 0,
+        "FLAGS": 2247
+      },
       "program": "f5f5f4",
-      "statuses": ["ok", "ok", "halted"],
-      "expected": { "CS": 55552, "IP": 3, "FLAGS": 2247 }
+      "statuses": [
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "CS": 55552,
+        "IP": 3,
+        "FLAGS": 2247
+      }
     },
     {
       "name": "test_al_immediate_matches_bios_probe",
-      "initial": { "CS": 55680, "IP": 0, "AX": 255, "FLAGS": 70 },
+      "initial": {
+        "CS": 55680,
+        "IP": 0,
+        "AX": 255,
+        "FLAGS": 70
+      },
       "program": "a80ff4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 255, "CS": 55680, "IP": 3, "FLAGS": 6 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 255,
+        "CS": 55680,
+        "IP": 3,
+        "FLAGS": 6
+      }
     },
     {
       "name": "test_ax_immediate_preserves_accumulator",
-      "initial": { "CS": 55744, "IP": 0, "AX": 32769, "FLAGS": 3799 },
+      "initial": {
+        "CS": 55744,
+        "IP": 0,
+        "AX": 32769,
+        "FLAGS": 3799
+      },
       "program": "a90080f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 32769, "CS": 55744, "IP": 4, "FLAGS": 1670 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 32769,
+        "CS": 55744,
+        "IP": 4,
+        "FLAGS": 1670
+      }
     },
     {
       "name": "mul_byte_memory_matches_bios_helper",
-      "initial": { "CS": 55808, "IP": 0, "AX": 0, "DS": 0, "FLAGS": 663 },
+      "initial": {
+        "CS": 55808,
+        "IP": 0,
+        "AX": 0,
+        "DS": 0,
+        "FLAGS": 663
+      },
       "program": "f6264a00f4",
       "memory": [
-        { "segment": 0, "offset": 74, "bytes": "00" }
+        {
+          "segment": 0,
+          "offset": 74,
+          "bytes": "00"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 0, "CS": 55808, "IP": 5, "FLAGS": 582 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 0,
+        "CS": 55808,
+        "IP": 5,
+        "FLAGS": 582
+      }
     },
     {
       "name": "mul_byte_sets_overflow_from_upper_half",
-      "initial": { "CS": 55872, "IP": 0, "AX": 255, "BX": 2, "FLAGS": 3799 },
+      "initial": {
+        "CS": 55872,
+        "IP": 0,
+        "AX": 255,
+        "BX": 2,
+        "FLAGS": 3799
+      },
       "program": "f6e3f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 510, "BX": 2, "CS": 55872, "IP": 3, "FLAGS": 3715 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 510,
+        "BX": 2,
+        "CS": 55872,
+        "IP": 3,
+        "FLAGS": 3715
+      }
     },
     {
       "name": "imul_byte_fits_signed_result",
-      "initial": { "CS": 55936, "IP": 0, "AX": 240, "BX": 2, "FLAGS": 3799 },
+      "initial": {
+        "CS": 55936,
+        "IP": 0,
+        "AX": 240,
+        "BX": 2,
+        "FLAGS": 3799
+      },
       "program": "f6ebf4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 65504, "BX": 2, "CS": 55936, "IP": 3, "FLAGS": 1666 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 65504,
+        "BX": 2,
+        "CS": 55936,
+        "IP": 3,
+        "FLAGS": 1666
+      }
     },
     {
       "name": "mul_word_writes_dx_ax",
-      "initial": { "CS": 56000, "IP": 0, "AX": 4660, "BX": 16, "DX": 65535, "FLAGS": 3799 },
+      "initial": {
+        "CS": 56000,
+        "IP": 0,
+        "AX": 4660,
+        "BX": 16,
+        "DX": 65535,
+        "FLAGS": 3799
+      },
       "program": "f7e3f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 9024, "BX": 16, "DX": 1, "CS": 56000, "IP": 3, "FLAGS": 3587 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 9024,
+        "BX": 16,
+        "DX": 1,
+        "CS": 56000,
+        "IP": 3,
+        "FLAGS": 3587
+      }
     },
     {
       "name": "imul_word_writes_sign_extended_product",
-      "initial": { "CS": 56064, "IP": 0, "AX": 65534, "BX": 3, "DX": 0, "FLAGS": 3799 },
+      "initial": {
+        "CS": 56064,
+        "IP": 0,
+        "AX": 65534,
+        "BX": 3,
+        "DX": 0,
+        "FLAGS": 3799
+      },
       "program": "f7ebf4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 65530, "BX": 3, "DX": 65535, "CS": 56064, "IP": 3, "FLAGS": 1670 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 65530,
+        "BX": 3,
+        "DX": 65535,
+        "CS": 56064,
+        "IP": 3,
+        "FLAGS": 1670
+      }
     },
     {
       "name": "group3_test_es_memory_matches_bios_probe",
-      "initial": { "CS": 56128, "IP": 0, "ES": 47104, "FLAGS": 70 },
+      "initial": {
+        "CS": 56128,
+        "IP": 0,
+        "ES": 47104,
+        "FLAGS": 70
+      },
       "program": "26f606100001f4",
       "memory": [
-        { "segment": 47104, "offset": 16, "bytes": "00" }
+        {
+          "segment": 47104,
+          "offset": 16,
+          "bytes": "00"
+        }
       ],
-      "statuses": ["ok", "halted"],
-      "expected": { "ES": 47104, "CS": 56128, "IP": 7, "FLAGS": 70 },
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "ES": 47104,
+        "CS": 56128,
+        "IP": 7,
+        "FLAGS": 70
+      },
       "expectedMemory": [
-        { "segment": 47104, "offset": 16, "bytes": "00" }
+        {
+          "segment": 47104,
+          "offset": 16,
+          "bytes": "00"
+        }
       ]
     },
     {
       "name": "group3_test_word_register_preserves_operand",
-      "initial": { "CS": 56192, "IP": 0, "AX": 61680, "FLAGS": 3799 },
+      "initial": {
+        "CS": 56192,
+        "IP": 0,
+        "AX": 61680,
+        "FLAGS": 3799
+      },
       "program": "f7c0000ff4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 61680, "CS": 56192, "IP": 5, "FLAGS": 1606 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 61680,
+        "CS": 56192,
+        "IP": 5,
+        "FLAGS": 1606
+      }
     },
     {
       "name": "test_modrm_byte_drives_zero_branch_without_store",
-      "initial": { "CS": 56224, "IP": 0, "AX": 255, "BX": 0, "ES": 47104, "FLAGS": 2 },
+      "initial": {
+        "CS": 56224,
+        "IP": 0,
+        "AX": 255,
+        "BX": 0,
+        "ES": 47104,
+        "FLAGS": 2
+      },
       "program": "26840610007403bb1111f4",
       "memory": [
-        { "segment": 47104, "offset": 16, "bytes": "00" }
+        {
+          "segment": 47104,
+          "offset": 16,
+          "bytes": "00"
+        }
       ],
-      "statuses": ["ok", "ok", "halted"],
-      "expected": { "AX": 255, "BX": 0, "ES": 47104, "CS": 56224, "IP": 11, "FLAGS": 70 },
+      "statuses": [
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 255,
+        "BX": 0,
+        "ES": 47104,
+        "CS": 56224,
+        "IP": 11,
+        "FLAGS": 70
+      },
       "expectedMemory": [
-        { "segment": 47104, "offset": 16, "bytes": "00" }
+        {
+          "segment": 47104,
+          "offset": 16,
+          "bytes": "00"
+        }
       ]
     },
     {
       "name": "video_status_ports_toggle_display_enable",
-      "initial": { "CS": 56256, "IP": 0, "FLAGS": 2 },
+      "initial": {
+        "CS": 56256,
+        "IP": 0,
+        "FLAGS": 2
+      },
       "program": "baba03ececbada03ececf4",
-      "statuses": ["ok", "ok", "ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 9, "DX": 986, "CS": 56256, "IP": 11, "FLAGS": 2 },
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 9,
+        "DX": 986,
+        "CS": 56256,
+        "IP": 11,
+        "FLAGS": 2
+      },
       "expectedIo": [
-        { "direction": "in", "port": 954, "value": 255 },
-        { "direction": "in", "port": 954, "value": 255 },
-        { "direction": "in", "port": 986, "value": 0 },
-        { "direction": "in", "port": 986, "value": 9 }
+        {
+          "direction": "in",
+          "port": 954,
+          "value": 255
+        },
+        {
+          "direction": "in",
+          "port": 954,
+          "value": 255
+        },
+        {
+          "direction": "in",
+          "port": 986,
+          "value": 0
+        },
+        {
+          "direction": "in",
+          "port": 986,
+          "value": 9
+        }
       ]
     },
     {
       "name": "xt_ppi_selects_cga_80_column_switches",
-      "initial": { "CS": 56576, "IP": 0, "FLAGS": 2 },
+      "initial": {
+        "CS": 56576,
+        "IP": 0,
+        "FLAGS": 2
+      },
       "program": "b008e661e462e461f4",
-      "statuses": ["ok", "ok", "ok", "ok", "halted"],
-      "expected": { "AX": 8, "CS": 56576, "IP": 9, "FLAGS": 2 },
+      "statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 8,
+        "CS": 56576,
+        "IP": 9,
+        "FLAGS": 2
+      },
       "expectedIo": [
-        { "direction": "out", "port": 97, "value": 8 },
-        { "direction": "in", "port": 98, "value": 6 },
-        { "direction": "in", "port": 97, "value": 8 }
+        {
+          "direction": "out",
+          "port": 97,
+          "value": 8
+        },
+        {
+          "direction": "in",
+          "port": 98,
+          "value": 6
+        },
+        {
+          "direction": "in",
+          "port": 97,
+          "value": 8
+        }
       ]
     },
     {
       "name": "daa_no_adjust_matches_bios_helper",
-      "initial": { "CS": 56320, "IP": 0, "AX": 515, "FLAGS": 518 },
+      "initial": {
+        "CS": 56320,
+        "IP": 0,
+        "AX": 515,
+        "FLAGS": 518
+      },
       "program": "27f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 515, "CS": 56320, "IP": 2, "FLAGS": 518 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 515,
+        "CS": 56320,
+        "IP": 2,
+        "FLAGS": 518
+      }
     },
     {
       "name": "daa_uses_auxiliary_carry",
-      "initial": { "CS": 56384, "IP": 0, "AX": 21, "FLAGS": 530 },
+      "initial": {
+        "CS": 56384,
+        "IP": 0,
+        "AX": 21,
+        "FLAGS": 530
+      },
       "program": "27f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 27, "CS": 56384, "IP": 2, "FLAGS": 534 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 27,
+        "CS": 56384,
+        "IP": 2,
+        "FLAGS": 534
+      }
     },
     {
       "name": "daa_adjusts_both_digits",
-      "initial": { "CS": 56448, "IP": 0, "AX": 155, "FLAGS": 2 },
+      "initial": {
+        "CS": 56448,
+        "IP": 0,
+        "AX": 155,
+        "FLAGS": 2
+      },
       "program": "27f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 1, "CS": 56448, "IP": 2, "FLAGS": 19 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 1,
+        "CS": 56448,
+        "IP": 2,
+        "FLAGS": 19
+      }
     },
     {
       "name": "daa_uses_input_carry_for_high_digit",
-      "initial": { "CS": 56512, "IP": 0, "AX": 153, "FLAGS": 3 },
+      "initial": {
+        "CS": 56512,
+        "IP": 0,
+        "AX": 153,
+        "FLAGS": 3
+      },
       "program": "27f4",
-      "statuses": ["ok", "halted"],
-      "expected": { "AX": 249, "CS": 56512, "IP": 2, "FLAGS": 135 }
+      "statuses": [
+        "ok",
+        "halted"
+      ],
+      "expected": {
+        "AX": 249,
+        "CS": 56512,
+        "IP": 2,
+        "FLAGS": 135
+      }
     }
   ]
 }

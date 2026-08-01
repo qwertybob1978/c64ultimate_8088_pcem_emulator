@@ -13,11 +13,13 @@ The input must be a raw disk image of exactly one of these sizes:
 | --- | ---: | ---: | ---: | ---: |
 | 160 KiB | 163,840 | 1 | 8 | 20 |
 | 320 KiB | 327,680 | 2 | 8 | 40 |
+| 360 KiB | 368,640 | 2 | 9 | 45 |
 
 The file can have any name or extension. The script validates only the size,
 not the DOS version or filesystem contents. The selected size also selects the
 emulated floppy geometry: 160 KiB uses one head and eight sectors per track;
-320 KiB uses two heads and eight sectors per track. This allows different DOS
+320 KiB uses two heads and eight sectors per track; 360 KiB uses two heads and
+nine sectors per track. This allows different DOS
 1.x images to be tested without changing the build scripts.
 
 The settings are defined in the size `switch` in `build_crt.ps1`. The selected
@@ -47,7 +49,7 @@ The existing default command remains available:
 .\build_crt.ps1
 ```
 
-It uses `third_party/pcdos/Disk01.img`. To select another supported image
+It uses `third_party/svardos/svdos-360K-disk-1.img`. To select another supported image
 directly, use:
 
 ```powershell
@@ -68,11 +70,12 @@ VICE without rebuilding:
 VICE runs with a 16 MiB REU and warp mode. The CRT bank count includes the
 payload banks plus the media banks, rounded up to 8 KiB per cartridge bank.
 For example, the current payload uses four banks, so a 160 KiB image produces
-24 total banks and a 320 KiB image produces 44 total banks.
+24 total banks, a 320 KiB image produces 44 total banks, and a 360 KiB image
+produces 49 total banks.
 
 ## Troubleshooting
 
-- `DOS disk image must be exactly 160 KiB or 320 KiB`: the file is not a raw
+- `DOS disk image must be exactly 160 KiB, 320 KiB, or 360 KiB`: the file is not a raw
   image of a supported size. Do not pass an archive or a disk image with a
   header; extract or convert it first.
 - `required disk image not found`: check the path relative to the repository

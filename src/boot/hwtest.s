@@ -44,6 +44,12 @@
 .import fdc_last_command
 .import fdc_read_count
 .import fdc_dma_failures
+.import dma_last_failure
+.import dma_channel2_addr
+.import dma_channel2_page
+.import dma_last_byte
+.import dma_first_addr_hi
+.import dma_first_page
 .import fdc_dor_writes
 .import pic_irq6_requests
 .import pic_irq6_deliveries
@@ -838,7 +844,7 @@ display_boot_failure:
     ldx #$13
     jsr display_hex_byte_row10
     lda boot_reset_bytes+4
-    ldx #$15
+    ldx #$19
     jsr display_hex_byte_row10
     lda #$46                    ; F
     sta $0598
@@ -1033,7 +1039,7 @@ display_boot_failure:
     ldx #$15
     jsr display_hex_byte
     lda interrupt_last_iret_ip
-    ldx #$18
+    ldx #$1C
     jsr display_hex_byte
     lda #$4D                    ; M
     sta $0520
@@ -1051,6 +1057,24 @@ display_boot_failure:
     lda fdc_dma_failures
     ldx #$A6
     jsr display_hex_byte
+    lda dma_last_failure
+    ldx #$B5
+    jsr display_hex_byte
+    lda dma_channel2_addr+1
+    ldx #$B8
+    jsr display_hex_byte
+    lda dma_channel2_page
+    ldx #$BB
+    jsr display_hex_byte
+    lda dma_last_byte
+    ldx #$1E
+    jsr display_hex_byte_at
+    lda dma_first_addr_hi
+    ldx #$21
+    jsr display_hex_byte_at
+    lda dma_first_page
+    ldx #$24
+    jsr display_hex_byte_at
     lda fdc_dor_writes
     ldx #$A9
     jsr display_hex_byte
@@ -1404,14 +1428,32 @@ display_fdc_runtime:
     jsr cpu8088_mem_read_u8
     ldx #$0D
     jsr display_hex_byte_row22
-    lda #$10                    ; K
-    sta $07D4
-    lda #$04                    ; E
-    sta $07D5
-    lda #$18                    ; Y
-    sta $07D6
+    lda #$04                    ; D
+    sta $07D0
+    lda #$01                    ; A
+    sta $07D1
+    lda #$14                    ; T
+    sta $07D2
+    lda #$01                    ; A
+    sta $07D3
     lda #$3A
-    sta $07D7
+    sta $07D4
+    lda #<$0600
+    sta cpu8088_phys_addr
+    lda #>$0600
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$15
+    jsr display_hex_byte_at
+    lda #<$0620
+    sta cpu8088_phys_addr
+    lda #>$0620
+    sta cpu8088_phys_addr+1
+    jsr cpu8088_mem_read_u8
+    ldx #$18
+    jsr display_hex_byte_at
     lda #<$041E
     sta cpu8088_phys_addr
     lda #>$041E

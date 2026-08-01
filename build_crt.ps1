@@ -1,5 +1,5 @@
 param(
-    [string]$DiskImage = "third_party/pcdos/Disk01.img"
+    [string]$DiskImage = "third_party/svardos/svdos-360K-disk-1.img"
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,10 +19,11 @@ $diskImagePath = $diskImageInfo.FullName
 $geometry = switch ([int64]$diskImageInfo.Length) {
     163840 { @{ SectorsPerTrack = 8; HeadsPerCylinder = 1 }; break }
     327680 { @{ SectorsPerTrack = 8; HeadsPerCylinder = 2 }; break }
+    368640 { @{ SectorsPerTrack = 9; HeadsPerCylinder = 2 }; break }
     default { $null }
 }
 if (-not $geometry) {
-    throw "DOS disk image must be exactly 160 KiB or 320 KiB; got $($diskImageInfo.Length) bytes: $diskImagePath"
+    throw "DOS disk image must be exactly 160 KiB, 320 KiB, or 360 KiB; got $($diskImageInfo.Length) bytes: $diskImagePath"
 }
 @(
     "SECTORS_PER_TRACK = $($geometry.SectorsPerTrack)"
