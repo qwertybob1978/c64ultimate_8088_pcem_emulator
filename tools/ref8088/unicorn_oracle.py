@@ -158,6 +158,10 @@ def run_unicorn(spec: dict, vector: dict) -> dict:
             if name == "FLAGS":
                 actual &= flag_mask
                 wanted &= flag_mask
+                if vector["program"][:2].lower() in ("d4", "d5"):
+                    defined_flags = spec["flags"]["PF"] | spec["flags"]["ZF"] | spec["flags"]["SF"]
+                    actual &= defined_flags
+                    wanted &= defined_flags
             if actual != wanted:
                 raise AssertionError(
                     f"{vector['name']} step {index}: Unicorn {name}={actual:#06x}, reference={wanted:#06x}"
