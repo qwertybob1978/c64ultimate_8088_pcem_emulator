@@ -569,14 +569,14 @@
       "initial": { "CS": 55040, "IP": 0, "AX": 154, "FLAGS": 2051 },
       "program": "d40af4",
       "statuses": ["ok", "halted"],
-      "expected": { "AX": 3844, "CS": 55040, "IP": 2 }
+      "expected": { "AX": 3844, "CS": 55040, "IP": 3 }
     },
     {
       "name": "aad_combines_ah_and_al",
       "initial": { "CS": 55040, "IP": 0, "AX": 772, "FLAGS": 2051 },
       "program": "d50af4",
       "statuses": ["ok", "halted"],
-      "expected": { "AX": 34, "CS": 55040, "IP": 2 }
+      "expected": { "AX": 34, "CS": 55040, "IP": 3 }
     },
     {
       "name": "xchg_word_registers",
