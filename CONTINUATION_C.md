@@ -107,6 +107,17 @@ flow reached BIOS data at `F000:E003`; the displayed `OP:04` was stale. The
 next diagnostic should identify the preceding jump/return or IVT target that
 lands in the `$E000` banner region.
 
+The active acceptance target is now explicit in `PROJECT_PLAN.md`: boot the
+supplied Sv a rDOS 360K image to a usable DOS prompt in the packaged CRT/VICE
+path. The next probe captures IVT vector 9 (`00024h`) at failure to distinguish
+an incorrect keyboard IRQ target from a later BIOS jump/return into `$E000`.
+
+The packaged run shows IVT 9 as `87 E9 00 F0` (`F000:E987`), the expected
+keyboard handler, while IVT 0 remains zeroed. The banner fault therefore is
+not caused by a bad IRQ1 vector. Treat it as an INT 0 or bad return/control
+transfer until the preceding instruction and stack frame are captured; FDC
+work remains blocked because command and read counters are still zero.
+
 Status update 2026-08-01: the former F44D hypothesis is closed. Reference
 execution shows F44D is a reusable CGA `$3DA` status helper with `DX=$3DA` and
 alternating `$00/$09` reads; it is not an FDC MSR or digital-input poll. The

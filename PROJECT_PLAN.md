@@ -23,6 +23,11 @@ floppy image, provide readable text output, accept keyboard input, and run
 ordinary real-mode software. Exact IBM PC bus timing, copy-protection support,
 and demo-grade cycle accuracy are not first-release goals.
 
+Active acceptance target: boot `third_party/svardos/svdos-360K-disk-1.img` with
+the Generic XT BIOS to a usable DOS prompt in the packaged CRT/VICE path,
+then exercise keyboard input and a read-only DOS command before expanding the
+scope of the floppy workload.
+
 ## 2. Feasibility statement
 
 This is technically plausible as a **functional** simulator, but real-time
@@ -66,9 +71,12 @@ Emulate one fixed, deliberately small configuration:
 | Storage | One 360 KiB 5.25-inch floppy image, read/write |
 | Sound | PC speaker, initially simple on/off or low-rate edge playback |
 | Optional later storage | XT-IDE-compatible controller and hard-disk image |
+| Nice-to-have feasibility | Real Commodore 1571 access for MS-DOS-format boot disks |
 
 Do not begin with EGA/VGA, 8087, EMS, serial/parallel devices, networking,
 mouse support, protected mode, 80286 instructions, or cycle-exact CGA effects.
+The physical Commodore 1571 study is explicitly non-blocking and must not delay
+the standard 360 KiB image boot path.
 
 ### 3.2 Host requirements
 
@@ -309,6 +317,15 @@ polling software and composite-artifact color are later compatibility work.
   read ID.
 - Keep a dirty-sector bitmap and save intentionally on menu command/clean exit.
   Never silently overwrite the user's only disk image; default to copy-on-write.
+- Treat real Commodore 1571 access as a later feasibility study. First determine
+  whether the available C64/C64U hardware path can safely issue IEC/1571
+  commands or expose a raw sector bridge while the emulator is running. Do not
+  assume that a filesystem API provides raw MFM sectors. The first experiment
+  must be read-only, use a user-supplied MS-DOS-format disk, identify the exact
+  adapter/firmware/API, and compare returned sectors and boot signature against
+  a known image. Only after repeatable sector reads work may the bridge be
+  connected to the guest XT FDC as drive A; writes require separate
+  copy-on-write and explicit export approval.
 - Begin PC-speaker support as a single SID/UltiSID voice updated at coarse event
   boundaries. Disable it during performance investigations.
 
@@ -415,6 +432,37 @@ without corrupting the base image.
 
 **Release gate:** reproducible build; clean license/provenance audit; BIOS-to-DOS
 demo; no bundled proprietary ROMs; no known base-image corruption path.
+
+### Optional feasibility study: real Commodore 1571 MS-DOS boot disks
+
+This is a nice-to-have experiment, not a version 1.0 requirement and not a
+reason to weaken or reorder the CPU/opcode or PCem-driver gates. Execute it only
+after the normal image-backed DOS boot is stable.
+
+Study order:
+
+1. Document the physical setup: real 1571 model, IEC connection or adapter,
+   C64/C64U firmware/API, cable, power, and whether the drive is shared with
+   the host. No unsupported hardware assumptions.
+2. Prove read-only discovery and sector access outside the guest. Read the boot
+   sector and a small CHS sample from a permitted MS-DOS-format disk; verify
+   `55 AA`, geometry, deterministic retries, and hashes against a separately
+   acquired image when available.
+3. Measure latency, failure modes, drive-busy behavior, reset/reconnect, and
+   whether access can coexist with turbo, REU DMA, VIC refresh, and keyboard
+   input. Preserve the standard image-backed path as a fallback.
+4. If raw sector access is reliable, add a narrow media-provider interface that
+   maps 1571 CHS reads to the existing XT FDC path. Do not make the guest speak
+   Commodore DOS commands unless a separate use case requires it.
+5. Add writes only as a separate experiment with copy-on-write, explicit
+   export, power-loss-safe behavior, and a disposable disk. Never write the
+   physical disk by default.
+
+Go/no-go gate: proceed only if read-only boot-sector and multi-sector reads are
+repeatable, the interface is documented, and a native VICE/C64U integration
+test can boot or validate the disk without regressing the normal image path.
+Otherwise record the measured limitation and leave the study as a documented
+adapter/media-provider proposal.
 
 ## 9. Testing strategy
 

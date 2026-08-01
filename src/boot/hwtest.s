@@ -124,6 +124,8 @@ boot_fault_ss:        .res 2
 boot_fault_sp:        .res 2
 boot_fault_bytes:     .res 4
 boot_stack_bytes:     .res 4
+boot_fault_ivt:       .res 4
+boot_fault_ivt0:      .res 4
 boot_prev2_cs:        .res 2
 boot_prev2_ip:        .res 2
 boot_prev2_opcode:    .res 1
@@ -673,6 +675,38 @@ display_boot_failure:
     lda boot_fault_bytes+3
     ldx #$DD
     jsr display_hex_byte
+    lda #$49                    ; I
+    sta $04E8
+    lda #$3A
+    sta $04E9
+    lda boot_fault_ivt
+    ldx #$EC
+    jsr display_hex_byte
+    lda boot_fault_ivt+1
+    ldx #$EF
+    jsr display_hex_byte
+    lda boot_fault_ivt+2
+    ldx #$F2
+    jsr display_hex_byte
+    lda boot_fault_ivt+3
+    ldx #$F5
+    jsr display_hex_byte
+    lda #$30                    ; 0
+    sta $04F8
+    lda #$3A
+    sta $04F9
+    lda boot_fault_ivt0
+    ldx #$FC
+    jsr display_hex_byte
+    lda boot_fault_ivt0+1
+    ldx #$FF
+    jsr display_hex_byte
+    lda boot_fault_ivt0+2
+    ldx #$02
+    jsr display_hex_byte
+    lda boot_fault_ivt0+3
+    ldx #$05
+    jsr display_hex_byte
     lda fdc_last_command
     ldx #$A0
     jsr display_hex_byte
@@ -1014,6 +1048,45 @@ display_fdc_runtime:
 capture_boot_fault_context:
     jsr capture_fault_bytes
     jsr capture_stack_bytes
+    jsr capture_fault_ivt
+    jsr capture_fault_ivt0
+    rts
+
+capture_fault_ivt0:
+    lda #$00
+    sta cpu8088_phys_addr
+    sta cpu8088_phys_addr+1
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_ivt0
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_ivt0+1
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_ivt0+2
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_ivt0+3
+    rts
+
+capture_fault_ivt:
+    lda #$24
+    sta cpu8088_phys_addr
+    lda #$00
+    sta cpu8088_phys_addr+1
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_ivt
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_ivt+1
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_ivt+2
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_ivt+3
     rts
 
 capture_fault_bytes:
