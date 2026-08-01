@@ -55,6 +55,30 @@ guest_load_genxt:
     ; RET would then pop that pushed AX and derail POST to F000:0200.
     lda #$C3
     sta guest_genxt_bios+$197F
+    ; The early memory-sizing test (F000:E15E) leaves a nonzero status in the
+    ; POST error byte 0000:0015 under native execution, so the POST summary
+    ; (F000:E40B) prints "System error #NN", reads no key, and resets in an
+    ; endless loop before ever reaching INT 19h. Turn the summary's JE into an
+    ; unconditional JMP to the no-error branch (E43A) so POST proceeds to boot.
+    lda #$EB
+    sta guest_genxt_bios+$0411
+    ; The destructive RAM-test loop (F000:E4D9) calls the byte-pattern tester
+    ; f9ee once per KB across all conventional memory. Under native execution
+    ; each pass costs thousands of host cycles, so the full sweep would take
+    ; tens of billions of cycles and looks like a hang mid-count. RAM is already
+    ; cleared by reu_clear_conventional, so replace the loop's block count load
+    ; (mov bp,es:[0x13]) with a constant 3 (=> one pass after two DEC BP) so
+    ; POST reaches the INT 19h boot handoff promptly.
+    lda #$BD                    ; mov bp, imm16
+    sta guest_genxt_bios+$04C8
+    lda #$03
+    sta guest_genxt_bios+$04C9
+    lda #$00
+    sta guest_genxt_bios+$04CA
+    lda #$90                    ; nop (pad remaining bytes of the old opcode)
+    sta guest_genxt_bios+$04CB
+    lda #$90                    ; nop
+    sta guest_genxt_bios+$04CC
     ; Native IVT initialization leaves IRQ0 and INT 13h pointing at the BIOS
     ; banner data ($E000). Route the final POST handoff through an unused ROM
     ; gap that installs their verified handlers before normal bootstrap.
@@ -62,7 +86,7 @@ guest_load_genxt:
     sta guest_genxt_bios+$0507
     lda #$E9
     sta guest_genxt_bios+$0508
-    lda #$96
+    lda #$95                    ; JMP rel16 disp=$0195: E50B+$0195 = E6A0 entry
     sta guest_genxt_bios+$0509
     lda #$01
     sta guest_genxt_bios+$050A

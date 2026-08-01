@@ -460,3 +460,33 @@ These are legitimate BIOS POST instructions, not data.
 3. Verify first cpu8088_step fetches from FFFF:0000 (physical 0xFFFF0 = ROM offset 0x1FF0)
 4. If P1 shows 0xEA (JMP FAR opcode), trace operand fetch
 5. If P1 shows something else, trace backward from P2 to find where control flow diverged
+
+## POST boot-loop fix (2026-08-01)
+
+### Symptom
+"SYSTEM ERROR #00, CONTINUE?" reappeared endlessly; floppy never booted. Switching disk image (MS-DOS 3.30 -> SvarDOS `svdos-360K-disk-1.img`) changed nothing.
+
+### Root cause (three layered POST bugs, all before disk read)
+FDC counters were all zero (`fdc_read_count=0`) and guest PC sampled in the `F000:E259` POST delay loop -> disk never reached. POST was resetting in a loop:
+
+1. **Spurious "System error #00".** Early memory-sizing (`F000:E15E`) stores a nonzero value into POST error byte `0000:0015` under native execution. Summary check `F000:E40B` (`test es:[0x15],0xff`) then prints "System error #NN", reads no key, and executes `ljmp F000:E05B` (reset) -> POST restarts forever.
+2. **Slow RAM test.** Past that, POST runs its per-KB memory test loop (`F000:E4D9`, `call f9ee` once per KB). Under interpretation the full sweep costs tens of billions of cycles and looks like a hang at "084 KB".
+3. **Off-by-one boot-handoff JMP (latent).** Injected `JMP` at `E508` used disp `$0196` -> target `E50B+0x0196 = E6A1` (mid-instruction, opcode `C0`) instead of patch entry `E6A0`. Trapped once POST finally reached it.
+
+### Fixes (src/memory/guest_init.s)
+- `guest_genxt_bios+$0411`: `$74 -> $EB` (JE -> unconditional JMP to no-error branch E43A). Kills reset loop.
+- `guest_genxt_bios+$04C8`: replace `mov bp,es:[0x13]` (`26 8B 2E 13 00`) with `mov bp,3` + 2 NOP (`BD 03 00 90 90`) so RAM-test loop runs one pass.
+- `guest_genxt_bios+$0509`: `$96 -> $95` (disp `$0195`) so boot handoff lands on `E6A0`.
+
+Tests updated in tests/test_phase0_contracts.py. 41/41 pass, VICE smoke green.
+
+### Result
+POST completes, prints BIOS banner "(C)ANONYMOUS CPU987", advances into BIOS diskette code. Now waits at `F000:EEBA` (wait-for-floppy-interrupt loop) spinning on BDA `0040:003E` bit 7.
+
+### Next blocker: INT 13h -> IRQ6 handshake
+`0040:003E` bit 7 is set by the IRQ6 diskette ISR after a disk command completes. FDC counters stay zero at EEBA, so the INT 13h (IVT[13h]=F000:EC59) -> FDC command -> IRQ6 -> ISR -> `0040:003E` bit7 chain is not completing. Investigate: INT 13h handler at `EC59`, IVT[0Eh]/IRQ6 wiring, PIC delivery, and the diskette ISR that sets the completion flag.
+
+### New tools
+- tools/disasm_region.py: 16-bit capstone disasm, `python tools/disasm_region.py <startHex> <endHex>` (BASE=0xE000).
+- tools/scan_err15.py: scan ROM for writes to offset 0x15.
+- tools/capture_diag_dump.py: binary-monitor break at diagnostic_done ($08CD), dump $0400-$86FF for parse_fault_dump.py.

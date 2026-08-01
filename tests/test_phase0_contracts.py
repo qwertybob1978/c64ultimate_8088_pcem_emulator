@@ -55,13 +55,12 @@ class Phase0Contracts(unittest.TestCase):
             r"lda\s+#\$EB\s+sta\s+guest_genxt_bios\+\$0D08\s+"
             r"lda\s+#\$09\s+sta\s+guest_genxt_bios\+\$0D09",
         )
-        self.assertRegex(
-            source,
-            r"lda\s+#\$C3\s+sta\s+guest_genxt_bios\+\$197F",
-        )
+        self.assertRegex(source, r"lda\s+#\$C3\s+sta\s+guest_genxt_bios\+\$197F",)
+        self.assertRegex(source, r"lda\s+#\$EB\s+sta\s+guest_genxt_bios\+\$0411")
+        self.assertRegex(source, r"lda\s+#\$BD[^\n]*\n\s+sta\s+guest_genxt_bios\+\$04C8")
         self.assertRegex(source, r"lda\s+#\$FA\s+sta\s+guest_genxt_bios\+\$0507")
         self.assertRegex(source, r"lda\s+#\$E9\s+sta\s+guest_genxt_bios\+\$0508")
-        self.assertRegex(source, r"lda\s+#\$96\s+sta\s+guest_genxt_bios\+\$0509")
+        self.assertRegex(source, r"lda\s+#\$95[^\n]*\n\s+sta\s+guest_genxt_bios\+\$0509")
         self.assertRegex(source, r"lda\s+#\$01\s+sta\s+guest_genxt_bios\+\$050A")
         self.assertIn("sta guest_genxt_bios+$06A0,x", source)
         self.assertIn("$B8,$A5,$FE,$A3,$20,$00", source)
