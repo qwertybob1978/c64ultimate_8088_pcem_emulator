@@ -306,6 +306,11 @@ class Reference8088:
         cycles = metadata["cycles"]
         if handler == "nop":
             pass
+        elif handler == "xchg_accumulator":
+            index = opcode & 7
+            accumulator = self.registers["AX"]
+            self.registers["AX"] = self.get_register(index, 16)
+            self.set_register(index, 16, accumulator)
         elif handler == "cwd":
             self.registers["DX"] = 0xFFFF if self.registers["AX"] & 0x8000 else 0
         elif handler == "hlt":

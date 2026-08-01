@@ -448,9 +448,9 @@
     },
     {
       "first": 144,
-      "last": 144,
-      "mnemonic": "NOP",
-      "handler": "nop",
+      "last": 151,
+      "mnemonic": "XCHG AX,r16",
+      "handler": "xchg_accumulator",
       "length": 1,
       "cycles": 3
     },

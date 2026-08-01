@@ -537,6 +537,13 @@
       "expected": { "AX": 24832, "CS": 54784, "IP": 3, "FLAGS": 71 }
     },
     {
+      "name": "xchg_accumulator_register",
+      "initial": { "CS": 54848, "IP": 0, "AX": 4660, "CX": 43981, "FLAGS": 2051 },
+      "program": "91f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 43981, "CX": 4660, "CS": 54848, "IP": 2, "FLAGS": 2051 }
+    },
+    {
       "name": "cwd_sign_extends_ax_into_dx",
       "initial": { "CS": 54912, "IP": 0, "AX": 32769, "DX": 4660, "FLAGS": 2 },
       "program": "99f4",
