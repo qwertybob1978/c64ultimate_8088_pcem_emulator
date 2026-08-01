@@ -382,6 +382,10 @@ cpu8088_step:
     long_beq @loop_rel8
     cmp #$E3
     long_beq @loop_rel8
+    cmp #$D4                    ; AAM imm8
+    long_beq @aam
+    cmp #$D5                    ; AAD imm8
+    long_beq @aad
     cmp #$FF                    ; Group 5 indirect control flow
     long_beq @group5_control
 
@@ -3008,6 +3012,101 @@ cpu8088_step:
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
     rts
+
+@aam:
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta immediate_low
+    long_beq @invalid
+    lda cpu8088_state+CPU_AX
+    sta alu_left
+    lda immediate_low
+    sta alu_right
+    lda #$00
+    sta alu_result
+@aam_divide:
+    lda alu_left
+    cmp alu_right
+    bcc @aam_done
+    sec
+    sbc alu_right
+    sta alu_left
+    inc alu_result
+    jmp @aam_divide
+@aam_done:
+    lda alu_result
+    sta cpu8088_state+CPU_AX+1
+    lda alu_left
+    sta cpu8088_state+CPU_AX
+    jsr @update_byte_result_flags
+    lda #$D5
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@aad:
+    jsr cpu8088_fetch_u8
+    long_bcs @memory_error
+    sta immediate_low
+    lda #$00
+    sta alu_result
+    ldx cpu8088_state+CPU_AX+1
+@aad_multiply:
+    cpx #$00
+    beq @aad_add_al
+    clc
+    lda alu_result
+    adc immediate_low
+    sta alu_result
+    dex
+    jmp @aad_multiply
+@aad_add_al:
+    clc
+    lda alu_result
+    adc cpu8088_state+CPU_AX
+    sta cpu8088_state+CPU_AX
+    lda #$00
+    sta cpu8088_state+CPU_AX+1
+    jsr @update_byte_result_flags
+    lda #$D5
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@update_byte_result_flags:
+    lda cpu8088_state+CPU_FLAGS
+    and #$3B
+    sta cpu8088_state+CPU_FLAGS
+    lda cpu8088_state+CPU_AX
+    beq @byte_result_zero
+    bpl @byte_result_parity
+    lda cpu8088_state+CPU_FLAGS
+    ora #$80
+    sta cpu8088_state+CPU_FLAGS
+@byte_result_parity:
+    lda cpu8088_state+CPU_AX
+    ldx #$08
+    ldy #$00
+@byte_parity_loop:
+    lsr a
+    bcc :+
+    iny
+:
+    dex
+    bne @byte_parity_loop
+    tya
+    and #$01
+    bne @byte_result_flags_done
+    lda cpu8088_state+CPU_FLAGS
+    ora #$04
+    sta cpu8088_state+CPU_FLAGS
+@byte_result_flags_done:
+    rts
+@byte_result_zero:
+    lda cpu8088_state+CPU_FLAGS
+    ora #$40
+    sta cpu8088_state+CPU_FLAGS
+    jmp @byte_result_parity
 
 @cbw:
     ; Convert Byte to Word - sign-extend AL into AX

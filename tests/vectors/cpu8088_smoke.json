@@ -565,6 +565,20 @@
       "expected": { "AX": 4660, "CS": 55040, "IP": 2, "FLAGS": 2051 }
     },
     {
+      "name": "aam_splits_al_into_ah_and_al",
+      "initial": { "CS": 55040, "IP": 0, "AX": 154, "FLAGS": 2051 },
+      "program": "d40af4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 3844, "CS": 55040, "IP": 2 }
+    },
+    {
+      "name": "aad_combines_ah_and_al",
+      "initial": { "CS": 55040, "IP": 0, "AX": 772, "FLAGS": 2051 },
+      "program": "d50af4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 34, "CS": 55040, "IP": 2 }
+    },
+    {
       "name": "xchg_word_registers",
       "initial": { "CS": 55040, "IP": 0, "AX": 4660, "BX": 43981, "FLAGS": 2051 },
       "program": "87d8f4",

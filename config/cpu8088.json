@@ -487,6 +487,22 @@
       "cycles": 3
     },
     {
+      "first": 212,
+      "last": 212,
+      "mnemonic": "AAM",
+      "handler": "aam",
+      "length": 2,
+      "cycles": 83
+    },
+    {
+      "first": 213,
+      "last": 213,
+      "mnemonic": "AAD",
+      "handler": "aad",
+      "length": 2,
+      "cycles": 60
+    },
+    {
       "first": 156,
       "last": 156,
       "mnemonic": "PUSHF",

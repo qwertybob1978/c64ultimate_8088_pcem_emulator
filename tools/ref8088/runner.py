@@ -315,6 +315,21 @@ class Reference8088:
             self.registers["DX"] = 0xFFFF if self.registers["AX"] & 0x8000 else 0
         elif handler == "wait":
             pass
+        elif handler == "aam":
+            base = self.fetch_u8()
+            if base == 0:
+                self.last_cycles = 0
+                return self.trace(before_ip, physical, opcode, "INVALID", 0xFF)
+            al = self.get_register(0, 8)
+            self.set_register(4, 8, al // base)
+            self.set_register(0, 8, al % base)
+            self.update_result_flags(self.get_register(0, 8), 8)
+        elif handler == "aad":
+            base = self.fetch_u8()
+            value = (self.get_register(4, 8) * base + self.get_register(0, 8)) & 0xFF
+            self.set_register(0, 8, value)
+            self.set_register(4, 8, 0)
+            self.update_result_flags(value, 8)
         elif handler == "hlt":
             self.halted = True
             status = 1
