@@ -2,6 +2,7 @@
 
 .import pic_request_irq
 .import dma_channel2_read_from_reu
+.include "media_geometry.inc"
 .importzp reu_ext_addr
 
 .export fdc_reset
@@ -21,8 +22,6 @@
 FDC_IRQ = $06
 FDC_DRIVE_A = $00
 MEDIA_BASE_HI = $20
-SECTORS_PER_TRACK = 9
-HEADS_PER_CYLINDER = 2
 SECTOR_SHIFT = 9
 
 .macro long_beq target
@@ -431,7 +430,7 @@ fdc_compute_sector_source:
     beq @after_cyl
     clc
     lda fdc_sector_index
-    adc #$12
+     adc #(SECTORS_PER_TRACK * HEADS_PER_CYLINDER)
     sta fdc_sector_index
     lda fdc_sector_index+1
     adc #$00
@@ -444,7 +443,7 @@ fdc_compute_sector_source:
     beq @after_head
     clc
     lda fdc_sector_index
-    adc #$09
+     adc #SECTORS_PER_TRACK
     sta fdc_sector_index
     lda fdc_sector_index+1
     adc #$00

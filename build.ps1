@@ -54,6 +54,7 @@ foreach ($unit in $objects) {
     $object = Join-Path $build $unit.Object
     New-Item -ItemType Directory -Force -Path (Split-Path $object) | Out-Null
     & $assemblerPath -I (Join-Path $PSScriptRoot "src") -g -o $object $source
+    & $assemblerPath -I $build -I (Join-Path $PSScriptRoot "src") -g -o $object $source
     if ($LASTEXITCODE -ne 0) {
         throw "ca65 failed for $($unit.Source) with exit code $LASTEXITCODE"
     }
