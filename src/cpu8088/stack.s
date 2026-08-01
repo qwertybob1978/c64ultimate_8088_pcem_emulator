@@ -8,12 +8,16 @@
 .importzp cpu8088_offset
 .import cpu8088_mem_read_u8
 .import cpu8088_mem_write_u8
+.import cpu8088_stack_stage
+.importzp cpu8088_phys_addr
 
 .export cpu8088_push_u16
 .export cpu8088_pop_u16
+.export stack_fail_phys
 
 .segment "BSS"
 stack_value: .res 2
+stack_fail_phys: .res 3
 
 .segment "CODE"
 
@@ -29,13 +33,23 @@ cpu8088_push_u16:
     sbc #$00
     sta cpu8088_state+CPU_SP+1
     jsr stack_address
+    lda #$01
+    sta cpu8088_stack_stage
     lda stack_value
     jsr cpu8088_mem_write_u8
     bcs stack_failed
     jsr stack_next_byte
+    lda #$02
+    sta cpu8088_stack_stage
     lda stack_value+1
     jmp cpu8088_mem_write_u8
 stack_failed:
+    lda cpu8088_phys_addr
+    sta stack_fail_phys
+    lda cpu8088_phys_addr+1
+    sta stack_fail_phys+1
+    lda cpu8088_phys_addr+2
+    sta stack_fail_phys+2
     rts
 
 cpu8088_pop_u16:

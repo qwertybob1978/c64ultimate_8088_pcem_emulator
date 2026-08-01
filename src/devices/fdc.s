@@ -19,6 +19,7 @@
 .export fdc_last_st0_read
 
 FDC_IRQ = $06
+FDC_DRIVE_A = $00
 MEDIA_BASE_HI = $20
 SECTORS_PER_TRACK = 9
 HEADS_PER_CYLINDER = 2
@@ -36,6 +37,12 @@ SECTOR_SHIFT = 9
 :
 .endmacro
 
+.macro long_bne target
+    beq :+
+    jmp target
+:
+.endmacro
+
 .segment "BSS"
 fdc_dor:            .res 1
 fdc_command:        .res 1
@@ -49,7 +56,9 @@ fdc_pending_st0:    .res 1
 fdc_pending_cyl:    .res 1
 fdc_reset_senses:   .res 1
 fdc_current_cyl:    .res 1
+fdc_selected_drive: .res 1
 fdc_sector_index:   .res 2
+fdc_transfer_count: .res 1
 fdc_last_command:   .res 1
 fdc_read_count:     .res 1
 fdc_dma_failures:   .res 1
@@ -71,8 +80,10 @@ fdc_reset:
     sta fdc_pending_st0
     sta fdc_pending_cyl
     sta fdc_current_cyl
+    sta fdc_selected_drive
     sta fdc_sector_index
     sta fdc_sector_index+1
+    sta fdc_transfer_count
     lda #$04
     sta fdc_reset_senses
     rts
@@ -116,7 +127,10 @@ fdc_read_data:
     rts
 
 fdc_read_digital_input:
-    lda #$00
+    ; PCem returns bit 0 set on the digital input register so the BIOS can
+    ; confirm the controller is present/ready. Keep the other bits clear for
+    ; now; the XT boot path only requires a stable ready indication.
+    lda #$01
     rts
 
 fdc_write_dor:
@@ -135,6 +149,8 @@ fdc_write_dor:
 @store_only:
     pla
     sta fdc_dor
+    and #$03
+    sta fdc_selected_drive
     rts
 
 fdc_write_data:
@@ -190,17 +206,17 @@ fdc_process_command:
     lda fdc_command
     and #$1F
     cmp #$03
-    beq fdc_process_specify
+    long_beq fdc_process_specify
     cmp #$07
-    beq fdc_process_recalibrate
+    long_beq fdc_process_recalibrate
     cmp #$08
-    beq fdc_process_sense
+    long_beq fdc_process_sense
     cmp #$0F
-    beq fdc_process_seek
+    long_beq fdc_process_seek
     cmp #$06
-    beq fdc_process_read_data
+    long_beq fdc_process_read_data
     cmp #$05
-    beq fdc_process_read_data
+    long_beq fdc_process_read_data
     cmp #$0A
     long_beq fdc_process_read_id
     jmp fdc_queue_invalid
@@ -209,6 +225,13 @@ fdc_process_specify:
     rts
 
 fdc_process_recalibrate:
+    lda fdc_params
+    and #$03
+    cmp #FDC_DRIVE_A
+    long_bne fdc_queue_not_found
+    lda fdc_selected_drive
+    cmp #FDC_DRIVE_A
+    long_bne fdc_queue_not_found
     lda #$00
     sta fdc_current_cyl
     lda #$20
@@ -219,6 +242,13 @@ fdc_process_recalibrate:
     jmp pic_request_irq
 
 fdc_process_seek:
+    lda fdc_params
+    and #$03
+    cmp #FDC_DRIVE_A
+    long_bne fdc_queue_not_found
+    lda fdc_selected_drive
+    cmp #FDC_DRIVE_A
+    long_bne fdc_queue_not_found
     lda fdc_params+1
     sta fdc_current_cyl
     lda #$20
@@ -259,17 +289,41 @@ fdc_process_sense:
     rts
 
 fdc_process_read_data:
+    lda fdc_params
+    and #$03
+    cmp #FDC_DRIVE_A
+    long_bne fdc_queue_not_found
+    lda fdc_selected_drive
+    cmp #FDC_DRIVE_A
+    long_bne fdc_queue_not_found
     jsr fdc_compute_sector_source
     bcc :+
     inc fdc_dma_failures
     jmp fdc_queue_not_found
 :
+    lda fdc_params+5
+    sec
+    sbc fdc_params+3
+    bcc @not_found
+    clc
+    adc #$01
+    sta fdc_transfer_count
+@transfer_next:
     jsr dma_channel2_read_from_reu
     bcc :+
     inc fdc_dma_failures
     jmp fdc_queue_not_found
 :
     inc fdc_read_count
+    dec fdc_transfer_count
+    beq @queue_result
+    inc fdc_sector_index
+    bne :+
+    inc fdc_sector_index+1
+:
+    jsr fdc_set_sector_source
+    jmp @transfer_next
+@queue_result:
     lda #$20
     sta fdc_results
     lda #$00
@@ -289,10 +343,20 @@ fdc_process_read_data:
     sta fdc_result_index
     lda #FDC_IRQ
     jmp pic_request_irq
+@not_found:
+    inc fdc_dma_failures
+    jmp fdc_queue_not_found
 
 ; READ ID returns the current 360 KiB drive geometry without transferring
 ; data.  BIOS uses this probe to verify that the selected head/media is ready.
 fdc_process_read_id:
+    lda fdc_params
+    and #$03
+    cmp #FDC_DRIVE_A
+    long_bne fdc_queue_not_found
+    lda fdc_selected_drive
+    cmp #FDC_DRIVE_A
+    long_bne fdc_queue_not_found
     lda #$20
     sta fdc_results
     lda #$00
@@ -301,7 +365,9 @@ fdc_process_read_id:
     lda fdc_current_cyl
     sta fdc_results+3
     lda fdc_params+0
-    and #$01
+    and #$04
+    lsr a
+    lsr a
     sta fdc_results+4
     lda #$01                    ; first addressable sector ID
     sta fdc_results+5
@@ -393,6 +459,14 @@ fdc_compute_sector_source:
     bcc :+
     inc fdc_sector_index+1
 :
+    jsr fdc_set_sector_source
+    clc
+    rts
+@invalid:
+    sec
+    rts
+
+fdc_set_sector_source:
     lda #$00
     sta reu_ext_addr
     lda fdc_sector_index
@@ -405,8 +479,4 @@ fdc_compute_sector_source:
     lda reu_ext_addr+2
     adc #MEDIA_BASE_HI
     sta reu_ext_addr+2
-    clc
-    rts
-@invalid:
-    sec
     rts

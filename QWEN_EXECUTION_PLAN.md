@@ -22,6 +22,8 @@ When they conflict, the actual source and tests win. Known stale statements are:
 - A media-bearing CRT is currently 49 banks and 402,256 bytes, not four banks
   and 32 KiB. The four-bank statement describes the pre-media cartridge.
 - The current task is beyond the keyboard wait described in `CONTINUATION.md`;
+- Qwen should not assume an FDC boot stall is a main-status-register bug. Verify both the main status register and the digital-input register: on this tree, the BIOS boot gate depended on the digital-input ready bit at port `$F7`/`$3F7`, not on a new MSR state machine rewrite.
+- When the current trace disagrees with a plausible hardware theory, instrument the exact port and bit being tested before editing controller logic.
   work is now at the BIOS floppy boot path.
 
 Do not change the fixed version 1.0 scope without updating `PROJECT_PLAN.md`.
@@ -53,6 +55,24 @@ The required release artifact is `build\c64x86.crt`. The PRG is diagnostic only.
 12. Do not claim completion from a desktop trace. Native execution in the CRT
     under VICE and then on C64 Ultimate hardware is required.
 
+13. CPU coverage is the first implementation priority. Complete the 8088
+    opcode/prefix set represented by the pinned PCem `808x` core before adding
+    new peripheral-driver scope. Existing device code may be repaired when a
+    test proves it blocks the current boot path, but do not expand CGA, FDC,
+    keyboard, or other drivers to hide an opcode failure.
+14. "All opcodes" means every documented 8088 instruction and prefix required
+    by the pinned PCem 8088 model: primary and escaped groups, ModR/M forms,
+    segment overrides, `LOCK`, `REP/REPE/REPNE`, string operations, I/O,
+    interrupts, `HLT`, and divide/exception paths. Do not silently treat an
+    80186+, 80286+, V20-only, or undocumented opcode as an 8088 opcode.
+15. A driver port is a behavioral port, not a source dump. Port only the
+    PCem behavior needed by the fixed XT profile, retain the provenance path,
+    and keep host UI/threading/file/audio abstractions out of 6502 assembly.
+16. Never advance on a red gate. A failed test enters the redo loop below:
+    reproduce, classify, add/confirm the failing regression, make one fix,
+    rerun the smallest gate, then rerun the full gate. Repeat until green or
+    hand off the exact blocker.
+
 At the inspected checkpoint the worktree was already dirty:
 
 ```text
@@ -70,6 +90,102 @@ Treat these as pre-existing user work. `OLDER_ROM_NOTES.md` appears to contain
 accidentally pasted VICE font-log output; do not delete or repair it unless the
 user explicitly assigns that cleanup. The `hwtest.s` and `test_vice.ps1`
 changes are active diagnostics. Never roll them back implicitly.
+
+## 2a. Priority contract: CPU first, then PCem driver ports
+
+This priority contract supersedes the historical milestone numbering below.
+The numbered milestones are compatibility labels; execute them in this order:
+
+1. **8088 opcode completion.** Build an inventory from the pinned PCem
+   `third_party\pcem\src\cpu\808x.c`, `config\cpu8088.json`, the reference
+   runner, and native dispatch. Close every missing or incorrect documented
+   8088 family, including edge flags, prefixes, ModR/M, memory wrapping,
+   interrupts, and faults. "BIOS currently reaches DOS" is not evidence of
+   completeness.
+2. **Driver-port contract.** After CPU completion, port and verify the minimum
+   PCem XT drivers in dependency order: bus/I/O ownership, PIC, PIT, PPI and
+   XT keyboard, DMA, FDC, CGA registers/memory, CGA renderer, then storage
+   persistence and speaker. Keep each driver independently testable.
+3. **Integration and optimization.** Only after the opcode and driver gates are
+   green may the model optimize, add fast-mode shortcuts, broaden CGA modes, or
+   add user-facing features.
+4. **1571 feasibility study.** Treat real Commodore 1571 MS-DOS boot-disk
+   access as a non-blocking post-stability experiment. It must never displace
+   the image-backed XT floppy path or count as complete merely because a disk
+   directory can be listed.
+
+For every opcode family and every driver, maintain this record in the handoff:
+`item`, PCem path/specification, native owner, host regression, native evidence,
+status (`missing`, `failing`, `green`), and commit. Do not mark an item green
+because it is unreachable in the current BIOS trace.
+
+### Required CPU inventory and completion gate
+
+Create or maintain a checked inventory (prefer `config\cpu8088.json` plus a
+host test) with one row per opcode byte/group and prefix. Each row must state
+the mnemonic family, operand forms, flags, exceptions, cycle estimate, native
+handler, and test vector. For every row:
+
+1. Run the desktop reference and Unicorn/independent oracle where applicable.
+2. Run the same vector through the native core or a native smoke program.
+3. Compare registers, flags, memory, instruction length, IP/segment behavior,
+   and exception vector/return state.
+4. Add a BIOS/boot trace case only after the isolated vector is green.
+
+The CPU gate is closed only when the inventory has no `missing` or `failing`
+rows, generated contracts are current, all vectors pass, and a long native
+BIOS/DOS trace produces no `CPU_STEP_INVALID`. If PCem has behavior that cannot
+be represented on the target, document the exact deviation and add a targeted
+compatibility test; do not silently omit it.
+
+### Required driver-port gate
+
+For each PCem driver, first write a small state/port contract, then implement
+the narrow target slice and test it before wiring it into the native scheduler.
+The contract must cover reset state, registers, accepted commands, side effects,
+IRQ/DMA ownership, timing assumptions, and unsupported behavior. The minimum
+driver order is:
+
+`io -> PIC -> PIT -> PPI/keyboard -> DMA -> FDC -> CGA registers -> CGA text
+renderer -> floppy persistence -> speaker`.
+
+Do not port a driver merely because a PCem file exists. Port only behavior
+required by the fixed Generic XT/360 KiB/CGA profile, and add an explicit
+unsupported result for everything else. A driver is green only when its host
+contract tests pass, its native port passes the full gate, and an integration
+trace proves the expected BIOS/DOS transaction.
+
+### Sequential test/redo loop
+
+Use this exact loop for each inventory row, opcode family, and driver slice:
+
+1. Select the first item whose status is not `green`; do not work on later
+   items in parallel or reorder the dependency list.
+2. Read the current implementation, its generated metadata, the focused tests,
+   and the pinned PCem reference. Write down the expected behavior before
+   editing.
+3. Reproduce the failure. Capture the smallest useful evidence: opcode bytes
+   and state for CPU work, or ports/registers/IRQ/DMA/media state for driver
+   work. If it cannot be reproduced, add instrumentation and stop; do not
+   guess a fix.
+4. Add or tighten a deterministic regression that fails for the observed bug.
+   A test that never went red does not prove the test covers the bug.
+5. Make one narrow implementation change. Regenerate generated CPU contracts
+   when applicable; never edit generated output by hand.
+6. Run the focused regression. If it fails, return to step 3 with the new
+   evidence. If it passes, run the CPU gate or driver contract gate for the
+   current item.
+7. Run the full repository gate and the native VICE warp gate. If any gate is
+   red, revert only the uncommitted narrow change or repair it in place, then
+   return to step 3. Do not start a second feature while a gate is red.
+8. Record the green evidence, mark exactly one item `green`, commit only its
+   files, and proceed to the next item.
+
+If three consecutive redo cycles produce different symptoms, stop changing
+code and hand off the exact logs, state, diff, and suspected layer in
+`CONTINUATION.md`. Never solve a blocker by weakening an assertion, skipping a
+vector, accepting `CPU_STEP_INVALID`, widening an open-bus response, or adding
+an address-specific BIOS/driver bypass.
 
 ## 3. Exact environment and tool locations
 
@@ -194,7 +310,7 @@ file is not an end-to-end floppy test.
 ### Build and cartridge
 
 | File | Responsibility |
-|---|---|
+| --- | --- |
 | `build.ps1` | Generates/checks CPU contracts, assembles all native modules, links the PRG |
 | `build_crt.ps1` | Builds PRG, finds DOS media, builds bootstrap, packages and validates CRT |
 | `cfg\c64x86.cfg` | PRG layout: zero page `$0002-$001B`, program at `$0801` |
@@ -207,7 +323,7 @@ file is not an end-to-end floppy test.
 ### Native 8088 core
 
 | File | Responsibility |
-|---|---|
+| --- | --- |
 | `config\cpu8088.json` | Canonical state, flags, opcode metadata, handler names, cycles |
 | `src\cpu8088\step.s` | Fetch/decode/execute and most opcode handlers |
 | `src\cpu8088\state.s` | Registers and reset state |
@@ -229,7 +345,7 @@ them; do not attempt an untested bulk implementation.
 ### Memory and host
 
 | File | Responsibility |
-|---|---|
+| --- | --- |
 | `src\memory\reu.s` | REU register programming and block DMA |
 | `src\memory\guest_memory.s` | Guest physical reads/writes and data-cache coherence |
 | `src\memory\page_cache.s` | 256-byte instruction page cache |
@@ -246,7 +362,7 @@ REU client reads or overwrites guest memory.
 ### XT devices and display
 
 | File | Current responsibility |
-|---|---|
+| --- | --- |
 | `src\bus\io.s` | Port dispatcher; open bus is `$FF`; routes PIC/PIT/PPI/DMA/FDC/CGA status |
 | `src\devices\pic.s` | Initial 8259 ICW/OCW1, pending/mask/in-service, EOI, IRQ delivery |
 | `src\devices\pit.s` | Initial 8253 channels, access modes, deterministic cycle advance, IRQ0 |
@@ -415,14 +531,51 @@ either finite loop. Use a longer native run to reach the next checkpoint. Add
 loop acceleration only as an explicit fast-mode feature with guest-cycle/PIT
 accounting; do not introduce a BIOS-address-specific skip.
 
+Status update 2026-08-01:
 
+- **F44D:** resolved as normal Generic XT BIOS CGA status polling. Reference
+   execution enters the helper with `DX=$3DA`, reads alternating `$00/$09`, and
+   returns. Do not change FDC state for this path.
+- **F78D:** disproven as a stall. The trace label was wrong; `F788-F796`
+   writes CRTC index/data pairs to `$3B4/$3B5` and `$3D4/$3D5`.
+- **Current unresolved blocker:** long native execution later reports roughly
+   `CS:IP=0000:7351`, opcode `$C0`. Capture current status, preceding state,
+   stack bytes, media bytes, DMA state, and cache state before deciding whether
+   this is corruption or a missing valid 8088 path.
+- **Completed small fix:** removed invalid ca65 placeholder directive in
+   `src/bus/io.s`; added a `$3DA` source contract in
+   `tests/test_phase0_contracts.py`.
 
+Next todos, in order:
+
+1. Reproduce current 2B-cycle result and read failure fields from the native
+    diagnostic, not stale 2026-07-28 screenshots.
+2. Compare `0000:7351` bytes against staged boot media and desktop reference.
+3. Add one deterministic regression for the proven corruption/opcode cause.
+4. Make one narrow fix, run focused test, full host gate, CRT build, and VICE.
+5. Update `CONTINUATION.md` with exact evidence before next subsystem work.
 
 ## 7b. Qwen continuation constraints and known failure modes (2026-07-28)
 
 This section exists because a smaller model tends to overfit to the last
 screenshot, make broad speculative changes, or rediscover already disproven
 hypotheses. Follow these constraints literally.
+
+### Observed Qwen failure patterns in this repository
+
+- Qwen tends to lock onto the most recent visible symptom and promote it to a
+  root cause without first checking the source or trace bytes. Require direct
+  evidence before changing I/O, keyboard, FDC, or CPU behavior.
+- Qwen tends to treat screenshot OCR as primary evidence. Do not. Use source,
+  counters, logs, and traces first; screenshots are only a secondary clue.
+- Qwen tends to broaden a fix into a subsystem rewrite. Keep each change
+  bounded to one file or one narrow behavior, then add a focused regression.
+- Qwen tends to mistake a green smoke harness for a completed boot. It is not.
+  A green wrapper only means the harness exited cleanly, not that the guest
+  booted from disk or reached DOS.
+- Qwen tends to miss required boot preconditions such as keyboard-buffer/BDA
+  initialization. Verify the guest state that BIOS code actually consumes
+  before blaming the next downstream device.
 
 ### Scope and source-of-truth rules
 
@@ -461,6 +614,10 @@ hypotheses. Follow these constraints literally.
 - The earlier BIOS delay checkpoints (`F000:E259`/`F000:F997`, opcode `$E2`)
   are finite `LOOP` delays. They are not device polls and must not be fixed
   with video, keyboard, or FDC changes.
+- The current verified keyboard reset seeds the BDA keyboard buffer correctly
+  and the full host test suite passes, but that still does not prove the guest
+  reaches the floppy boot sector. Treat disk boot as unproven until a native
+  trace or runtime counters show it.
 
 ### Completed cache/DMA lesson
 
@@ -499,7 +656,6 @@ Every Qwen continuation update must end with:
 - one reproducible native command;
 - decoded CS:IP, status, opcode bytes, and device counters;
 - one proposed next bounded task.
-
 
 ## 8. Execution method for every milestone
 
@@ -989,6 +1145,50 @@ docs: complete setup and compatibility guide
 build(release): prepare c64x86 v1.0
 ```
 
+## 19a. Optional milestone L: real Commodore 1571 feasibility study
+
+Run this only after Milestones A-K needed for the normal image-backed DOS path
+are green. This milestone is a nice-to-have and must not block version 1.0.
+
+Files should be added only after the interface is proven; likely locations are:
+
+```text
+src\devices\media_provider.s
+src\host\iec1571.s
+tests\test_1571_media.py
+docs\1571-feasibility.md
+```
+
+Sequential steps:
+
+1. Identify and document the real 1571, physical IEC/adapter path, firmware,
+   API, cable, and ownership of the bus. If the path is unknown, stop at a
+   hardware feasibility note; do not invent an API.
+2. Implement a read-only probe outside the guest. Read the boot sector and a
+   small CHS sample from a permitted MS-DOS-format disk. Verify `55 AA`,
+   geometry, stable repeated reads, and hashes against an independently
+   acquired image where possible.
+3. Add deterministic host tests for CHS translation, retry/error mapping,
+   reset/reconnect, and media-provider fallback. Filesystem directory access
+   is not raw-sector support and does not satisfy this milestone.
+4. Measure latency and coexistence with turbo, REU DMA, VIC refresh, keyboard,
+   and the existing virtual XT FDC. Keep the image-backed provider as the
+   default and fallback.
+5. Only if read-only sector access is repeatable, connect the provider to the
+   existing XT FDC drive-A read path. Do not add guest Commodore DOS commands.
+6. Keep physical-disk writes disabled. Any later write experiment requires
+   copy-on-write, explicit export, a disposable disk, and a separate approval.
+
+Acceptance:
+
+- `docs\1571-feasibility.md` records hardware, API, sector evidence, limits,
+  latency, and the go/no-go decision.
+- A real 1571 supplies repeatable boot-sector and multi-sector reads, or the
+  study records the exact blocker and remains a documented proposal.
+- Normal image-backed DOS boot and all existing CPU/device gates remain green.
+- This milestone may end in `not feasible` without being considered a project
+  failure.
+
 ## 20. Stop and handoff protocol
 
 If execution must stop before version 1.0:
@@ -1006,4 +1206,3 @@ If execution must stop before version 1.0:
    - the next single bounded task.
 5. State the unmet acceptance item plainly. A green border alone is not project
    completion.
-

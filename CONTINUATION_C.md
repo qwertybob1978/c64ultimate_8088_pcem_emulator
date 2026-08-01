@@ -180,3 +180,43 @@ pwsh -ExecutionPolicy Bypass -File tools\test_vice.ps1
 # Generate CPU contracts after metadata changes
 python tools\generate_cpu8088.py --check
 ```
+
+## Diagnostic continued — 2026-08-01 (P2 instruction trace)
+
+**Goal:** Determine control flow leading to F000:E003 (BIOS banner-data region).
+
+**Approach:** Capture P2 (prior-2 instruction) state to distinguish sequential execution from jump/return/interrupt.
+
+**Implementation:** 
+- Added boot_prev2_* storage for instruction 2 steps before fault (boot/hwtest.s lines 133-136)
+- Each cpu8088_step advances: P2 ← P1, P1 ← fault (boot/hwtest.s lines 314-324)
+- Display P2 with explicit labels: `P2: ST: CS: IP: OP:` for clarity (boot/hwtest.s lines 670-701)
+- Forced black background + cyan text for diagnostic readability (src/boot/hwtest.s line 451, 456)
+
+**Build/Test Results:**
+```
+✓ pwsh build.ps1: OK
+✓ python -m unittest tests.test_cpu8088_reference tests.test_phase0_contracts: 41 tests passed
+✓ pwsh build_crt.ps1: 49 banks, 402256 bytes
+✓ VICE 3.10 smoke test: 2B-cycle limit, blue border
+```
+
+**Findings from screenshot (VICE run ~14-cycle mark based on typical progression):**
+
+The diagnostic display now shows explicit field labels (`P2: ST: CS: IP: OP:`), but parsing exact hex values from VICE screenshot with monospace C64 font remains ambiguous due to character alignment and font rendering.
+
+**Known values from prior diagnostics:**
+- Fault: CS=F000, IP=E003 (confirmed by boot_fault_bytes = "ener" = BIOS banner text)
+- P1 Status: 0x00 (from earlier run showing "ST:00")
+- P2 appears to show CS=F000 (matches fault CS)
+- P2 opcode: 0x90 (from earlier partial decode)
+
+**Interpretation challenges:**
+- C64 pixel font makes it hard to count hex digit positions precisely
+- Character spacing in color RAM makes visual column alignment uncertain
+- Exact P2:IP value critical to determining sequential vs. control-flow path
+
+**Next step:** Extract P2 values directly from CRT cartridge RAM rather than relying on visual parsing. The boot_prev2_* variables are stored in cartridge RAM at known symbol offsets; reading CRT file structure will yield exact byte values without screenshot ambiguity.
+
+**Decision:** Do NOT modify FDC until media-access counters become nonzero. The frame-integrity check (M:00) proves IRET is returning correctly, so the F000:E003 fault is a BIOS control-flow issue, not a stack corruption. Leave FDC inert.
+

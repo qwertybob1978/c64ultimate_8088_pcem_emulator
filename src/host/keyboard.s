@@ -1,6 +1,7 @@
 .setcpu "6502"
 
 .import io_keyboard_push
+.import io_keyboard_service
 .import pic_request_irq
 
 .export host_keyboard_poll
@@ -11,15 +12,22 @@ XT_KEYBOARD_IRQ = $01
 
 .segment "CODE"
 
-; Poll the C64 KERNAL keyboard buffer and inject one XT set-1 make code.
-; Carry is set when a key was delivered. Break codes are intentionally omitted
-; for the first BIOS/DOS slice; ordinary BIOS key input consumes make codes.
+; Poll the C64 KERNAL keyboard buffer, service the XT keyboard queue, and
+; inject one XT set-1 make code when a host key is available.
+; Carry is set when a key was delivered.
 host_keyboard_poll:
+    jsr io_keyboard_service
     jsr GETIN
     beq @none
     jsr host_keyboard_translate
     bcc @none
+    pha
     jsr io_keyboard_push
+    pla
+    ora #$80
+    jsr io_keyboard_push
+    jsr io_keyboard_service
+    jsr io_keyboard_service
     lda #XT_KEYBOARD_IRQ
     jsr pic_request_irq
     sec
@@ -143,3 +151,5 @@ punctuation_chars:
 punctuation_scans:
     .byte $0C,$0D,$33,$34,$35,$27
 punctuation_count = *-punctuation_scans
+
+

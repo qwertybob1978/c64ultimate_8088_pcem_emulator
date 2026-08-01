@@ -12,6 +12,10 @@
 .export pic_service
 .export pic_irq6_requests
 .export pic_irq6_deliveries
+.export pic_irq1_requests
+.export pic_irq1_deliveries
+.export pic_vector_base
+.export pic_mask
 
 .segment "BSS"
 pic_vector_base:  .res 1
@@ -24,6 +28,8 @@ pic_request_bit:  .res 1
 pic_request_irqn: .res 1
 pic_irq6_requests:  .res 1
 pic_irq6_deliveries:.res 1
+pic_irq1_requests:  .res 1
+pic_irq1_deliveries:.res 1
 
 .segment "CODE"
 
@@ -121,6 +127,10 @@ pic_request_irq:
     cpx #$06
     bne :+
     inc pic_irq6_requests
+:   
+    cpx #$01
+    bne :+
+    inc pic_irq1_requests
 :
     lda pic_irq_bits,x
     ora pic_pending
@@ -163,6 +173,10 @@ pic_service:
     cpx #$06
     bne :+
     inc pic_irq6_deliveries
+:   
+    cpx #$01
+    bne :+
+    inc pic_irq1_deliveries
 :
     txa
     clc

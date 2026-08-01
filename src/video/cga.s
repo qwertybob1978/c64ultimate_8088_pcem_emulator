@@ -10,6 +10,34 @@
 .export cga_render_text_40
 .export cga_test_render
 .export cga_test_error
+.export cga_read_mono_mode_control
+.export cga_read_color_mode_control
+.export cga_read_mono_crtc_index
+.export cga_read_color_crtc_index
+.export cga_read_mono_crtc_data
+.export cga_read_color_crtc_data
+.export cga_read_mono_color_select
+.export cga_read_color_select
+.export cga_write_mono_mode_control
+.export cga_write_color_mode_control
+.export cga_write_mono_crtc_index
+.export cga_write_color_crtc_index
+.export cga_write_mono_crtc_data
+.export cga_write_color_crtc_data
+.export cga_write_mono_color_select
+.export cga_write_color_select
+.export cga_read_mono_cursor_position
+.export cga_read_color_cursor_position
+.export cga_write_mono_cursor_position
+.export cga_write_color_cursor_position
+.export cga_read_mono_cursor_start
+.export cga_read_color_cursor_start
+.export cga_read_mono_cursor_end
+.export cga_read_color_cursor_end
+.export cga_write_mono_cursor_start
+.export cga_write_color_cursor_start
+.export cga_write_mono_cursor_end
+.export cga_write_color_cursor_end
 
 C64_SCREEN = $0400
 C64_COLOR  = $D800
@@ -23,6 +51,12 @@ CGA_ROWS = 25
 :
 .endmacro
 
+.macro long_bne target
+    beq :+
+    jmp target
+:
+.endmacro
+
 .segment "ZEROPAGE"
 cga_screen_ptr: .res 2
 cga_color_ptr:  .res 2
@@ -31,8 +65,26 @@ cga_color_ptr:  .res 2
 cga_row_buffer:  .res CGA_ROW_BYTES
 cga_saved_row:   .res CGA_ROW_BYTES
 cga_source_index:.res 1
+cga_row_base:    .res 1
+cga_row_left_count:  .res 1
+cga_row_right_count: .res 1
 cga_rows_left:   .res 1
 cga_test_error:  .res 1
+cga_text_start_offset:   .res 2
+cga_mono_mode_control:   .res 1
+cga_mono_color_select:    .res 1
+cga_mono_cursor_start:    .res 1
+cga_mono_cursor_end:      .res 1
+cga_mono_cursor_pos:      .res 2
+cga_mono_crtc_index:      .res 1
+cga_mono_crtc_regs:       .res 32
+cga_color_mode_control:   .res 1
+cga_color_color_select:   .res 1
+cga_color_cursor_start:   .res 1
+cga_color_cursor_end:     .res 1
+cga_color_cursor_pos:     .res 2
+cga_color_crtc_index:     .res 1
+cga_color_crtc_regs:      .res 32
 
 .segment "CODE"
 
@@ -54,6 +106,7 @@ cga_render_text_40:
     lda #>C64_COLOR
     sta cga_color_ptr+1
     jsr cga_setup_b8000
+    jsr cga_apply_color_start_address
     lda #CGA_ROWS
     sta cga_rows_left
 
@@ -67,9 +120,39 @@ cga_render_text_40:
     lda #>CGA_ROW_BYTES
     sta reu_length+1
     jsr reu_copy_from_reu
-    bcs @failed
+    long_bcs @failed
 
+    lda #$00
+    sta cga_row_left_count
+    sta cga_row_right_count
     ldx #$00
+@density:
+    lda cga_row_buffer,x
+    cmp #$20
+    beq :+
+    cmp #$00
+    beq :+
+    cpx #$50
+    bcc @count_left
+    inc cga_row_right_count
+    bne :+
+@count_left:
+    inc cga_row_left_count
+:
+    inx
+    inx
+    cpx #CGA_ROW_BYTES
+    bne @density
+    lda cga_row_right_count
+    cmp cga_row_left_count
+    bcc @use_left_half
+    lda #$50
+    bne @store_half
+@use_left_half:
+    lda #$00
+@store_half:
+    sta cga_row_base
+    ldx cga_row_base
     ldy #$00
 @cell:
     stx cga_source_index
@@ -114,7 +197,7 @@ cga_render_text_40:
     inc reu_ext_addr+2
 :
     dec cga_rows_left
-    bne @row
+    long_bne @row
     clc
     rts
 @failed:
@@ -241,6 +324,24 @@ cga_setup_b8000:
     sta reu_ext_addr+2
     rts
 
+cga_apply_color_start_address:
+    lda cga_color_crtc_regs+$0C
+    sta cga_text_start_offset+1
+    lda cga_color_crtc_regs+$0D
+    asl a
+    sta cga_text_start_offset
+    lda cga_text_start_offset+1
+    rol a
+    sta cga_text_start_offset+1
+    clc
+    lda reu_ext_addr+1
+    adc cga_text_start_offset
+    sta reu_ext_addr+1
+    lda reu_ext_addr+2
+    adc cga_text_start_offset+1
+    sta reu_ext_addr+2
+    rts
+
 cga_ascii_to_screen:
     cmp #$20
     bcc @screen_space
@@ -262,6 +363,254 @@ cga_ascii_to_screen:
 @screen_space:
     lda #$20
 @screen_done:
+    rts
+
+cga_write_mono_mode_control:
+    sta cga_mono_mode_control
+    rts
+
+cga_write_color_mode_control:
+    sta cga_color_mode_control
+    rts
+
+cga_write_mono_color_select:
+    sta cga_mono_color_select
+    rts
+
+cga_write_color_select:
+    sta cga_color_color_select
+    rts
+
+cga_write_mono_crtc_index:
+    and #$1F
+    sta cga_mono_crtc_index
+    rts
+
+cga_write_color_crtc_index:
+    and #$1F
+    sta cga_color_crtc_index
+    rts
+
+cga_write_mono_crtc_data:
+    ldx cga_mono_crtc_index
+    cpx #$0A
+    beq @cursor_start
+    cpx #$0B
+    beq @cursor_end
+    cpx #$0E
+    beq @cursor_pos_hi
+    cpx #$0F
+    beq @cursor_pos_lo
+    sta cga_mono_crtc_regs,x
+    rts
+@cursor_start:
+    sta cga_mono_cursor_start
+    sta cga_mono_crtc_regs,x
+    rts
+@cursor_end:
+    sta cga_mono_cursor_end
+    sta cga_mono_crtc_regs,x
+    rts
+@cursor_pos_hi:
+    sta cga_mono_cursor_pos+1
+    sta cga_mono_crtc_regs,x
+    rts
+@cursor_pos_lo:
+    sta cga_mono_cursor_pos
+    sta cga_mono_crtc_regs,x
+    rts
+
+cga_write_color_crtc_data:
+    ldx cga_color_crtc_index
+    cpx #$0A
+    beq @ccursor_start
+    cpx #$0B
+    beq @ccursor_end
+    cpx #$0E
+    beq @ccursor_pos_hi
+    cpx #$0F
+    beq @ccursor_pos_lo
+    sta cga_color_crtc_regs,x
+    rts
+@ccursor_start:
+    sta cga_color_cursor_start
+    sta cga_color_crtc_regs,x
+    rts
+@ccursor_end:
+    sta cga_color_cursor_end
+    sta cga_color_crtc_regs,x
+    rts
+@ccursor_pos_hi:
+    sta cga_color_cursor_pos+1
+    sta cga_color_crtc_regs,x
+    rts
+@ccursor_pos_lo:
+    sta cga_color_cursor_pos
+    sta cga_color_crtc_regs,x
+    rts
+
+cga_read_mono_mode_control:
+    lda cga_mono_mode_control
+    rts
+
+cga_read_color_mode_control:
+    lda cga_color_mode_control
+    rts
+
+cga_read_mono_crtc_index:
+    lda cga_mono_crtc_index
+    rts
+
+cga_read_color_crtc_index:
+    lda cga_color_crtc_index
+    rts
+
+cga_read_mono_crtc_data:
+    ldx cga_mono_crtc_index
+    cpx #$0A
+    beq @cursor_start
+    cpx #$0B
+    beq @cursor_end
+    cpx #$0E
+    beq @cursor_pos_hi
+    cpx #$0F
+    beq @cursor_pos_lo
+    lda cga_mono_crtc_regs,x
+    rts
+@cursor_start:
+    lda cga_mono_cursor_start
+    rts
+@cursor_end:
+    lda cga_mono_cursor_end
+    rts
+@cursor_pos_hi:
+    lda cga_mono_cursor_pos+1
+    rts
+@cursor_pos_lo:
+    lda cga_mono_cursor_pos
+    rts
+
+cga_read_mono_color_select:
+    lda cga_mono_color_select
+    rts
+
+cga_read_color_crtc_data:
+    ldx cga_color_crtc_index
+    cpx #$0A
+    beq @ccursor_start
+    cpx #$0B
+    beq @ccursor_end
+    cpx #$0E
+    beq @ccursor_pos_hi
+    cpx #$0F
+    beq @ccursor_pos_lo
+    lda cga_color_crtc_regs,x
+    rts
+@ccursor_start:
+    lda cga_color_cursor_start
+    rts
+@ccursor_end:
+    lda cga_color_cursor_end
+    rts
+@ccursor_pos_hi:
+    lda cga_color_cursor_pos+1
+    rts
+@ccursor_pos_lo:
+    lda cga_color_cursor_pos
+    rts
+
+cga_read_color_select:
+    lda cga_color_color_select
+    rts
+
+cga_write_mono_cursor_start:
+    sta cga_mono_cursor_start
+    rts
+
+cga_write_color_cursor_start:
+    sta cga_color_cursor_start
+    rts
+
+cga_write_mono_cursor_end:
+    sta cga_mono_cursor_end
+    rts
+
+cga_write_color_cursor_end:
+    sta cga_color_cursor_end
+    rts
+
+cga_write_mono_cursor_position:
+    ldx cga_mono_crtc_index
+    cpx #$0E
+    beq @pos_hi
+    cpx #$0F
+    beq @pos_lo
+    rts
+@pos_hi:
+    sta cga_mono_cursor_pos+1
+    rts
+@pos_lo:
+    sta cga_mono_cursor_pos
+    rts
+
+cga_write_color_cursor_position:
+    ldx cga_color_crtc_index
+    cpx #$0E
+    beq @cpos_hi
+    cpx #$0F
+    beq @cpos_lo
+    rts
+@cpos_hi:
+    sta cga_color_cursor_pos+1
+    rts
+@cpos_lo:
+    sta cga_color_cursor_pos
+    rts
+
+cga_read_mono_cursor_start:
+    lda cga_mono_cursor_start
+    rts
+
+cga_read_color_cursor_start:
+    lda cga_color_cursor_start
+    rts
+
+cga_read_mono_cursor_end:
+    lda cga_mono_cursor_end
+    rts
+
+cga_read_color_cursor_end:
+    lda cga_color_cursor_end
+    rts
+
+cga_read_mono_cursor_position:
+    ldx cga_mono_crtc_index
+    cpx #$0E
+    beq @rpos_hi
+    cpx #$0F
+    beq @rpos_lo
+    lda #$00
+    rts
+@rpos_hi:
+    lda cga_mono_cursor_pos+1
+    rts
+@rpos_lo:
+    lda cga_mono_cursor_pos
+    rts
+
+cga_read_color_cursor_position:
+    ldx cga_color_crtc_index
+    cpx #$0E
+    beq @crpos_hi
+    cpx #$0F
+    beq @crpos_lo
+    lda #$00
+    rts
+@crpos_hi:
+    lda cga_color_cursor_pos+1
+    rts
+@crpos_lo:
+    lda cga_color_cursor_pos
     rts
 
 .segment "RODATA"

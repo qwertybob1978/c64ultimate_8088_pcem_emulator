@@ -57,7 +57,7 @@ block translator as a later, explicitly separate experiment.
 Emulate one fixed, deliberately small configuration:
 
 | Component | Initial target |
-|---|---|
+| --- | --- |
 | CPU | Intel 8088, real mode, architecturally correct instructions and flags |
 | Clock model | Nominal 4.772728 MHz; instruction/event timing approximate first |
 | Address space | 20-bit, 1 MiB, including 20-bit segment wrap |
@@ -152,7 +152,7 @@ disk boot. Keep Generic XT as the active profile unless IBM-PC-specific PPI swit
 emulation proves cheaper than continuing the already-working Generic XT boot path.
 
 | Asset | Required? | Mapping/use | Distribution policy |
-|---|---:|---|---|
+| --- | ---: | --- | --- |
 | Generic XT BIOS (`genxt/pcxt.rom`, 8 KiB) | Yes for the recommended profile | `$FE000-$FFFFF`, confirmed against pinned PCem | Acquire from the PCem-ROMs checkout for local development, or build an open-source [pcxtbios](https://github.com/virtualxt/pcxtbios) alternative; never bundle without verified redistribution rights |
 | IBM XT ROMs `ibmxt/5000027.u19` and `ibmxt/1501512.u18` | Alternative only | `$F0000-$F7FFF` and `$F8000-$FFFFF`, confirmed against pinned PCem | Available in the PCem-ROMs checkout for local development; never redistribute without permission |
 | IBM PC ROM `ibmpc/pc102782.bin` | Alternative only | `$FE000-$FFFFF`, confirmed against pinned PCem | Available in the PCem-ROMs checkout for local development; never redistribute without permission |
@@ -232,7 +232,7 @@ result into read-only tables. Avoid a large C runtime in the target binary.
 Reserve REU addresses by constants generated from one memory-map file:
 
 | REU range | Purpose |
-|---|---|
+| --- | --- |
 | `$000000-$0FFFFF` | Complete 8088 physical address space |
 | `$100000-$1FFFFF` | Page-cache backing, snapshots, or scratch |
 | `$200000-$27FFFF` | Up to one 512 KiB floppy image and metadata |
@@ -335,7 +335,7 @@ Review these PCem areas and record the exact pinned paths in the provenance
 ledger before porting:
 
 | Concern | PCem starting point | Intended use |
-|---|---|---|
+| --- | --- | --- |
 | 8088 instruction behavior | `src/cpu/808x.c`, CPU headers/tables | Semantics, edge cases, timing reference |
 | Main machine loop | `src/pc.c` | Understand event ownership; replace desktop loop entirely |
 | Port dispatch | `src/io.c` | Design a much smaller XT I/O dispatcher |
@@ -484,7 +484,7 @@ acquisition/build instructions for non-redistributable inputs.
 ## 10. Principal risks and mitigations
 
 | Risk | Impact | Mitigation |
-|---|---|---|
+| --- | --- | --- |
 | Interpreter is too slow | Project not useful interactively | Phase 0 benchmark gate; assembly hot path; page cache; fast mode; honest speed reporting |
 | REU per-access overhead dominates | Severe slowdown | Never use byte-sized DMA in the normal path; cache/pin pages; profile working sets |
 | 64 KiB host address-space pressure | Code/cache/video cannot coexist | Generated compact tables, bank ROMs out, tune cache, overlay cold monitor/UI code |

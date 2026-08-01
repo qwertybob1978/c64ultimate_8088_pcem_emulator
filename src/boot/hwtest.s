@@ -447,7 +447,9 @@ install_genxt_boot_ivt:
     rts
 
 display_boot_failure:
-    lda #$01                    ; visible white text on failure screen
+    lda #$00                    ; black background
+    sta $D021
+    lda #$03                    ; cyan text on black background for readability
     sta $D800
     sta $D801
     sta $D802
@@ -634,34 +636,58 @@ display_boot_failure:
     ldx #$60
     jsr display_hex_byte
     lda #$10                    ; P
-    sta $0478
+    sta $0470
     lda #$32                    ; 2
-    sta $0479
-    lda #$3A
-    sta $047A
+    sta $0471
+    lda #$3A                    ; :
+    sta $0472
+    lda #$13                    ; S (for "Status")
+    sta $0473
+    lda #$14                    ; T
+    sta $0474
+    lda #$3A                    ; :
+    sta $0475
     lda boot_prev2_status
-    ldx #$7B
+    ldx #$76
     jsr display_hex_byte
-    lda #$20
-    sta $047D
-    lda boot_prev2_opcode
-    ldx #$7E
-    jsr display_hex_byte
-    lda #$20
-    sta $0480
+    lda #$20                    ; space
+    sta $0478
+    lda #$03                    ; C
+    sta $0479
+    lda #$13                    ; S
+    sta $047A
+    lda #$3A                    ; :
+    sta $047B
     lda boot_prev2_cs+1
-    ldx #$81
+    ldx #$7C
     jsr display_hex_byte
     lda boot_prev2_cs
-    ldx #$83
+    ldx #$7E
     jsr display_hex_byte
-    lda #$20
-    sta $0485
+    lda #$20                    ; space
+    sta $0480
+    lda #$09                    ; I
+    sta $0481
+    lda #$10                    ; P
+    sta $0482
+    lda #$3A                    ; :
+    sta $0483
     lda boot_prev2_ip+1
-    ldx #$86
+    ldx #$84
     jsr display_hex_byte
     lda boot_prev2_ip
-    ldx #$88
+    ldx #$86
+    jsr display_hex_byte
+    lda #$20                    ; space
+    sta $0488
+    lda #$0F                    ; O
+    sta $0489
+    lda #$10                    ; P
+    sta $048A
+    lda #$3A                    ; :
+    sta $048B
+    lda boot_prev2_opcode
+    ldx #$8C
     jsr display_hex_byte
     lda #$44                    ; D
     sta $04D0
