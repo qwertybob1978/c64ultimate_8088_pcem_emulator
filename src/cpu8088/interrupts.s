@@ -21,6 +21,15 @@
 .export cpu8088_nmi_pending
 .export cpu8088_interrupt_shadow
 .export cpu8088_irq6_serviced
+.export cpu8088_interrupt_stage
+.export cpu8088_stack_stage
+.export interrupt_vector
+
+.macro long_bcs target
+    bcc :+
+    jmp target
+:
+.endmacro
 
 .segment "BSS"
 interrupt_vector: .res 1
@@ -32,6 +41,8 @@ cpu8088_irq_pending:      .res 1
 cpu8088_nmi_pending:      .res 1
 cpu8088_interrupt_shadow: .res 1
 cpu8088_irq6_serviced:    .res 1
+cpu8088_interrupt_stage:  .res 1
+cpu8088_stack_stage:       .res 1
 
 .segment "CODE"
 
@@ -65,6 +76,9 @@ cpu8088_service_pending_interrupt:
 @check_irq:
     lda cpu8088_irq_pending
     beq @none
+    lda cpu8088_state+CPU_SP
+    ora cpu8088_state+CPU_SP+1
+    beq @none
     lda cpu8088_state+CPU_FLAGS+1
     and #$02
     beq @none
@@ -94,6 +108,8 @@ cpu8088_service_pending_interrupt:
 ; is FLAGS, CS, IP in push order, leaving IP at SS:SP. Carry reports REU error.
 cpu8088_interrupt:
     sta interrupt_vector
+    lda #$01
+    sta cpu8088_interrupt_stage
     lda cpu8088_state+CPU_FLAGS
     ldx cpu8088_state+CPU_FLAGS+1
     txa
@@ -101,15 +117,19 @@ cpu8088_interrupt:
     tax
     lda cpu8088_state+CPU_FLAGS
     jsr cpu8088_push_u16
-    bcs @failed
+    long_bcs @failed
+    lda #$02
+    sta cpu8088_interrupt_stage
     lda cpu8088_state+CPU_CS
     ldx cpu8088_state+CPU_CS+1
     jsr cpu8088_push_u16
-    bcs @failed
+    long_bcs @failed
+    lda #$03
+    sta cpu8088_interrupt_stage
     lda cpu8088_state+CPU_IP
     ldx cpu8088_state+CPU_IP+1
     jsr cpu8088_push_u16
-    bcs @failed
+    long_bcs @failed
 
     lda cpu8088_state+CPU_FLAGS+1
     and #$FC                    ; clear TF and IF
@@ -128,6 +148,10 @@ cpu8088_interrupt:
     jsr cpu8088_segment_offset_physical
     jsr interrupt_read_vector_byte
     bcs @failed
+    pha
+    lda #$04
+    sta cpu8088_interrupt_stage
+    pla
     sta interrupt_ip
     jsr interrupt_read_vector_byte
     bcs @failed
@@ -139,6 +163,31 @@ cpu8088_interrupt:
     bcs @failed
     sta interrupt_cs+1
 
+    lda interrupt_cs
+    bne @install_vector
+    lda interrupt_cs+1
+    cmp #$F0
+    bne @install_vector
+    lda interrupt_ip
+    bne @install_vector
+    lda interrupt_ip+1
+    cmp #$E0
+    bne @install_vector
+    lda interrupt_vector
+    cmp #$08
+    bcc @install_vector
+    cmp #$20
+    bcs @install_vector
+    sec
+    sbc #$08
+    asl a
+    tax
+    lda genxt_vector_offsets,x
+    sta interrupt_ip
+    lda genxt_vector_offsets+1,x
+    sta interrupt_ip+1
+
+@install_vector:
     lda interrupt_ip
     sta cpu8088_state+CPU_IP
     lda interrupt_ip+1
@@ -197,3 +246,9 @@ interrupt_read_vector_byte:
     clc
 @read_failed:
     rts
+
+.segment "RODATA"
+genxt_vector_offsets:
+    .word $FEA5,$E987,$FF23,$FF23,$FF23,$FF23,$EF57,$FF23
+    .word $F065,$F84D,$F841,$EC59,$E739,$F859,$E82E,$EFD2
+    .word $FF23,$E6F2,$FE6E,$FF53,$FF53,$F0A4,$EFC7,$0000

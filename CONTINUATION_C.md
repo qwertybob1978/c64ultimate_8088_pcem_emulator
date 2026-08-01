@@ -93,13 +93,13 @@ Observed failure after the IRQ stack guard:
 - The displayed interrupt vector was previously ambiguous because diagnostic
    fields survived the CPU smoke test; reset now clears those fields.
 
-The requested-vector diagnostic now displays `Q:01` while the vector entering
-`cpu8088_interrupt` displays `V:00`. This proves the IRQ request is being
-latched as vector 1, but the service boundary passes zero into interrupt entry.
-FDC behavior remains unchanged because no FDC command/read/IRQ6 activity has
-begun. The next fix should trace the accumulator across
-`cpu8088_service_pending_interrupt` and `jsr cpu8088_interrupt`, then retest
-the same packaged VICE path.
+The requested-vector diagnostic initially displayed `Q:01` while `V:00`, but
+that was a diagnostic bug: `cpu8088_interrupt` overwrote A with stage `01`
+before recording the entry vector. After capturing A first, the packaged VICE
+run shows Q and V agree on the IRQ-derived vector. The failure remains at
+`F000:E003`, with FDC command/read/IRQ6 counters still zero. The next fix
+should investigate the BIOS handler/vector target or the memory fetch at that
+address, rather than changing FDC behavior.
 
 Status update 2026-08-01: the former F44D hypothesis is closed. Reference
 execution shows F44D is a reusable CGA `$3DA` status helper with `DX=$3DA` and
