@@ -142,12 +142,17 @@ guest_load_genxt:
 
 .segment "RODATA"
 genxt_bootstrap_patch:
-    ; DS=0; IVT 08h=F000:FEA5; IVT 13h=F000:EC59; JMP F000:E6F2.
-    ; Last opcode E9=near JMP rel16: disp=$0036 (IP after=$E6BC -> $E6F2).
+    ; DS=0; IVT 08h=F000:FEA5; IVT 13h=F000:EC59; IVT 0Eh=F000:EF57;
+    ; then JMP F000:E6F2. IVT 0Eh is the diskette IRQ6 vector: its handler
+    ; (F000:EF57) sets BDA 0040:003E bit 7 and issues the PIC EOI, which the
+    ; INT 13h wait loop (F000:EEBA) spins on. Native IVT init leaves it wrong,
+    ; so the FDC completion IRQ6 never released the wait loop and boot stalled.
+    ; Last opcode E9=near JMP rel16: disp=$002D (IP after=$E6C5 -> $E6F2).
     ; High byte MUST be $00; $E9 is relative, not far/absolute.
     .byte $31,$C0,$8E,$D8,$B8,$A5,$FE,$A3,$20,$00
     .byte $B8,$59,$EC,$A3,$4C,$00,$B8,$00,$F0,$A3
-    .byte $22,$00,$A3,$4E,$00,$E9,$36,$00
+    .byte $22,$00,$A3,$4E,$00,$A3,$3A,$00,$B8,$57
+    .byte $EF,$A3,$38,$00,$E9,$2D,$00
 genxt_bootstrap_patch_size = *-genxt_bootstrap_patch
 
 guest_genxt_bios:

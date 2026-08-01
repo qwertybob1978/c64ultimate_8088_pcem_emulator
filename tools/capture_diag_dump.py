@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-"""Break at diagnostic_done ($08CD) and dump the diagnostic region for parsing."""
-import socket
-import struct
-import subprocess
-import time
+"""Store-watchpoint capture: fire on first write to a chosen C64 address, dump diag region."""
+import socket, struct, subprocess, sys, time
 from pathlib import Path
 
 WORKSPACE = Path(__file__).resolve().parent.parent
 VICE = WORKSPACE / ".cache" / "vice-3.10" / "GTK3VICE-3.10-win64" / "bin" / "x64sc.exe"
 CRT = WORKSPACE / "build" / "c64x86.crt"
 HOST, PORT = "127.0.0.1", 6502
-BREAK_ADDR = 0x08CD
+WATCH = int(sys.argv[1], 16) if len(sys.argv) > 1 else 0x7F85  # fdc_last_command
 
 
 def cmd(sock, ctype, body):
@@ -28,32 +25,31 @@ def read_resp(sock, timeout=5.0):
             raise ConnectionError("closed")
         hdr += c
     blen = struct.unpack("<I", hdr[2:6])[0]
-    rtype, err = hdr[6], hdr[7]
-    rid = struct.unpack("<I", hdr[8:12])[0]
+    rtype, rid = hdr[6], struct.unpack("<I", hdr[8:12])[0]
     body = b""
     while len(body) < blen:
         c = sock.recv(blen - len(body))
         if not c:
             raise ConnectionError("closed")
         body += c
-    return rtype, err, rid, body
+    return rtype, rid, body
 
 
 def drain_until(sock, rtype, rid, timeout=5.0):
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        t, e, r, b = read_resp(sock, max(0.5, deadline - time.time()))
+    dl = time.time() + timeout
+    while time.time() < dl:
+        t, r, b = read_resp(sock, max(0.5, dl - time.time()))
         if t == rtype and r == rid:
-            return t, e, r, b
+            return b
     raise TimeoutError()
 
 
 def mem_get(sock, start, end):
     body = bytes([0, start & 0xFF, start >> 8, end & 0xFF, end >> 8, 0, 0, 0])
     rid = cmd(sock, 0x01, body)
-    _, _, _, b = drain_until(sock, 0x01, rid, timeout=20.0)
-    length = struct.unpack("<H", b[:2])[0]
-    return b[2:2 + length]
+    b = drain_until(sock, 0x01, rid, timeout=20.0)
+    n = struct.unpack("<H", b[:2])[0]
+    return b[2:2 + n]
 
 
 def main():
@@ -66,45 +62,36 @@ def main():
     sock = None
     for _ in range(30):
         try:
-            sock = socket.create_connection((HOST, PORT), timeout=1.0)
-            break
+            sock = socket.create_connection((HOST, PORT), timeout=1.0); break
         except OSError:
             time.sleep(1.0)
     if sock is None:
-        proc.kill()
-        raise SystemExit("no monitor")
+        proc.kill(); raise SystemExit("no monitor")
     try:
         cmd(sock, 0x81, b"")
         for _ in range(5):
-            try:
-                read_resp(sock, 2.0)
-            except TimeoutError:
-                break
-        # exec checkpoint at diagnostic_done
-        cp = struct.pack("<HH", BREAK_ADDR, BREAK_ADDR) + bytes([1, 1, 0x04, 0, 0])
+            try: read_resp(sock, 2.0)
+            except TimeoutError: break
+        cp = struct.pack("<HH", WATCH, WATCH) + bytes([1, 1, 0x02, 1, 0])  # stop,enabled,store,temporary,mainmem
         rid = cmd(sock, 0x12, cp)
-        _, _, _, cpr = drain_until(sock, 0x11, rid, timeout=5.0)
-        print(f"checkpoint #{struct.unpack('<I', cpr[:4])[0]} at ${BREAK_ADDR:04X}")
-        cmd(sock, 0xAA, b"")  # resume
-        # wait for checkpoint hit
-        deadline = time.time() + 120
-        while time.time() < deadline:
-            t, e, r, b = read_resp(sock, max(0.5, deadline - time.time()))
+        cpr = drain_until(sock, 0x11, rid, timeout=5.0)
+        print(f"store watchpoint #{struct.unpack('<I', cpr[:4])[0]} on ${WATCH:04X}")
+        cmd(sock, 0xAA, b"")
+        dl = time.time() + 120
+        hit = False
+        while time.time() < dl:
+            t, r, b = read_resp(sock, max(0.5, dl - time.time()))
             if t == 0x11 and len(b) >= 5 and b[4]:
-                break
-        else:
-            raise TimeoutError("no hit")
-        print("hit, dumping...")
+                hit = True; break
+        print("HIT" if hit else "TIMEOUT (addr never written)")
         dump = mem_get(sock, 0x0400, 0x86FF)
         (WORKSPACE / "build" / "fault-dump.bin").write_bytes(dump)
         print(f"saved build/fault-dump.bin ({len(dump)} bytes)")
         cmd(sock, 0xBB, b"")
     finally:
         sock.close()
-        try:
-            proc.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+        try: proc.wait(timeout=10)
+        except subprocess.TimeoutExpired: proc.kill()
 
 
 if __name__ == "__main__":

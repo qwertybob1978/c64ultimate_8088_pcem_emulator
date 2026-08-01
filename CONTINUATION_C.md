@@ -490,3 +490,31 @@ POST completes, prints BIOS banner "(C)ANONYMOUS CPU987", advances into BIOS dis
 - tools/disasm_region.py: 16-bit capstone disasm, `python tools/disasm_region.py <startHex> <endHex>` (BASE=0xE000).
 - tools/scan_err15.py: scan ROM for writes to offset 0x15.
 - tools/capture_diag_dump.py: binary-monitor break at diagnostic_done ($08CD), dump $0400-$86FF for parse_fault_dump.py.
+
+## INT 13h -> IRQ6 diskette handshake fix (2026-08-01)
+
+Symptom: after the POST reset-loop fix, POST completed but the BIOS diskette
+wait loop at F000:EEBA spun forever (`test byte[0x3e],0x80`), never seeing the
+FDC completion. Boot never reached the boot sector.
+
+Root cause: the guest-side bootstrap patch (genxt_bootstrap_patch, copied to the
+unused ROM gap at F000:E6A0 and entered from the patched INT 19h handoff at
+F000:E507) installed only IVT[08h] (timer) and IVT[13h] (disk). It left IVT[0Eh]
+(the IRQ6 diskette vector at 0000:0038) unwired. The emulated FDC raises IRQ6 on
+read/reset completion (fdc.s -> pic_request_irq, FDC_IRQ=6; PIC vector base 0x08
+=> INT 0Eh), but with IVT[0Eh] wrong the delivered interrupt never ran the real
+diskette ISR, so BDA 0040:003E bit 7 was never set and EEBA timed out.
+
+Diskette ISR located at F000:EF57: `sti; push ds; push ax; mov ds,0x40;
+or byte[0x3e],0x80; mov al,0x20; out 0x20,al; pop ax; pop ds; iret` (sets the
+completion bit the wait loop spins on, then issues the PIC EOI).
+
+Fix: extended genxt_bootstrap_patch to also install IVT[0Eh] = F000:EF57
+(added `mov [0x3A],ax` with ax=F000, `mov ax,EF57`, `mov [0x38],ax`), and
+recomputed the trailing near-JMP displacement to E6F2 (patch grew 28 -> 37 bytes,
+disp $0036 -> $002D).
+
+Result: guest PC now leaves the F000:EEBA wait loop (previously an infinite
+spin); border no longer traps. IRQ6 completion releases the wait as intended.
+tests/test_phase0_contracts.py updated to assert the new IVT[0Eh] patch bytes;
+41/41 tests pass.

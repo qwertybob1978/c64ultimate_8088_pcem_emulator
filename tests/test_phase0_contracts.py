@@ -67,7 +67,10 @@ class Phase0Contracts(unittest.TestCase):
         self.assertIn("$B8,$59,$EC,$A3,$4C,$00", source)
         self.assertIn("$B8,$00,$F0,$A3", source)
         self.assertIn("$22,$00,$A3,$4E,$00", source)
-        self.assertIn("$E9,$36,$00", source)
+        # IVT 0Eh (IRQ6 diskette) = F000:EF57 so the FDC completion IRQ6 sets
+        # BDA 0040:003E bit 7 and releases the INT 13h wait loop (F000:EEBA).
+        self.assertIn("$A3,$3A,$00,$B8,$57", source)
+        self.assertIn("$EF,$A3,$38,$00,$E9,$2D,$00", source)
 
     def test_boot_autokey_answers_genxt_continue_prompt_with_y(self):
         source = (ROOT / "src/boot/hwtest.s").read_text()
