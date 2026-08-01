@@ -383,13 +383,12 @@ git status --short
 | --- | --- |
 | `config/roms.json` | Pinned BIOS file paths, hashes, sizes, and guest mappings |
 | `tools/fetch_pcem.ps1` | Fetches pinned PCem source into ignored `third_party/pcem` |
-| `tools/fetch_roms.ps1` | Fetches pinned PCem-ROMs into ignored `third_party/pcem-roms` |
+| `tools/verify_roms.py` | Verifies locally supplied ROM files against hashes and sizes |
 | `tools/verify_roms.py` | Verifies local ROM checkout against manifest |
 | `tools/build_guest_image.py` | Builds ignored 1 MiB `build/guest-genxt.reu` |
 | `config/dos_media.json` | Hashes, source URLs, geometry, and non-redistribution policy for DOS disks |
 | `tools/validate_dos_media.py` | Validates the supplied DOS boot disk and BPB |
 | `references/pcem.commit` | Pinned PCem dev commit |
-| `references/pcem-roms.commit` | Pinned PCem-ROMs commit |
 | `references/cc65.version` | Recorded local cc65 version |
 
 ## 8. Local ignored dependencies and assets
@@ -403,7 +402,7 @@ These paths exist on the current machine but are intentionally ignored by Git:
 .cache\vice-3.10\GTK3VICE-3.10-win64\bin\cartconv.exe
 .cache\python\unicorn\
 third_party\pcem\
-third_party\pcem-roms\
+third_party\roms\
 build\guest-genxt.reu
 build\c64x86.crt
 ```
@@ -415,11 +414,9 @@ PCem repository: https://github.com/sarah-walker-pcem/pcem.git
 PCem branch:     dev
 PCem commit:     d674c4088e04a5fdc74e452c4d5284fa8920726d
 
-ROM repository: https://github.com/BaRRaKudaRain/PCem-ROMs.git
-ROM branch:     master
-ROM commit:     75bd118dd86378cac1d9d55e29e26ef82d6d57ef
+I can not and will not supply any ROMs that may be copyrighted.
 
-Generic XT ROM: third_party\pcem-roms\genxt\pcxt.rom
+Generic XT ROM: third_party\roms\genxt\pcxt.rom
 ROM guest map:  FE000-FFFFF
 ROM SHA-256:    c3353ceed8954e586ae711373e3b3fdc923354fe6ceb9a124acb7d760bc974b5
 ```

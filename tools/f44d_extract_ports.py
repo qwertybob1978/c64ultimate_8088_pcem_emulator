@@ -1,7 +1,7 @@
 """Minimal x86 decoder focused on finding I/O port polling loops."""
 from pathlib import Path
 
-rom = bytearray(Path("third_party/pcem-roms/genxt/pcxt.rom").read_bytes())
+rom = bytearray(Path("third_party/roms/genxt/pcxt.rom").read_bytes())
 
 def phys(off):
     return off + 0xFE000

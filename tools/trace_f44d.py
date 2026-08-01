@@ -103,7 +103,7 @@ def main():
     cpu = RefCPU()
     
     # Load genxt ROM
-    rom_path = ROOT / "third_party" / "pcem-roms" / "genxt" / "pcxt.rom"
+    rom_path = ROOT / "third_party" / "roms" / "genxt" / "pcxt.rom"
     if not rom_path.exists():
         print(f"No ROM at {rom_path}")
         return

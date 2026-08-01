@@ -1,4 +1,4 @@
-data = open('third_party/pcem-roms/genxt/pcxt.rom', 'rb').read()
+data = open('third_party/roms/genxt/pcxt.rom', 'rb').read()
 BASE = 0xE000
 
 def show(name, p):

@@ -53,7 +53,7 @@ def build_image(manifest_path: Path, rom_root: Path, profile_name: str) -> bytea
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build a raw 1 MiB 8088 memory image")
     parser.add_argument("--manifest", type=Path, default=ROOT / "config/roms.json")
-    parser.add_argument("--rom-root", type=Path, default=ROOT / "third_party/pcem-roms")
+    parser.add_argument("--rom-root", type=Path, default=ROOT / "third_party/roms")
     parser.add_argument("--profile", choices=("genxt", "ibmxt", "ibmpc"), default="genxt")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()

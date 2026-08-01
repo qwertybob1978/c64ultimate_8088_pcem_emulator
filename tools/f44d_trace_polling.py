@@ -1,7 +1,7 @@
 """Trace forward from known polling locations."""
 from pathlib import Path
 
-rom = bytearray(Path("third_party/pcem-roms/genxt/pcxt.rom").read_bytes())
+rom = bytearray(Path("third_party/roms/genxt/pcxt.rom").read_bytes())
 
 def decode_simple(addr_phys, b0, next_byte=None):
     """Decode one instruction given its physical address and opcode byte."""

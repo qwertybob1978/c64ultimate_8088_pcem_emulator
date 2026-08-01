@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "config" / "roms.json"
-DEFAULT_ROM_ROOT = ROOT / "third_party" / "pcem-roms"
+DEFAULT_ROM_ROOT = ROOT / "third_party" / "roms"
 
 
 def verify(manifest_path: Path, rom_root: Path, profile: str | None) -> int:
@@ -37,7 +37,7 @@ def verify(manifest_path: Path, rom_root: Path, profile: str | None) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Verify local PCem ROM inputs")
+    parser = argparse.ArgumentParser(description="Verify locally supplied ROM inputs")
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--rom-root", type=Path, default=DEFAULT_ROM_ROOT)
     parser.add_argument("--profile", choices=("genxt", "ibmxt", "ibmpc"))

@@ -164,15 +164,15 @@ pinned revision with:
 
 The checkout lives at `third_party/pcem` and is ignored by this repository.
 
-Fetch and validate the user-requested development ROM collection with:
+I can not and will not supply any ROMs that may be copyrighted. Provide any
+lawfully obtained ROM files locally under `third_party/roms` and validate them
+with:
 
 ```powershell
-./tools/fetch_roms.ps1
 python ./tools/verify_roms.py
 ```
 
-The ROM checkout is also ignored. Its upstream repository has no license file,
-so ROM binaries must not be committed or packaged with releases.
+ROM binaries must not be committed or packaged with releases.
 
 Create a raw 1 MiB REU guest-memory image with the selected BIOS mapped into
 place:

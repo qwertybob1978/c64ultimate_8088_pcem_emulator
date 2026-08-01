@@ -2,7 +2,7 @@
 from pathlib import Path
 
 # Read BIOS ROM
-rom = Path("third_party/pcem-roms/genxt/pcxt.rom").read_bytes()
+rom = Path("third_party/roms/genxt/pcxt.rom").read_bytes()
 print(f"ROM size: {len(rom)} bytes (0x{len(rom):X})")
 
 # F000:E003 = physical FE000 + E003 = FE003

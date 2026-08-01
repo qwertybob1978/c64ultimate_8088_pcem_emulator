@@ -1,7 +1,7 @@
 """Deep trace backward from FF44A looking for how DX gets initialized."""
 from pathlib import Path
 
-rom = bytearray(Path("third_party/pcem-roms/genxt/pcxt.rom").read_bytes())
+rom = bytearray(Path("third_party/roms/genxt/pcxt.rom").read_bytes())
 
 def phys(off):
     return off + 0xFE000

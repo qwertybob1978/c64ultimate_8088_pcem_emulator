@@ -1,7 +1,7 @@
 """Debug: dump raw bytes at known instruction locations."""
 from pathlib import Path
 
-rom = bytearray(Path("third_party/pcem-roms/genxt/pcxt.rom").read_bytes())
+rom = bytearray(Path("third_party/roms/genxt/pcxt.rom").read_bytes())
 
 # Known offsets based on previous disassembly
 # Physical FF44D = ROM offset 0x144D
