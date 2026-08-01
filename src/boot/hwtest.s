@@ -134,10 +134,12 @@ boot_prev2_cs:        .res 2
 boot_prev2_ip:        .res 2
 boot_prev2_opcode:    .res 1
 boot_prev2_status:    .res 1
+boot_prev2_bytes:     .res 4
 boot_prev_cs:         .res 2
 boot_prev_ip:         .res 2
 boot_prev_opcode:     .res 1
 boot_prev_status:     .res 1
+boot_prev_bytes:      .res 4
 boot_genxt_ivt_ready: .res 1
 boot_genxt_ivt_index: .res 1
 
@@ -334,6 +336,8 @@ boot_guest:
     sta boot_prev_opcode
     lda boot_failure_status
     sta boot_prev_status
+    jsr capture_prev2_bytes
+    jsr capture_prev_bytes
     lda cpu8088_last_cycles
     jsr pit_advance_cycles
 @boot_step_done:
@@ -689,6 +693,114 @@ display_boot_failure:
     lda boot_prev2_opcode
     ldx #$8C
     jsr display_hex_byte
+    ; Row 8: P1 bytes display
+    lda #$10                    ; P
+    sta $0540
+    lda #$31                    ; 1
+    sta $0541
+    lda #$42                    ; B
+    sta $0542
+    lda #$3A                    ; :
+    sta $0543
+    lda boot_prev_bytes         ; high byte
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0544
+    lda boot_prev_bytes
+    and #$0F
+    jsr display_hex_nibble
+    sta $0545
+    lda boot_prev_bytes+1       ; next byte
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0546
+    lda boot_prev_bytes+1
+    and #$0F
+    jsr display_hex_nibble
+    sta $0547
+    lda boot_prev_bytes+2
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0548
+    lda boot_prev_bytes+2
+    and #$0F
+    jsr display_hex_nibble
+    sta $0549
+    lda boot_prev_bytes+3
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $054A
+    lda boot_prev_bytes+3
+    and #$0F
+    jsr display_hex_nibble
+    sta $054B
+    ; Row 9: P2 bytes display
+    lda #$20                    ; space
+    sta $054C
+    lda #$10                    ; P
+    sta $054D
+    lda #$32                    ; 2
+    sta $054E
+    lda #$42                    ; B
+    sta $054F
+    lda #$3A                    ; :
+    sta $0550
+    lda boot_prev2_bytes        ; high byte
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0551
+    lda boot_prev2_bytes
+    and #$0F
+    jsr display_hex_nibble
+    sta $0552
+    lda boot_prev2_bytes+1
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0553
+    lda boot_prev2_bytes+1
+    and #$0F
+    jsr display_hex_nibble
+    sta $0554
+    lda boot_prev2_bytes+2
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0555
+    lda boot_prev2_bytes+2
+    and #$0F
+    jsr display_hex_nibble
+    sta $0556
+    lda boot_prev2_bytes+3
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0557
+    lda boot_prev2_bytes+3
+    and #$0F
+    jsr display_hex_nibble
+    sta $0558
     lda #$44                    ; D
     sta $04D0
     lda #$3A
@@ -1166,6 +1278,52 @@ capture_fault_bytes:
     jsr increment_phys_addr
     jsr cpu8088_mem_read_u8
     sta boot_fault_bytes+3
+    rts
+
+capture_prev_bytes:
+    lda boot_prev_cs
+    sta cpu8088_segment
+    lda boot_prev_cs+1
+    sta cpu8088_segment+1
+    lda boot_prev_ip
+    sta cpu8088_offset
+    lda boot_prev_ip+1
+    sta cpu8088_offset+1
+    jsr cpu8088_segment_offset_physical
+    jsr cpu8088_mem_read_u8
+    sta boot_prev_bytes
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_prev_bytes+1
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_prev_bytes+2
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_prev_bytes+3
+    rts
+
+capture_prev2_bytes:
+    lda boot_prev2_cs
+    sta cpu8088_segment
+    lda boot_prev2_cs+1
+    sta cpu8088_segment+1
+    lda boot_prev2_ip
+    sta cpu8088_offset
+    lda boot_prev2_ip+1
+    sta cpu8088_offset+1
+    jsr cpu8088_segment_offset_physical
+    jsr cpu8088_mem_read_u8
+    sta boot_prev2_bytes
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_prev2_bytes+1
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_prev2_bytes+2
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_prev2_bytes+3
     rts
 
 capture_stack_bytes:
