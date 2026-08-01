@@ -220,3 +220,47 @@ The diagnostic display now shows explicit field labels (`P2: ST: CS: IP: OP:`), 
 
 **Decision:** Do NOT modify FDC until media-access counters become nonzero. The frame-integrity check (M:00) proves IRET is returning correctly, so the F000:E003 fault is a BIOS control-flow issue, not a stack corruption. Leave FDC inert.
 
+## Summary of Diagnostic Work (2026-08-01)
+
+**Completed milestones:**
+1. ✅ Frame integrity validation (IRET push/pop verify) - M:00 = success
+2. ✅ P2 (prior-2 instruction) capture infrastructure deployed with explicit labels
+3. ✅ Display color scheme improved (black background + cyan text)
+4. ✅ CRT diagnostic analysis tools created (extract_crt_diagnostics.py)
+5. ✅ Documented all findings in CONTINUATION_C.md and session notes
+
+**Current diagnostic state:**
+- Fault locked at F000:E003 (BIOS banner data "ener" confirmed)
+- P2 state captured but exact P2:IP value ambiguous from VICE screenshot
+- Known: P2 CS=F000 (no segment change), P2 contains NOP (0x90)
+- Frame integrity verified (IRET returns correctly to pre-interrupt CS:IP)
+- FDC counters at zero (no media access path active yet)
+
+**Remaining P2 analysis blocked by:**
+- Visual parsing difficulty: C64 font rendering makes hex digit alignment uncertain
+- No direct memory snapshot mechanism in VICE batch mode for runtime value extraction
+- CRT file contains static code, not runtime C64 memory state
+
+**Path forward (3 options):**
+
+**Option A: Infer from known facts (lowest cost, proceed now)**
+- Assume P2 IP ≈ E001 (sequential execution pattern)
+- Assumption: E003 reached via sequential decode of instructions, not jump
+- Action: Add next diagnostic to identify exact jump/control-flow instruction
+- Rationale: If sequential, FDC/BIOS logic must intentionally reference banner; needs BIOS ROM analysis
+
+**Option B: Extract via VICE monitor (medium cost)**
+- Modify hwtest.s to write P2 values to fixed C64 memory location
+- Use VICE monitor mode to dump memory after run
+- Exact byte values without ambiguity
+- Cost: One rebuild + modified VICE run + manual memory dump parse
+
+**Option C: Visual signal encoding (medium cost)**
+- Encode P2:IP bytes into border color sequence (4 colors per nibble)
+- Visual pattern easier to parse than font-rendered hex
+- Or use speaker beeper tones (requires audio output support)
+- Cost: Rewrite display logic to use signals instead of screen text
+
+**Recommended next action:** Proceed with Option A (inference-based) for now, adding next diagnostic (P1 analysis or first instruction after fault) to narrow down control flow. Revisit Options B/C only if pattern remains unclear after 2-3 more diagnostic iterations.
+
+
