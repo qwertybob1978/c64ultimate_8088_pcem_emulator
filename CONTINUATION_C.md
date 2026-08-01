@@ -124,6 +124,15 @@ justified yet; compare the recorded IRET return `CS:IP` with the saved
 pre-interrupt state on the next run to determine whether the frame is corrupt
 or the BIOS was already executing the `$E000` banner path.
 
+Frame-integrity result 2026-08-01: the new comparison reports `M:00` in the
+packaged 2-billion-cycle VICE run. The `CS:IP` restored by IRET matches the
+`CS:IP` captured immediately before interrupt entry, so the interrupt frame
+push/pop path is not corrupting the return address. The run still ends blue at
+the same banner-data path, with FDC command/read/IRQ6 counters at zero.
+This falsifies the stack-frame corruption hypothesis. Continue with control
+flow/opcode dispatch and the BIOS entry path; leave FDC unchanged until its
+counters become nonzero.
+
 Status update 2026-08-01: the former F44D hypothesis is closed. Reference
 execution shows F44D is a reusable CGA `$3DA` status helper with `DX=$3DA` and
 alternating `$00/$09` reads; it is not an FDC MSR or digital-input poll. The

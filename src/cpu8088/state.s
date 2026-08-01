@@ -19,6 +19,9 @@
 .import interrupt_last_iret_ip
 .import interrupt_last_iret_cs
 .import interrupt_last_iret_stage
+.import interrupt_frame_ip
+.import interrupt_frame_cs
+.import interrupt_frame_mismatch
 
 .segment "BSS"
 cpu8088_state: .res CPU_STATE_SIZE
@@ -48,6 +51,11 @@ cpu8088_reset:
     sta interrupt_last_iret_cs
     sta interrupt_last_iret_cs+1
     sta interrupt_last_iret_stage
+    sta interrupt_frame_ip
+    sta interrupt_frame_ip+1
+    sta interrupt_frame_cs
+    sta interrupt_frame_cs+1
+    sta interrupt_frame_mismatch
     ldx #CPU_STATE_SIZE-1
 @clear:
     sta cpu8088_state,x

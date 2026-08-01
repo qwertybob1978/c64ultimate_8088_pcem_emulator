@@ -52,6 +52,7 @@
 .import interrupt_last_iret_ip
 .import interrupt_last_iret_cs
 .import interrupt_last_iret_stage
+.import interrupt_frame_mismatch
 .import stack_fail_phys
 .import cpu8088_irq_vector
 .import interrupt_vector
@@ -728,6 +729,13 @@ display_boot_failure:
     jsr display_hex_byte
     lda interrupt_last_iret_ip
     ldx #$18
+    jsr display_hex_byte
+    lda #$4D                    ; M
+    sta $0520
+    lda #$3A
+    sta $0521
+    lda interrupt_frame_mismatch
+    ldx #$24
     jsr display_hex_byte
     lda fdc_last_command
     ldx #$A0

@@ -26,6 +26,9 @@
 .export interrupt_last_iret_ip
 .export interrupt_last_iret_cs
 .export interrupt_last_iret_stage
+.export interrupt_frame_ip
+.export interrupt_frame_cs
+.export interrupt_frame_mismatch
 .export interrupt_vector
 
 .macro long_bcs target
@@ -49,6 +52,9 @@ cpu8088_stack_stage:       .res 1
 interrupt_last_iret_ip:    .res 2
 interrupt_last_iret_cs:    .res 2
 interrupt_last_iret_stage: .res 1
+interrupt_frame_ip:         .res 2
+interrupt_frame_cs:         .res 2
+interrupt_frame_mismatch:   .res 1
 
 .segment "CODE"
 
@@ -114,6 +120,16 @@ cpu8088_service_pending_interrupt:
 ; is FLAGS, CS, IP in push order, leaving IP at SS:SP. Carry reports REU error.
 cpu8088_interrupt:
     sta interrupt_vector
+    lda cpu8088_state+CPU_IP
+    sta interrupt_frame_ip
+    lda cpu8088_state+CPU_IP+1
+    sta interrupt_frame_ip+1
+    lda cpu8088_state+CPU_CS
+    sta interrupt_frame_cs
+    lda cpu8088_state+CPU_CS+1
+    sta interrupt_frame_cs+1
+    lda #$00
+    sta interrupt_frame_mismatch
     lda #$01
     sta cpu8088_interrupt_stage
     lda cpu8088_state+CPU_FLAGS
@@ -209,7 +225,7 @@ cpu8088_interrupt:
 ; Return from a real-mode interrupt frame, restoring IP, CS, then FLAGS.
 cpu8088_iret:
     jsr cpu8088_pop_u16
-    bcs @failed
+    long_bcs @failed
     sta interrupt_ip
     stx interrupt_ip+1
     sta interrupt_last_iret_ip
@@ -217,7 +233,7 @@ cpu8088_iret:
     lda #$01
     sta interrupt_last_iret_stage
     jsr cpu8088_pop_u16
-    bcs @failed
+    long_bcs @failed
     sta interrupt_cs
     stx interrupt_cs+1
     sta interrupt_last_iret_cs
@@ -225,7 +241,7 @@ cpu8088_iret:
     lda #$02
     sta interrupt_last_iret_stage
     jsr cpu8088_pop_u16
-    bcs @failed
+    long_bcs @failed
     lda #$03
     sta interrupt_last_iret_stage
     ora #$02                    ; reserved bit is architecturally set
@@ -241,6 +257,28 @@ cpu8088_iret:
     sta cpu8088_state+CPU_CS
     lda interrupt_cs+1
     sta cpu8088_state+CPU_CS+1
+    lda interrupt_ip
+    cmp interrupt_frame_ip
+    beq :+
+    jmp @frame_mismatch
+:
+    lda interrupt_ip+1
+    cmp interrupt_frame_ip+1
+    beq :+
+    jmp @frame_mismatch
+:
+    lda interrupt_cs
+    cmp interrupt_frame_cs
+    beq :+
+    jmp @frame_mismatch
+:
+    lda interrupt_cs+1
+    cmp interrupt_frame_cs+1
+    beq @frame_checked
+@frame_mismatch:
+    lda #$01
+    sta interrupt_frame_mismatch
+@frame_checked:
     lda interrupt_flags
     sta cpu8088_state+CPU_FLAGS
     lda interrupt_flags+1
