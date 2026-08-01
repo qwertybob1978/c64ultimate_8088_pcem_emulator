@@ -2,31 +2,31 @@
 
 This file is a complete handoff for continuing the Intel 8088 / IBM XT
 simulator on the Commodore 64 Ultimate. Read this entire file before editing
-anything. Also read `PROJECT_PLAN.md` and `README.md` for the design and current
-user-facing instructions.
+editing anything. The former planning documents were removed; use the source,
+tests, configuration, and README as the current specification.
 
 ## 1. Current checkpoint
 
 ### Verified native-boot state (2026-08-01)
 
-The current verified commit is:
+The current repository checkpoint is:
 
 ```text
-aa6accc fix: bypass actual BIOS speaker delay
+3ef8b06 docs: document SvarDOS boot milestones
 ```
 
 The SvarDOS checkpoint used `third_party/svardos/svdos-360K-disk-1.img`.
-The current build now prefers the former MS-DOS 3.30 image at
-`.cache/media/msdos330/**/DISK01.IMG`; SvarDOS remains the fallback when that
-local cache is unavailable.
+The default boot target is the SvarDOS 360 KiB image at
+`third_party/svardos/svdos-360K-disk-1.img`. Do not reintroduce the removed
+MS-DOS cache as the default or acceptance target.
 The BIOS helper at `F000:F78D` was investigated and is normal Generic XT BIOS
 CGA CRTC code; it is not a hardware stall and must not be patched without new
 evidence.
 
 The native run was instead observed looping in the BIOS speaker delay at
-`F000:F9E8` (`LOOP`), with no FDC command or IRQ6 activity. The existing
-runtime patch had targeted `F000:F97F`; commit `aa6accc` moves it to the actual
-delay entry `F000:F9D4`, where it safely replaces the routine entry with `RET`.
+`F000:F9E8` (`LOOP`), with no FDC command or IRQ6 activity. The runtime patch
+targeted the actual delay entry at `F000:F9D4`, where it safely replaces the
+routine entry with `RET`.
 
 Verified after that change:
 
@@ -46,21 +46,21 @@ state.
 Repository root on the current machine:
 
 ```text
-F:\projects\C64_x86
+C:\Repository\C64_x86
 ```
 
 Current branch and known-good commit:
 
 ```text
 branch: master
-commit before the current native-boot milestone: dc48342
-subject: feat(input): route C64 keyboard to XT
+commit: 3ef8b06
+subject: docs: document SvarDOS boot milestones
 ```
 
 The working tree was clean when this guide was created. Confirm before work:
 
 ```powershell
-Set-Location F:\projects\C64_x86
+Set-Location C:\Repository\C64_x86
 git status --short
 git log -8 --oneline
 ```
@@ -86,8 +86,8 @@ c783907 feat(cpu): add rotate family
 ```
 
 The end goal is not complete. Continue until the Generic XT BIOS displays via
-CGA and attempts to boot the supplied MS-DOS 3.30 floppy. Commit every verified
-milestone locally.
+CGA and attempts to boot the supplied SvarDOS 360 KiB floppy. Commit every
+verified milestone locally.
 
 ## 2. Mandatory working rules
 
@@ -236,7 +236,7 @@ iterated thousands of times before reaching its video dispatch.
 
 ## 6. Build and test commands
 
-Run commands from `F:\projects\C64_x86`.
+Run commands from `C:\Repository\C64_x86`.
 
 Install missing project-local tools only when necessary:
 
@@ -278,8 +278,8 @@ Expected final build messages include:
 
 ```text
 Built build/c64x86-hwtest.prg
-Built ...\build\c64x86.crt (4 banks, 32896 bytes)
-Valid Magic Desk CRT: ...\build\c64x86.crt (4 banks, 32896 bytes)
+Built ...\build\c64x86.crt (49 banks, 402256 bytes)
+Valid Magic Desk CRT: ...\build\c64x86.crt (49 banks, 402256 bytes)
 ```
 
 Run the VICE gate. This script always uses `-warp` and must remain that way:
@@ -292,8 +292,8 @@ Expected result:
 
 ```text
 VICE 3.10 CRT smoke test passed with a 16 MiB REU.
-Screenshot: F:\projects\C64_x86\build\vice-smoke.png
-Log: F:\projects\C64_x86\build\vice-smoke.log
+Screenshot: C:\Repository\C64_x86\build\vice-smoke.png
+Log: C:\Repository\C64_x86\build\vice-smoke.log
 ```
 
 The screenshot should have a green border. The VICE script checks it
@@ -322,7 +322,6 @@ git status --short
 
 | Path | Purpose |
 | --- | --- |
-| `PROJECT_PLAN.md` | Complete architecture, requirements, phases, ROM policy, and risks |
 | `README.md` | Current build, test, supported-instruction, ROM, and media instructions |
 | `CONTINUATION.md` | This handoff and exact continuation point |
 | `build.ps1` | Assembles and links the native diagnostic PRG |
@@ -437,34 +436,30 @@ Use `rg` to locate exact current PCem paths if the subtree names differ.
 
 ## 9. DOS media location and policy
 
-The user supplied a WinWorld MS-DOS 3.30 download. The original Kansas City
-mirror returned HTTP 404; the alternate mirror listed on the same download page
-worked. The archive and extracted files are ignored and must never be committed.
+The default supplied boot media is SvarDOS 360 KiB. DOS media and generated
+CRT/build artifacts must remain outside Git unless explicitly documented as
+small source metadata.
 
 Local paths:
 
 ```text
-.cache\media\msdos330-360k.7z
-.cache\media\msdos330\Microsoft MS-DOS 3.30 (5.25)\DISK01.IMG
-.cache\media\msdos330\Microsoft MS-DOS 3.30 (5.25)\DISK02.IMG
+third_party\svardos\svdos-360K-disk-1.img
 ```
 
 Hashes and geometry:
 
 ```text
-archive SHA-256: 32e8b965ac11238f1d84e1c168031f1af7a13e89e9f1986e40ffa57c6a880f5c
-DISK01 SHA-256:  d79f283ebd2cd68e8dede44ed876da13c25024f7000bcb576177820388c424f4
-DISK02 SHA-256:  a85e1c35057d17a556a7fe151ca3824bf82eb13621392d803f487e35ebe8af56
+SvarDOS image:    third_party\svardos\svdos-360K-disk-1.img
 image size:       368640 bytes
 geometry:         40 cylinders, 2 heads, 9 sectors/track, 512 bytes/sector
 boot signature:   55 AA
-OEM/BPB text:      MSDOS3.3
+OEM/BPB text:      SvarDOS media metadata
 ```
 
 Validate it with:
 
 ```powershell
-python tools\validate_dos_media.py ".cache\media\msdos330\Microsoft MS-DOS 3.30 (5.25)\DISK01.IMG"
+python tools\validate_dos_media.py "third_party\svardos\svdos-360K-disk-1.img"
 ```
 
 Do not place DOS data inside the CRT. Eventually the emulator needs a local
@@ -491,14 +486,14 @@ with desktop reference tests and native smoke gates for each:
    font ROM.
 6. **NEC uPD765-compatible floppy controller and DMA channel 2**: commands,
    status/result phases, CHS sector reads, terminal count, IRQ6.
-7. **Boot-media integration**: expose `DISK01.IMG` as drive A, let BIOS INT 19h
+7. **Boot-media integration**: expose the SvarDOS image as drive A, let BIOS INT 19h
    load sector 0 to 0000:7C00, verify 55AA, and transfer control.
-8. **DOS evidence**: show BIOS/CGA text followed by the MS-DOS boot message or
+8. **DOS evidence**: show BIOS/CGA text followed by the SvarDOS boot message or
    command prompt in a warp-mode VICE screenshot.
 
 Start correctness-first. Device timing can be approximate but deterministic
-until basic boot works. Keep the guest clock and device scheduler design in
-`PROJECT_PLAN.md`; do not add random wall-clock timing.
+until basic boot works. Keep device timing deterministic; do not add random
+wall-clock timing.
 
 ## 11. Known traps and constraints
 
@@ -540,8 +535,8 @@ disk. Minimum acceptable evidence:
 2. VICE launches it with a 16 MiB REU and `-warp`.
 3. The native core runs the Generic XT BIOS, not only the diagnostic vector.
 4. CGA text generated by the guest appears on the C64 display.
-5. The floppy boot sector is read from the validated `DISK01.IMG` data.
-6. Execution reaches 0000:7C00 and begins the MS-DOS boot sector.
+5. The floppy boot sector is read from the validated SvarDOS image data.
+6. Execution reaches 0000:7C00 and begins the SvarDOS boot sector.
 7. A screenshot shows XT BIOS/DOS boot text or a DOS prompt.
 8. All desktop tests, Unicorn vectors, CRT validation, and VICE gates pass.
 9. Every milestone has its own local commit and the final working tree is clean.
