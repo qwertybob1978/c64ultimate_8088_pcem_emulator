@@ -263,4 +263,63 @@ The diagnostic display now shows explicit field labels (`P2: ST: CS: IP: OP:`), 
 
 **Recommended next action:** Proceed with Option A (inference-based) for now, adding next diagnostic (P1 analysis or first instruction after fault) to narrow down control flow. Revisit Options B/C only if pattern remains unclear after 2-3 more diagnostic iterations.
 
+## BIOS Control-Flow Analysis — 2026-08-01 (post-P2 infrastructure)
+
+**Goal:** Understand why execution reaches F000:E003 (banner-data region) instead of code.
+
+**Key Discoveries from ROM Analysis:**
+
+1. **Generic XT BIOS ROM structure (8192 bytes, 0x2000):**
+   - Offset 0x0000-0x004F: Banner string ("  Generic Turbo XT Bios 1987...")
+   - Offset 0x0050+: Actual executable BIOS code
+
+2. **CPU reset vector (FFFF:0000 = physical 0xFFFF0 = ROM offset 0x1FF0):**
+   - Contains: `EA 5B E0 00 F0` (JMP FAR F000:E05B)
+   - Destination: F000:E05B (13 bytes into actual BIOS code, skips banner)
+   - Physical address: 0xFE05B
+
+3. **Fault location (F000:E003 = physical 0xFE003 = ROM offset 0x0003):**
+   - Maps exactly to byte 0x65 ('e') in "Generic"
+   - This is inside the banner-data region, NOT executable code
+   - Logical progression: CPU should jump to E05B but lands at E003 instead
+
+**Control-Flow Hypothesis:**
+
+One of three scenarios:
+
+1. **Vector Fetch Bug:** CPU not executing reset vector (JMP FAR) correctly; instead starting execution from E000 and sequentially reading data bytes
+2. **State Init Bug:** FFFF:0000 vector is not being fetched; CS/IP initialized wrong (e.g., F000:0000 instead of FFFF:0000)
+3. **Interrupt Re-entry:** BIOS code intentionally jumps to E003 area (unlikely; would be writing code that executes data)
+
+**Evidence Favoring Vector Fetch Bug:**
+
+- Diagnostic shows `CS=F000` from first fault onward
+- But reset should initialize `CS=FFFF`
+- This suggests CS is being overwritten BEFORE reaching the expected reset vector
+- Timeline: Reset → fetch FFFF:0000 → JMP sets CS=F000, IP=E05B → but fault shows E003, not E05B
+
+**Next Diagnostic:** Capture what instruction sequence P1→P2→Fault shows. If P1 or P2 contain the JMP instruction (EA xx xx xx xx pattern), we can confirm vector execution is proceeding. If P2 shows data bytes, then vector was never executed.
+
+**Critical Question:** Why does diagnostic show `CS=F000` if CPU starts with `CS=FFFF`?
+
+Possible explanation: The JMP FAR F000:E05B instruction atomically sets both CS and IP in one operation. So:
+- Step 0: FFFF:0000 (pre-fetch vector)
+- Step 1: Execute JMP FAR → fetch 5 bytes, decode jump parameters
+- Step 2+: Jump to F000:E05B (CS now F000, IP now E05B)
+
+But if P1/P2 are one or two steps before fault at E003, they should show:
+- P2 = Step N: (some instruction)
+- P1 = Step N+1: (some instruction)
+- Fault = Step N+2: F000:E003
+
+If P2 CS=F000 but CPU starts with CS=FFFF, then JMP FAR must have already executed by step N (the P2 step).
+
+**Resolution Path:**
+
+1. Examine P1 bytes from latest VICE run (screenshot/P1B diagnostic field)
+2. Decode P1 instruction: if EA pattern, it's part of JMP execution; if data pattern, vector never executed
+3. If P1 shows JMP is executing: CPU state init is correct, proceed to step 4
+4. If P1 shows data bytes: vector fetch is broken, investigate CPU reset in src/cpu8088/state.s
+5. Determine: Does P1 IP show sequential advance (E003 → E004?) or jump (E05B → ????)
+
 
