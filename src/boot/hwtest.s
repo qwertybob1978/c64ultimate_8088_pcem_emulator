@@ -657,6 +657,22 @@ display_boot_failure:
     lda boot_prev2_ip
     ldx #$88
     jsr display_hex_byte
+    lda #$44                    ; D
+    sta $04D0
+    lda #$3A
+    sta $04D1
+    lda boot_fault_bytes
+    ldx #$D4
+    jsr display_hex_byte
+    lda boot_fault_bytes+1
+    ldx #$D7
+    jsr display_hex_byte
+    lda boot_fault_bytes+2
+    ldx #$DA
+    jsr display_hex_byte
+    lda boot_fault_bytes+3
+    ldx #$DD
+    jsr display_hex_byte
     lda fdc_last_command
     ldx #$A0
     jsr display_hex_byte
@@ -1001,7 +1017,14 @@ capture_boot_fault_context:
     rts
 
 capture_fault_bytes:
-    jsr cpu8088_cs_ip_physical
+    lda boot_fault_cs
+    sta cpu8088_segment
+    lda boot_fault_cs+1
+    sta cpu8088_segment+1
+    lda boot_fault_ip
+    sta cpu8088_offset
+    lda boot_fault_ip+1
+    sta cpu8088_offset+1
     jsr cpu8088_segment_offset_physical
     jsr cpu8088_mem_read_u8
     sta boot_fault_bytes

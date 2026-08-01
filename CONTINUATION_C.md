@@ -101,6 +101,12 @@ run shows Q and V agree on the IRQ-derived vector. The failure remains at
 should investigate the BIOS handler/vector target or the memory fetch at that
 address, rather than changing FDC behavior.
 
+The exact-fault-byte probe now reports `D:65 6E 65 72` at the saved address.
+Those bytes are the Generic XT ROM banner text (`"ener"`), proving control
+flow reached BIOS data at `F000:E003`; the displayed `OP:04` was stale. The
+next diagnostic should identify the preceding jump/return or IVT target that
+lands in the `$E000` banner region.
+
 Status update 2026-08-01: the former F44D hypothesis is closed. Reference
 execution shows F44D is a reusable CGA `$3DA` status helper with `DX=$3DA` and
 alternating `$00/$09` reads; it is not an FDC MSR or digital-input poll. The
