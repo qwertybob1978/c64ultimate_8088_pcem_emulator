@@ -39,6 +39,10 @@
 
 .export cpu8088_step
 .export cpu8088_last_opcode
+.export cpu8088_last_far_target
+.export cpu8088_last_near_target
+.export cpu8088_last_direct_source
+.export cpu8088_last_direct_target
 
 .macro long_beq target
     bne :+
@@ -66,6 +70,10 @@
 
 .segment "BSS"
 cpu8088_last_opcode: .res 1
+cpu8088_last_far_target: .res 4
+cpu8088_last_near_target: .res 2
+cpu8088_last_direct_source: .res 2
+cpu8088_last_direct_target: .res 2
 immediate_low:       .res 1
 relative_high:       .res 1
 modrm_byte:          .res 1
@@ -92,6 +100,7 @@ string_value:        .res 2
 string_width:        .res 1
 string_source_segment:.res 1
 far_target:          .res 4
+far_target_index:    .res 1
 io_port:             .res 2
 io_value:            .res 1
 io_cycles:           .res 1
@@ -1927,9 +1936,9 @@ cpu8088_step:
     lsr a
     and #$07
     cmp #$02
-    bcc @group5_inc_dec
+    long_bcc @group5_inc_dec
     cmp #$02
-    beq @group5_extension_ok
+    long_beq @group5_extension_ok
     cmp #$04
     long_bne @invalid
 @group5_extension_ok:
@@ -1960,6 +1969,10 @@ cpu8088_step:
     jsr cpu8088_push_u16
     long_bcs @memory_error
 @group5_install_ip:
+    lda alu_left
+    sta cpu8088_last_near_target
+    lda alu_left+1
+    sta cpu8088_last_near_target+1
     lda alu_left
     sta cpu8088_state+CPU_IP
     lda alu_left+1
@@ -2282,6 +2295,7 @@ cpu8088_step:
     lda cpu8088_state+CPU_IP+1
     adc relative_high
     sta cpu8088_state+CPU_IP+1
+    jsr @record_direct_jmp3
     lda #$17
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
@@ -2386,19 +2400,30 @@ cpu8088_step:
     rts
 
 @fetch_far_target:
-    ldx #$00
+    lda #$00
+    sta far_target_index
 @fetch_far_byte:
     jsr cpu8088_fetch_u8
     bcs @fetch_far_failed
+    ldx far_target_index
     sta far_target,x
-    inx
-    cpx #$04
+    inc far_target_index
+    lda far_target_index
+    cmp #$04
     bne @fetch_far_byte
     clc
 @fetch_far_failed:
     rts
 
 @install_far_target:
+    lda far_target
+    sta cpu8088_last_far_target
+    lda far_target+1
+    sta cpu8088_last_far_target+1
+    lda far_target+2
+    sta cpu8088_last_far_target+2
+    lda far_target+3
+    sta cpu8088_last_far_target+3
     lda far_target
     sta cpu8088_state+CPU_IP
     lda far_target+1
@@ -2407,6 +2432,33 @@ cpu8088_step:
     sta cpu8088_state+CPU_CS
     lda far_target+3
     sta cpu8088_state+CPU_CS+1
+    rts
+
+; Record the source/target of a direct near control transfer for diagnostics.
+; On entry CPU_IP holds the target.
+@record_direct_jmp2:
+    lda cpu8088_state+CPU_IP
+    sec
+    sbc #$02
+    sta cpu8088_last_direct_source
+    lda cpu8088_state+CPU_IP+1
+    sbc #$00
+    sta cpu8088_last_direct_source+1
+    jmp @record_direct_target
+@record_direct_jmp3:
+    lda cpu8088_state+CPU_IP
+    sec
+    sbc #$03
+    sta cpu8088_last_direct_source
+    lda cpu8088_state+CPU_IP+1
+    sbc #$00
+    sta cpu8088_last_direct_source+1
+    ; fall through to target storage
+@record_direct_target:
+    lda cpu8088_state+CPU_IP
+    sta cpu8088_last_direct_target
+    lda cpu8088_state+CPU_IP+1
+    sta cpu8088_last_direct_target+1
     rts
 
 @ret_near_imm:
@@ -2499,6 +2551,8 @@ cpu8088_step:
 @ret_pop:
     jsr cpu8088_pop_u16
     long_bcs @memory_error
+    sta cpu8088_last_near_target
+    stx cpu8088_last_near_target+1
     sta cpu8088_state+CPU_IP
     stx cpu8088_state+CPU_IP+1
     clc
@@ -2535,6 +2589,7 @@ cpu8088_step:
 @jcc_add_high:
     adc cpu8088_state+CPU_IP+1
     sta cpu8088_state+CPU_IP+1
+    jsr @record_direct_jmp2
     lda #$10
     bne @jcc_done
 @jcc_not_taken:
@@ -3093,6 +3148,7 @@ cpu8088_step:
     adc #$00
 @rel8_high_done:
     sta cpu8088_state+CPU_IP+1
+    jsr @record_direct_jmp2
     lda #$0F
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK
@@ -3112,6 +3168,7 @@ cpu8088_step:
     lda cpu8088_state+CPU_IP+1
     adc relative_high
     sta cpu8088_state+CPU_IP+1
+    jsr @record_direct_jmp3
     lda #$0F
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK

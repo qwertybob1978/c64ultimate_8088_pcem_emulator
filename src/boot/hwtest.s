@@ -25,7 +25,12 @@
 .importzp cpu8088_offset
 .import cpu8088_state
 .import cpu8088_step
+.import cpu8088_fetch_u8
 .import cpu8088_last_opcode
+.import cpu8088_last_far_target
+.import cpu8088_last_near_target
+.import cpu8088_last_direct_source
+.import cpu8088_last_direct_target
 .import cpu8088_mul_u8
 .import cpu8088_mul_s8
 .import cpu8088_mul_u16
@@ -140,8 +145,14 @@ boot_prev_ip:         .res 2
 boot_prev_opcode:     .res 1
 boot_prev_status:     .res 1
 boot_prev_bytes:      .res 4
+boot_reset_cs:        .res 2
+boot_reset_ip:        .res 2
+boot_reset_bytes:     .res 5
 boot_genxt_ivt_ready: .res 1
 boot_genxt_ivt_index: .res 1
+trace_ring_lo:        .res 16
+trace_ring_hi:        .res 16
+trace_idx:            .res 1
 
 .segment "CODE"
 start:
@@ -272,6 +283,9 @@ boot_guest:
     jsr pit_reset
     jsr cpu8088_fetch_cache_invalidate
     jsr cpu8088_reset
+    jsr capture_reset_vector
+    jsr cpu8088_fetch_cache_invalidate
+    jsr cpu8088_reset
     jsr io_keyboard_reset
     lda #$00
     sta boot_video_divider
@@ -290,6 +304,15 @@ boot_guest:
     sta boot_fault_ip
     lda cpu8088_state+CPU_IP+1
     sta boot_fault_ip+1
+    ldx trace_idx               ; record pre-step IP into rolling trace ring
+    lda cpu8088_state+CPU_IP
+    sta trace_ring_lo,x
+    lda cpu8088_state+CPU_IP+1
+    sta trace_ring_hi,x
+    inx
+    txa
+    and #$0F
+    sta trace_idx
     lda cpu8088_state+CPU_SS
     sta boot_fault_ss
     lda cpu8088_state+CPU_SS+1
@@ -312,6 +335,18 @@ boot_guest:
     long_beq @boot_step_record
     jmp @boot_failed
 @boot_step_record:
+    lda cpu8088_state+CPU_CS
+    bne @no_e000_trap
+    lda cpu8088_state+CPU_CS+1
+    cmp #$F0
+    bne @no_e000_trap
+    lda cpu8088_state+CPU_IP+1   ; IP high byte
+    cmp #$E0                     ; IP < $E000 => left the FE000 ROM window
+    bcs @no_e000_trap
+    lda #$E0                    ; trap marker: CPU left ROM (jumped below F000:E000)
+    sta boot_failure_status
+    jmp @boot_failed
+@no_e000_trap:
     lda boot_prev_cs
     sta boot_prev2_cs
     lda boot_prev_cs+1
@@ -383,19 +418,27 @@ boot_guest:
     jmp @boot_batch
 @boot_failed:
     jsr capture_boot_fault_context
-    jsr cga_render_text_40
-    lda cpu8088_last_opcode
-    pha
-    lsr a
-    lsr a
-    lsr a
-    lsr a
+    lda boot_failure_status
+    cmp #CPU_STEP_HALTED
+    beq @fault_halted
+    cmp #CPU_STEP_MEMORY
+    beq @fault_memory
+    cmp #CPU_STEP_INVALID
+    beq @fault_invalid
+    lda #COLOR_GREEN
+    .byte $2C                 ; BIT <next>,A  skip 2-byte LDA
+@fault_halted:
+    lda #COLOR_PURPLE
+    .byte $2C
+@fault_memory:
+    lda #COLOR_RED
+    .byte $2C
+@fault_invalid:
+    lda #$0F                  ; light grey
     sta BORDER_COLOR
-    pla
-    and #$0F
-    sta $D021
+    lda #$AA                  ; sentinel for VICE memory watchpoint
+    sta $85F0
     jsr display_boot_failure
-    jsr display_fdc_runtime
     jmp diagnostic_done
 
 install_genxt_boot_ivt:
@@ -453,6 +496,41 @@ install_genxt_boot_ivt:
 display_boot_failure:
     lda #$00                    ; black background
     sta $D021
+    ldx #$00                    ; clear leftover CGA banner from text screen
+@clear_screen:
+    lda #$20
+    sta $0400,x
+    sta $0500,x
+    sta $0600,x
+    sta $0700,x
+    inx
+    bne @clear_screen
+    lda #$4E                    ; N
+    sta $0400
+    lda #$3A
+    sta $0401
+    lda cpu8088_last_near_target+1
+    ldx #$02
+    jsr display_hex_byte
+    lda cpu8088_last_near_target
+    ldx #$04
+    jsr display_hex_byte
+    lda #$46                    ; F
+    sta $0406
+    lda #$3A
+    sta $0407
+    lda cpu8088_last_far_target+3
+    ldx #$08
+    jsr display_hex_byte
+    lda cpu8088_last_far_target+2
+    ldx #$0B
+    jsr display_hex_byte
+    lda cpu8088_last_far_target+1
+    ldx #$0E
+    jsr display_hex_byte
+    lda cpu8088_last_far_target
+    ldx #$11
+    jsr display_hex_byte
     lda #$03                    ; cyan text on black background for readability
     sta $D800
     sta $D801
@@ -724,6 +802,70 @@ display_boot_failure:
     and #$0F
     jsr display_hex_nibble
     sta $0547
+    ; Row 10: reset vector snapshot (RV: CS IP bytes)
+    lda #$12                    ; R
+    sta $0580
+    lda #$16                    ; V
+    sta $0581
+    lda #$3A                    ; :
+    sta $0582
+    lda boot_reset_cs+1
+    ldx #$03
+    jsr display_hex_byte_row10
+    lda boot_reset_cs
+    ldx #$05
+    jsr display_hex_byte_row10
+    lda #$3A
+    sta $0587
+    lda boot_reset_ip+1
+    ldx #$08
+    jsr display_hex_byte_row10
+    lda boot_reset_ip
+    ldx #$0A
+    jsr display_hex_byte_row10
+    lda #$20
+    sta $058C
+    lda boot_reset_bytes
+    ldx #$0D
+    jsr display_hex_byte_row10
+    lda boot_reset_bytes+1
+    ldx #$0F
+    jsr display_hex_byte_row10
+    lda boot_reset_bytes+2
+    ldx #$11
+    jsr display_hex_byte_row10
+    lda boot_reset_bytes+3
+    ldx #$13
+    jsr display_hex_byte_row10
+    lda boot_reset_bytes+4
+    ldx #$15
+    jsr display_hex_byte_row10
+    lda #$46                    ; F
+    sta $0598
+    lda #$3A
+    sta $0599
+    lda cpu8088_last_far_target+3
+    ldx #$1C
+    jsr display_hex_byte_row10
+    lda cpu8088_last_far_target+2
+    ldx #$1E
+    jsr display_hex_byte_row10
+    lda cpu8088_last_far_target+1
+    ldx #$20
+    jsr display_hex_byte_row10
+    lda cpu8088_last_far_target
+    ldx #$22
+    jsr display_hex_byte_row10
+    lda #$4E                    ; N
+    sta $0600
+    lda #$3A
+    sta $0601
+    lda cpu8088_last_near_target+1
+    ldx #$84
+    jsr display_hex_byte
+    lda cpu8088_last_near_target
+    ldx #$87
+    jsr display_hex_byte
     lda boot_prev_bytes+2
     lsr a
     lsr a
@@ -848,6 +990,31 @@ display_boot_failure:
     jsr display_hex_byte
     lda boot_fault_ivt0+3
     ldx #$05
+    jsr display_hex_byte
+    lda #$49                    ; I
+    sta $0528
+    lda #$56                    ; V
+    sta $0529
+    lda #$3A
+    sta $052A
+    lda interrupt_vector
+    ldx #$2C
+    jsr display_hex_byte
+    lda #$46                    ; F
+    sta $0528
+    lda #$3A
+    sta $0529
+    lda cpu8088_last_far_target+3
+    ldx #$2C
+    jsr display_hex_byte
+    lda cpu8088_last_far_target+2
+    ldx #$2F
+    jsr display_hex_byte
+    lda cpu8088_last_far_target+1
+    ldx #$32
+    jsr display_hex_byte
+    lda cpu8088_last_far_target
+    ldx #$35
     jsr display_hex_byte
     lda #$52                    ; R
     sta $0508
@@ -982,6 +1149,76 @@ display_boot_failure:
     jsr cpu8088_mem_read_u8
     ldx #$08
     jsr display_hex_byte_at
+    ; --- IP trace ring: last 16 pre-step IPs, oldest..newest, rows 16 & 18 ---
+    lda #<$0680
+    sta print_screen
+    lda #>$0680
+    sta print_screen+1
+    ldx #$00
+@tr_row0:
+    txa
+    clc
+    adc trace_idx
+    and #$0F
+    tay
+    lda trace_ring_hi,y
+    jsr tr_put_byte
+    lda trace_ring_lo,y
+    jsr tr_put_byte
+    lda #$20
+    ldy #$00
+    sta (print_screen),y
+    inc print_screen
+    inx
+    cpx #$08
+    bne @tr_row0
+    lda #<$06D0
+    sta print_screen
+    lda #>$06D0
+    sta print_screen+1
+@tr_row1:
+    txa
+    clc
+    adc trace_idx
+    and #$0F
+    tay
+    lda trace_ring_hi,y
+    jsr tr_put_byte
+    lda trace_ring_lo,y
+    jsr tr_put_byte
+    lda #$20
+    ldy #$00
+    sta (print_screen),y
+    inc print_screen
+    inx
+    cpx #$10
+    bne @tr_row1
+    ldx #$00                    ; cyan color for both trace rows
+@tr_color:
+    lda #$03
+    sta $DA80,x
+    sta $DAD0,x
+    inx
+    cpx #$28
+    bne @tr_color
+    rts
+
+tr_put_byte:
+    pha
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    ldy #$00
+    sta (print_screen),y
+    inc print_screen
+    pla
+    and #$0F
+    jsr display_hex_nibble
+    ldy #$00
+    sta (print_screen),y
+    inc print_screen
     rts
 
 ; Keep a compact live FDC/PIC trace on the host's last screen row.  This is
@@ -1280,6 +1517,27 @@ capture_fault_bytes:
     sta boot_fault_bytes+3
     rts
 
+capture_reset_vector:
+    lda cpu8088_state+CPU_CS
+    sta boot_reset_cs
+    lda cpu8088_state+CPU_CS+1
+    sta boot_reset_cs+1
+    lda cpu8088_state+CPU_IP
+    sta boot_reset_ip
+    lda cpu8088_state+CPU_IP+1
+    sta boot_reset_ip+1
+    jsr cpu8088_fetch_u8
+    sta boot_reset_bytes
+    jsr cpu8088_fetch_u8
+    sta boot_reset_bytes+1
+    jsr cpu8088_fetch_u8
+    sta boot_reset_bytes+2
+    jsr cpu8088_fetch_u8
+    sta boot_reset_bytes+3
+    jsr cpu8088_fetch_u8
+    sta boot_reset_bytes+4
+    rts
+
 capture_prev_bytes:
     lda boot_prev_cs
     sta cpu8088_segment
@@ -1386,6 +1644,21 @@ display_hex_byte_row22:
     and #$0F
     jsr display_hex_nibble
     sta $0760,x
+    rts
+
+display_hex_byte_row10:
+    pha
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0580,x
+    inx
+    pla
+    and #$0F
+    jsr display_hex_nibble
+    sta $0580,x
     rts
 
 display_hex_byte:

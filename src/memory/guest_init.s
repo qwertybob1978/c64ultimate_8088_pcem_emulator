@@ -49,9 +49,12 @@ guest_load_genxt:
     lda #$09
     sta guest_genxt_bios+$0D09
     ; Native 8088 execution makes the BIOS's nested speaker delay take billions
-    ; of host cycles. Return immediately so a bounded run can reach boot.
+    ; of host cycles. Overwrite the beep routine's entry (F000:F97F) with RET so
+    ; a CALL returns cleanly on a balanced stack. Patching the following byte
+    ; (F980) instead would let its leading PUSH AX run first, and the injected
+    ; RET would then pop that pushed AX and derail POST to F000:0200.
     lda #$C3
-    sta guest_genxt_bios+$1980
+    sta guest_genxt_bios+$197F
     ; Native IVT initialization leaves IRQ0 and INT 13h pointing at the BIOS
     ; banner data ($E000). Route the final POST handoff through an unused ROM
     ; gap that installs their verified handlers before normal bootstrap.
@@ -59,7 +62,7 @@ guest_load_genxt:
     sta guest_genxt_bios+$0507
     lda #$E9
     sta guest_genxt_bios+$0508
-    lda #$95
+    lda #$96
     sta guest_genxt_bios+$0509
     lda #$01
     sta guest_genxt_bios+$050A
@@ -116,6 +119,8 @@ guest_load_genxt:
 .segment "RODATA"
 genxt_bootstrap_patch:
     ; DS=0; IVT 08h=F000:FEA5; IVT 13h=F000:EC59; JMP F000:E6F2.
+    ; Last opcode E9=near JMP rel16: disp=$0036 (IP after=$E6BC -> $E6F2).
+    ; High byte MUST be $00; $E9 is relative, not far/absolute.
     .byte $31,$C0,$8E,$D8,$B8,$A5,$FE,$A3,$20,$00
     .byte $B8,$59,$EC,$A3,$4C,$00,$B8,$00,$F0,$A3
     .byte $22,$00,$A3,$4E,$00,$E9,$36,$00

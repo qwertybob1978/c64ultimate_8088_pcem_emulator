@@ -187,13 +187,15 @@ python tools\generate_cpu8088.py --check
 
 **Approach:** Capture P2 (prior-2 instruction) state to distinguish sequential execution from jump/return/interrupt.
 
-**Implementation:** 
+**Implementation:**
+
 - Added boot_prev2_* storage for instruction 2 steps before fault (boot/hwtest.s lines 133-136)
 - Each cpu8088_step advances: P2 ← P1, P1 ← fault (boot/hwtest.s lines 314-324)
 - Display P2 with explicit labels: `P2: ST: CS: IP: OP:` for clarity (boot/hwtest.s lines 670-701)
 - Forced black background + cyan text for diagnostic readability (src/boot/hwtest.s line 451, 456)
 
 **Build/Test Results:**
+
 ```
 ✓ pwsh build.ps1: OK
 ✓ python -m unittest tests.test_cpu8088_reference tests.test_phase0_contracts: 41 tests passed
@@ -206,12 +208,14 @@ python tools\generate_cpu8088.py --check
 The diagnostic display now shows explicit field labels (`P2: ST: CS: IP: OP:`), but parsing exact hex values from VICE screenshot with monospace C64 font remains ambiguous due to character alignment and font rendering.
 
 **Known values from prior diagnostics:**
+
 - Fault: CS=F000, IP=E003 (confirmed by boot_fault_bytes = "ener" = BIOS banner text)
 - P1 Status: 0x00 (from earlier run showing "ST:00")
 - P2 appears to show CS=F000 (matches fault CS)
 - P2 opcode: 0x90 (from earlier partial decode)
 
 **Interpretation challenges:**
+
 - C64 pixel font makes it hard to count hex digit positions precisely
 - Character spacing in color RAM makes visual column alignment uncertain
 - Exact P2:IP value critical to determining sequential vs. control-flow path
@@ -223,6 +227,7 @@ The diagnostic display now shows explicit field labels (`P2: ST: CS: IP: OP:`), 
 ## Summary of Diagnostic Work (2026-08-01)
 
 **Completed milestones:**
+
 1. ✅ Frame integrity validation (IRET push/pop verify) - M:00 = success
 2. ✅ P2 (prior-2 instruction) capture infrastructure deployed with explicit labels
 3. ✅ Display color scheme improved (black background + cyan text)
@@ -230,6 +235,7 @@ The diagnostic display now shows explicit field labels (`P2: ST: CS: IP: OP:`), 
 5. ✅ Documented all findings in CONTINUATION_C.md and session notes
 
 **Current diagnostic state:**
+
 - Fault locked at F000:E003 (BIOS banner data "ener" confirmed)
 - P2 state captured but exact P2:IP value ambiguous from VICE screenshot
 - Known: P2 CS=F000 (no segment change), P2 contains NOP (0x90)
@@ -237,6 +243,7 @@ The diagnostic display now shows explicit field labels (`P2: ST: CS: IP: OP:`), 
 - FDC counters at zero (no media access path active yet)
 
 **Remaining P2 analysis blocked by:**
+
 - Visual parsing difficulty: C64 font rendering makes hex digit alignment uncertain
 - No direct memory snapshot mechanism in VICE batch mode for runtime value extraction
 - CRT file contains static code, not runtime C64 memory state
@@ -244,18 +251,21 @@ The diagnostic display now shows explicit field labels (`P2: ST: CS: IP: OP:`), 
 **Path forward (3 options):**
 
 **Option A: Infer from known facts (lowest cost, proceed now)**
+
 - Assume P2 IP ≈ E001 (sequential execution pattern)
 - Assumption: E003 reached via sequential decode of instructions, not jump
 - Action: Add next diagnostic to identify exact jump/control-flow instruction
 - Rationale: If sequential, FDC/BIOS logic must intentionally reference banner; needs BIOS ROM analysis
 
 **Option B: Extract via VICE monitor (medium cost)**
+
 - Modify hwtest.s to write P2 values to fixed C64 memory location
 - Use VICE monitor mode to dump memory after run
 - Exact byte values without ambiguity
 - Cost: One rebuild + modified VICE run + manual memory dump parse
 
 **Option C: Visual signal encoding (medium cost)**
+
 - Encode P2:IP bytes into border color sequence (4 colors per nibble)
 - Visual pattern easier to parse than font-rendered hex
 - Or use speaker beeper tones (requires audio output support)
@@ -303,11 +313,13 @@ One of three scenarios:
 **Critical Question:** Why does diagnostic show `CS=F000` if CPU starts with `CS=FFFF`?
 
 Possible explanation: The JMP FAR F000:E05B instruction atomically sets both CS and IP in one operation. So:
+
 - Step 0: FFFF:0000 (pre-fetch vector)
 - Step 1: Execute JMP FAR → fetch 5 bytes, decode jump parameters
 - Step 2+: Jump to F000:E05B (CS now F000, IP now E05B)
 
 But if P1/P2 are one or two steps before fault at E003, they should show:
+
 - P2 = Step N: (some instruction)
 - P1 = Step N+1: (some instruction)
 - Fault = Step N+2: F000:E003
@@ -317,11 +329,13 @@ If P2 CS=F000 but CPU starts with CS=FFFF, then JMP FAR must have already execut
 **Critical Question:** Why does diagnostic show `CS=F000` if CPU starts with `CS=FFFF`?
 
 Possible explanation: The JMP FAR F000:E05B instruction atomically sets both CS and IP in one operation. So:
+
 - Step 0: FFFF:0000 (pre-fetch vector)
 - Step 1: Execute JMP FAR → fetch 5 bytes, decode jump parameters
 - Step 2+: Jump to F000:E05B (CS now F000, IP now E05B)
 
 But if P1/P2 are one or two steps before fault at E003, they should show:
+
 - P2 = Step N: (some instruction)
 - P1 = Step N+1: (some instruction)
 - Fault = Step N+2: F000:E003
@@ -341,17 +355,20 @@ If P2 CS=F000 but CPU starts with CS=FFFF, then JMP FAR must have already execut
 **Problem:** P1B and P2B diagnostic fields are rendered to C64 screen RAM (offsets $0544-$054B and $0551-$0558) as hex characters. These values exist only at runtime in C64 memory, not in cartridge ROM.
 
 **Attempts to extract values:**
+
 1. ✗ Direct cartridge binary read: Variables at 0x73B1 and 0x73BB are runtime BSS, not in ROM
 2. ✗ VICE debug log: Contains no memory dumps, only hardware initialization logging
 3. ✓ Screenshot visual reading: Difficult due to C64 font rendering making hex digit alignment ambiguous
 4. ~  VICE monitor dump: Would require custom script to invoke VICE monitor and dump RAM
 
 **Extracted variable addresses from symbol table:**
+
 - boot_prev2_bytes: 0x73B1 (4 bytes)
 - boot_prev_bytes: 0x73BB (4 bytes)
 - These are allocated in C64 RAM during cartridge execution
 
 **Display rendering confirmed working:**
+
 - hwtest.s lines 688-758: P1B display writes boot_prev_bytes[0-3] as 8 hex digits to screen offsets $0544-$054B
 - hwtest.s lines 749-758: P2B display writes boot_prev2_bytes[0-3] as 8 hex digits to screen offsets $0551-$0558
 - Both use display_hex_nibble subroutine (line 1422) for proper 8088 instruction byte → hex character conversion
@@ -362,12 +379,14 @@ If P2 CS=F000 but CPU starts with CS=FFFF, then JMP FAR must have already execut
 ## Analysis: CPU Reset Vector Execution (2026-08-01 - CRITICAL FINDING)
 
 **Setup discovered:**
+
 - BIOS ROM at physical 0xFE000-0xFFFFF (8 KB)
 - CPU reset vector at FFFF:0000 (physical 0xFFFF0) = F000*16 + FFF0 ✓
 - Reset vector contains: EA 5B E0 00 F0 (JMP FAR F000:E05B, 5 bytes)
 - Destination E05B is where actual BIOS code begins (past banner at 0x00-0x4F)
 
 **Mismatch identified:**
+
 - CPU should start at CS=FFFF, IP=0000
 - Should fetch and execute 5-byte JMP FAR
 - Should land at CS=F000, IP=E05B (actual code)
@@ -384,6 +403,7 @@ If P2 CS=F000 but CPU starts with CS=FFFF, then JMP FAR must have already execut
    - Fix location: src/cpu8088/instructions.s or far-jump decode/execute logic
 
 **Most likely:** Option 2 (JMP FAR decode bug)
+
 - If P1 and P2 instruction bytes showed the JMP opcode sequence, that would indicate vector was fetched
 - The CPU may be reading/executing the JMP instruction but decoding destination wrong
 - Far JMP should be: operand IP (LE), operand CS (LE) = 5B E0, 00 F0 → jump to F000:E05B
@@ -394,6 +414,7 @@ If P2 CS=F000 but CPU starts with CS=FFFF, then JMP FAR must have already execut
 ## JMP FAR Verification (2026-08-01 - Post-Analysis)
 
 **Operand byte order verified:**
+
 ```
 Instruction at FFFF:0000 (ROM offset 0x1FF0):
   Byte 0: 0xEA (opcode, JMP FAR)
@@ -402,6 +423,7 @@ Instruction at FFFF:0000 (ROM offset 0x1FF0):
 ```
 
 **CPU emulator logic (step.s @install_far_target):**
+
 - Stores far_target[0]=0x5B in CPU_IP (low byte)
 - Stores far_target[1]=0xE0 in CPU_IP+1 (high byte)
 - Stores far_target[2]=0x00 in CPU_CS (low byte)
@@ -411,6 +433,7 @@ Instruction at FFFF:0000 (ROM offset 0x1FF0):
 **But fault shows:** CS=F000, IP=E003 (88 bytes earlier than expected)
 
 **Code at destination (E05B - where CPU should be):**
+
 ```
 E05B: B8 40 00     MOV AX, 0x0040     ; Load data segment address
 E5E: 8E D8         MOV DS, AX         ; Set DS register
@@ -423,6 +446,7 @@ E69: 72 48         JB short +0x48     ; Conditional jump
 These are legitimate BIOS POST instructions, not data.
 
 **Conclusion:** Either:
+
 1. JMP FAR is not being executed at all (CPU jumping to wrong address immediately)
 2. OR JMP FAR is executed but destination offset calculation has 88-byte bug
 3. OR CPU reset is not initializing CS:IP to FFFF:0000, instead starting at F000:E003 or F000:E000
@@ -430,10 +454,9 @@ These are legitimate BIOS POST instructions, not data.
 **Most suspicious:** The difference 0x58 (88 bytes) equals exactly the banner size (0x50 = 80 bytes) + some offset. This could indicate the CPU is being initialized to F000:E000 and then reading forward into the banner instead of fetching from FFFF:0000.
 
 **Recommended fix path:**
+
 1. Add debug output to hwtest.s to log exact CS:IP at each step
 2. Verify cpu8088_reset is being called and sets CS=FFFF correctly
 3. Verify first cpu8088_step fetches from FFFF:0000 (physical 0xFFFF0 = ROM offset 0x1FF0)
 4. If P1 shows 0xEA (JMP FAR opcode), trace operand fetch
 5. If P1 shows something else, trace backward from P2 to find where control flow diverged
-
-
