@@ -391,4 +391,49 @@ If P2 CS=F000 but CPU starts with CS=FFFF, then JMP FAR must have already execut
 
 **Next immediate task:** Add diagnostic to capture exact instruction bytes from reset vector location, confirm they match JMP pattern, and trace far-jump decode.
 
+## JMP FAR Verification (2026-08-01 - Post-Analysis)
+
+**Operand byte order verified:**
+```
+Instruction at FFFF:0000 (ROM offset 0x1FF0):
+  Byte 0: 0xEA (opcode, JMP FAR)
+  Bytes 1-2: 0x5B 0xE0 (IP operand, little-endian = 0xE05B)
+  Bytes 3-4: 0x00 0xF0 (CS operand, little-endian = 0xF000)
+```
+
+**CPU emulator logic (step.s @install_far_target):**
+- Stores far_target[0]=0x5B in CPU_IP (low byte)
+- Stores far_target[1]=0xE0 in CPU_IP+1 (high byte)
+- Stores far_target[2]=0x00 in CPU_CS (low byte)
+- Stores far_target[3]=0xF0 in CPU_CS+1 (high byte)
+- Results in correct interpretation: IP=0xE05B, CS=0xF000 ✓
+
+**But fault shows:** CS=F000, IP=E003 (88 bytes earlier than expected)
+
+**Code at destination (E05B - where CPU should be):**
+```
+E05B: B8 40 00     MOV AX, 0x0040     ; Load data segment address
+E5E: 8E D8         MOV DS, AX         ; Set DS register
+E60: C7 06 72 00 00 00  MOV WORD [0x0072], 0x0000  ; Clear BDA flag
+E66: FA            CLI                 ; Disable interrupts
+E67: 33 C0         XOR AX, AX         ; Zero AX
+E69: 72 48         JB short +0x48     ; Conditional jump
+```
+
+These are legitimate BIOS POST instructions, not data.
+
+**Conclusion:** Either:
+1. JMP FAR is not being executed at all (CPU jumping to wrong address immediately)
+2. OR JMP FAR is executed but destination offset calculation has 88-byte bug
+3. OR CPU reset is not initializing CS:IP to FFFF:0000, instead starting at F000:E003 or F000:E000
+
+**Most suspicious:** The difference 0x58 (88 bytes) equals exactly the banner size (0x50 = 80 bytes) + some offset. This could indicate the CPU is being initialized to F000:E000 and then reading forward into the banner instead of fetching from FFFF:0000.
+
+**Recommended fix path:**
+1. Add debug output to hwtest.s to log exact CS:IP at each step
+2. Verify cpu8088_reset is being called and sets CS=FFFF correctly
+3. Verify first cpu8088_step fetches from FFFF:0000 (physical 0xFFFF0 = ROM offset 0x1FF0)
+4. If P1 shows 0xEA (JMP FAR opcode), trace operand fetch
+5. If P1 shows something else, trace backward from P2 to find where control flow diverged
+
 
