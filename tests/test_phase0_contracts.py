@@ -55,7 +55,7 @@ class Phase0Contracts(unittest.TestCase):
             r"lda\s+#\$EB\s+sta\s+guest_genxt_bios\+\$0D08\s+"
             r"lda\s+#\$09\s+sta\s+guest_genxt_bios\+\$0D09",
         )
-        self.assertRegex(source, r"lda\s+#\$C3\s+sta\s+guest_genxt_bios\+\$197F",)
+        self.assertRegex(source, r"lda\s+#\$C3\s+sta\s+guest_genxt_bios\+\$19D4",)
         self.assertRegex(source, r"lda\s+#\$EB\s+sta\s+guest_genxt_bios\+\$0411")
         self.assertRegex(source, r"lda\s+#\$BD[^\n]*\n\s+sta\s+guest_genxt_bios\+\$04C8")
         self.assertRegex(source, r"lda\s+#\$FA\s+sta\s+guest_genxt_bios\+\$0507")

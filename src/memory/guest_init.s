@@ -48,13 +48,11 @@ guest_load_genxt:
     sta guest_genxt_bios+$0D08
     lda #$09
     sta guest_genxt_bios+$0D09
-    ; Native 8088 execution makes the BIOS's nested speaker delay take billions
-    ; of host cycles. Overwrite the beep routine's entry (F000:F97F) with RET so
-    ; a CALL returns cleanly on a balanced stack. Patching the following byte
-    ; (F980) instead would let its leading PUSH AX run first, and the injected
-    ; RET would then pop that pushed AX and derail POST to F000:0200.
+    ; Native 8088 execution makes the BIOS's speaker delay take billions of
+    ; host cycles. Overwrite its entry (F000:F9D4) with RET so a CALL returns
+    ; cleanly on a balanced stack.
     lda #$C3
-    sta guest_genxt_bios+$197F
+    sta guest_genxt_bios+$19D4
     ; The early memory-sizing test (F000:E15E) leaves a nonzero status in the
     ; POST error byte 0000:0015 under native execution, so the POST summary
     ; (F000:E40B) prints "System error #NN", reads no key, and resets in an

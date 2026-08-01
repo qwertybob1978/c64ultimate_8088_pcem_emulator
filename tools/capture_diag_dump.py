@@ -78,12 +78,16 @@ def main():
         print(f"store watchpoint #{struct.unpack('<I', cpr[:4])[0]} on ${WATCH:04X}")
         cmd(sock, 0xAA, b"")
         dl = time.time() + 120
-        hit = False
+        hit_count = 0
         while time.time() < dl:
             t, r, b = read_resp(sock, max(0.5, dl - time.time()))
             if t == 0x11 and len(b) >= 5 and b[4]:
-                hit = True; break
-        print("HIT" if hit else "TIMEOUT (addr never written)")
+                hit_count += 1
+                break
+        print("HIT" if hit_count else "TIMEOUT (addr never written)")
+        if hit_count:
+            cmd(sock, 0xAA, b"")
+            time.sleep(15)
         dump = mem_get(sock, 0x0400, 0x86FF)
         (WORKSPACE / "build" / "fault-dump.bin").write_bytes(dump)
         print(f"saved build/fault-dump.bin ({len(dump)} bytes)")
