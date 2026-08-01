@@ -49,6 +49,9 @@
 .import cpu8088_irq6_serviced
 .import cpu8088_interrupt_stage
 .import cpu8088_stack_stage
+.import interrupt_last_iret_ip
+.import interrupt_last_iret_cs
+.import interrupt_last_iret_stage
 .import stack_fail_phys
 .import cpu8088_irq_vector
 .import interrupt_vector
@@ -706,6 +709,25 @@ display_boot_failure:
     jsr display_hex_byte
     lda boot_fault_ivt0+3
     ldx #$05
+    jsr display_hex_byte
+    lda #$52                    ; R
+    sta $0508
+    lda #$3A
+    sta $0509
+    lda interrupt_last_iret_stage
+    ldx #$0C
+    jsr display_hex_byte
+    lda interrupt_last_iret_cs+1
+    ldx #$0F
+    jsr display_hex_byte
+    lda interrupt_last_iret_cs
+    ldx #$12
+    jsr display_hex_byte
+    lda interrupt_last_iret_ip+1
+    ldx #$15
+    jsr display_hex_byte
+    lda interrupt_last_iret_ip
+    ldx #$18
     jsr display_hex_byte
     lda fdc_last_command
     ldx #$A0

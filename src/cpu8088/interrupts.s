@@ -23,6 +23,9 @@
 .export cpu8088_irq6_serviced
 .export cpu8088_interrupt_stage
 .export cpu8088_stack_stage
+.export interrupt_last_iret_ip
+.export interrupt_last_iret_cs
+.export interrupt_last_iret_stage
 .export interrupt_vector
 
 .macro long_bcs target
@@ -43,6 +46,9 @@ cpu8088_interrupt_shadow: .res 1
 cpu8088_irq6_serviced:    .res 1
 cpu8088_interrupt_stage:  .res 1
 cpu8088_stack_stage:       .res 1
+interrupt_last_iret_ip:    .res 2
+interrupt_last_iret_cs:    .res 2
+interrupt_last_iret_stage: .res 1
 
 .segment "CODE"
 
@@ -206,12 +212,22 @@ cpu8088_iret:
     bcs @failed
     sta interrupt_ip
     stx interrupt_ip+1
+    sta interrupt_last_iret_ip
+    stx interrupt_last_iret_ip+1
+    lda #$01
+    sta interrupt_last_iret_stage
     jsr cpu8088_pop_u16
     bcs @failed
     sta interrupt_cs
     stx interrupt_cs+1
+    sta interrupt_last_iret_cs
+    stx interrupt_last_iret_cs+1
+    lda #$02
+    sta interrupt_last_iret_stage
     jsr cpu8088_pop_u16
     bcs @failed
+    lda #$03
+    sta interrupt_last_iret_stage
     ora #$02                    ; reserved bit is architecturally set
     sta interrupt_flags
     txa

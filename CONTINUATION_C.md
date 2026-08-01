@@ -118,6 +118,12 @@ not caused by a bad IRQ1 vector. Treat it as an INT 0 or bad return/control
 transfer until the preceding instruction and stack frame are captured; FDC
 work remains blocked because command and read counters are still zero.
 
+The latest run also records the last IRET stage as `03`, meaning IP, CS, and
+FLAGS were all popped before the failure. No stack implementation change is
+justified yet; compare the recorded IRET return `CS:IP` with the saved
+pre-interrupt state on the next run to determine whether the frame is corrupt
+or the BIOS was already executing the `$E000` banner path.
+
 Status update 2026-08-01: the former F44D hypothesis is closed. Reference
 execution shows F44D is a reusable CGA `$3DA` status helper with `DX=$3DA` and
 alternating `$00/$09` reads; it is not an FDC MSR or digital-input poll. The
