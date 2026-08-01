@@ -2,7 +2,7 @@
 
 An experimental **Intel 8088 emulator** running natively on [Commodore 64 Ultimate](<https://c64ultimate.com/> - <https://www.commodore.net>) hardware in Turbo Mode — because why not?
 
-This project is a retro-computing experiment inspired by the spirit of pushing vintage machines beyond their intended boundaries. It simulates an Intel 8088 CPU (the heart of the original IBM PC) directly on a MOS 6502-based platform, targeting boot of MS-DOS through the C64U's REU memory expansion.
+This project is a retro-computing experiment inspired by the spirit of pushing vintage machines beyond their intended boundaries. It simulates an Intel 8088 CPU (the heart of the original IBM PC) directly on a MOS 6502-based platform, targeting a SvarDOS boot through the C64U's REU memory expansion.
 
 No FPGAs. No external processors. Just pure 6502 assembly squeezing out x86 semantics one cycle at a time.
 
@@ -21,7 +21,7 @@ program validates the host features and then runs the Generic XT reset vector:
 - a bounded native BIOS execution loop with C64 keyboard polling and CGA
   refreshes.
 
-See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the architecture and milestones.
+The current milestone is native BIOS execution with SvarDOS 360 KiB media.
 
 ## Build requirements
 
@@ -58,158 +58,55 @@ Build the required autostart cartridge executable with:
 ./build_crt.ps1
 ```
 
-The primary output is `build/c64x86.crt`. It is a four-bank, 32 KiB Magic Desk
-cartridge. On reset, a ROM bootstrap initializes the C64, relocates its loader
-to `$0200`, copies the diagnostic payload across Magic Desk banks into internal
-RAM, clears BSS, disables the cartridge through `$DE00`,
-and continues at the relocated entry point. The REU at `$DF00` remains
-available. The `.prg` remains a developer diagnostic artifact.
+## Boot path
 
-Build and open the latest CRT in a visible VICE window with a 16 MiB REU and
-warp mode enabled:
-
-```powershell
-.\start_vice.ps1
+```mermaid
+flowchart TD
+  A[C64 Ultimate reset] --> B[Magic Desk cartridge bootstrap]
+  B --> C[Copy native payload into C64 RAM]
+  C --> D[Stage BIOS and SvarDOS disk in 16 MiB REU]
+  D --> E[Initialize 8088 reset state]
+  E --> F[Execute Generic XT BIOS]
+  F --> G[Read keyboard, CGA, PIC, PIT and FDC ports]
+  G --> H[Load SvarDOS boot sector]
+  H --> I[SvarDOS command prompt]
 ```
 
-Use `.\start_vice.ps1 -SkipBuild` when `build/c64x86.crt` is already current.
+## VICE milestones
 
-### Current CGA text output
+The checked-in captures record the current desktop milestones. They are
+diagnostic evidence, not a claim that the final SvarDOS prompt is complete.
 
-The native cartridge includes a correctness-first CGA text renderer. It DMA
-reads each 160-byte row from guest physical `$B8000`, projects the left 40
-columns of the PC's 80x25 text page onto the C64's 40x25 screen, converts common
-ASCII characters to C64 screen codes, and approximates all 16 CGA foreground
-colors in color RAM. The cartridge diagnostic first seeds and verifies a CGA
-banner, then clears guest memory, maps the verified Generic XT ROM at `$FE000`,
-and uses the same renderer while the native BIOS executes. The guest data path
-uses a coherent 256-byte write-back cache and flushes before direct CGA DMA.
-A 500-million-cycle warp-mode VICE run visibly reaches the real BIOS banner
-and its `System error #00, Continue?` prompt. PIC/PIT and floppy hardware remain
-the next POST blockers.
+![C64 diagnostic startup](docs/screenshots/vice-diagnostic-startup.png)
 
-## Running the hardware diagnostic
+*C64 cartridge diagnostic starts and reaches the host checks.*
 
-1. Configure a 16 MiB REU in the Ultimate settings.
-2. Set Turbo Control to `U64 Turbo Registers` or `Turbo Enable Bit`.
-3. Load and run `c64x86-hwtest.prg`.
-4. Confirm that turbo control, REU presence, and the 16 MiB probe all report
-   `OK`. The diagnostic also checks the 8088 reset address and executes a small
-   cached guest instruction stream; both CPU checks should report `OK`.
+![Generic Turbo XT BIOS banner](docs/screenshots/vice-bios-banner.png)
 
-The capacity test temporarily changes one byte at REU addresses `$000000` and
-`$800000`, but saves and restores both bytes before returning. Turbo settings
-are likewise restored before the program returns to BASIC.
+*The native 8088 reaches the Generic Turbo XT BIOS banner.*
 
-The border starts red and changes to green only after every required REU and
-8088 check passes. VICE does not emulate the C64 Ultimate turbo register, so
-`TURBO CONTROL: NOT AVAILABLE` is expected in desktop smoke tests.
+![BIOS and FDC trace](docs/screenshots/vice-fdc-trace.png)
 
-## VICE smoke test
-
-Install the pinned, project-local VICE 3.10 package on Windows with:
-
-```powershell
-./tools/bootstrap_vice.ps1
-```
-
-It is downloaded from the official VICE SourceForge release archive, verified
-against `config/vice.json`, and unpacked below `.cache`, which is ignored by
-Git. No system-wide installation or user VICE configuration is changed.
-
-Build and boot the CRT in cycle-accurate `x64sc` with a 16 MiB REU:
-
-```powershell
-./tools/test_vice.ps1
-```
-
-The script validates the cartridge independently with VICE `cartconv`, starts
-from VICE defaults, explicitly enables a 16384 KiB REU, boots the Magic Desk
-CRT in warp mode, and checks the log and final green diagnostic border. The
-ignored evidence files are `build/vice-smoke.log` and
-`build/vice-smoke.png`.
+*The BIOS/FDC diagnostic trace is visible while floppy initialization is under test.*
 
 ## Current 8088 execution subset
 
-The native stepper currently implements `NOP`, `HLT`, byte/word immediate
-register `MOV`, register and REU-memory ModR/M `MOV`, short and near relative `JMP`, and
-the byte/word accumulator-immediate forms of `ADD`, `OR`, `ADC`, `SBB`, `AND`,
-`SUB`, `XOR`, and `CMP`, including 8088 condition flags. It also supports
-`CLC`/`STC`/`CLI`/`STI`/`CLD`/`STD`. All 8088 ModR/M effective-address forms
-are decoded with the correct DS/SS default segment. Data operands use a
-256-byte write-back page cache with instruction-cache coherence and explicit
-flushing for direct REU clients. Register and memory ModR/M forms of `ADD`,
-`OR`, `ADC`, `SBB`, `AND`,
-`SUB`, `XOR`, and `CMP` share the same native flag engine as accumulator forms.
-The direct-offset `A0`-`A3` forms move AL or AX to and from a DS- or
-segment-override-relative 16-bit memory offset, covering the BIOS POST store
-that previously stopped the native run.
-`CMC` toggles CF without disturbing the remaining FLAGS state.
-Accumulator-immediate `TEST` (`A8`/`A9`) updates logical flags without changing
-AL or AX.
-`DAA` applies the 8088 packed-BCD correction to AL and updates AF/CF plus the
-result status flags.
-The native control-flow slice also supports register `INC`/`DEC`, register
-`PUSH`/`POP`, near relative `CALL`, near `RET`/`RET imm16`, and all sixteen
-short conditional branches with REU-backed SS:SP stack accesses.
-Group-4 `INC`/`DEC` extends the same carry-preserving flag behavior to byte
-register and REU-memory operands.
-`LOOPNE`, `LOOPE`, `LOOP`, and `JCXZ` provide the 8088 CX-controlled short
-branch family without modifying arithmetic flags.
-Group-5 near indirect `CALL` and `JMP` support register and memory targets,
-including segment-overridden BIOS dispatch tables.
-Byte and word ModR/M `XCHG` supports register/register and REU-memory exchanges
-without modifying FLAGS.
-Native prefix decoding applies ES/CS/SS/DS overrides to ModR/M operands and
-supports interruptible-instruction groundwork for `REP`/`REPNE`. Byte and word
-`MOVS`, `CMPS`, `STOS`, `LODS`, and `SCAS` execute directly against REU-backed
-guest memory, including direction-flag index updates, zero-count repetition,
-and the ZF-controlled stopping rules for `REPE` and `REPNE` comparisons.
-Real-mode software interrupt entry and return are native as well: `INT3`,
-`INT imm8`, taken `INTO`, and `IRET` use the REU-backed IVT and SS:SP stack,
-preserve the 8088 interrupt frame layout, and clear TF/IF on entry.
-An asynchronous IRQ latch holds a PIC-supplied vector while IF is clear,
-honors the one-instruction interrupt shadow after `STI`, and wakes a halted
-guest once delivery becomes legal. A separate NMI latch bypasses IF/shadow.
-Native `DIV`/`IDIV` handlers cover byte and word register or memory divisors.
-They use bounded binary long division and enter interrupt 0 without modifying
-the dividend on a zero divisor or a quotient that cannot fit its destination.
-The same Group-3 decoder implements byte/word `NOT` for register and memory
-operands without changing any FLAGS bits.
-Group-3 `MUL`/`IMUL` produces byte products in AX and word products in DX:AX,
-with CF/OF overflow behavior and deterministic undefined status flags.
-Group-3 `TEST` supports byte/word register and memory operands, including
-segment overrides, and updates logical flags without storing the AND result.
-`PUSHF`/`POPF` round-trip the 8088 FLAGS image through the REU-backed stack,
-while `SAHF`/`LAHF` transfer the five arithmetic status flags through AH.
-Immediate far `CALL`/`JMP` and `RETF`/`RETF imm16` now update CS:IP and the
-far return frame natively, including instruction-cache page changes. This
-includes the `EA` reset-stub jump used by XT-compatible BIOS ROMs.
-Segment setup now includes `MOV` between ES/SS/DS and register or memory
-operands plus `PUSH`/`POP` for the 8088 segment registers. Loading SS arms the
-same one-instruction interrupt shadow used by the boundary IRQ logic.
-`LES` and `LDS` atomically load a 16:16 memory pointer into a general register
-and ES or DS, including SS-default and explicitly overridden pointer sources.
-Group-1 immediate arithmetic (`80`–`83`) supports byte/word register and
-memory destinations, including sign extension for the compact `83` encoding.
-Single-bit `SHL`/`SAL`, `SHR`, and `SAR` (`D0`/`D1`, ModR/M extensions 4–7)
-support byte and word register or memory destinations with 8088 CF, OF, SF,
-ZF, and PF results.
-The corresponding `D2`/`D3` forms iterate the unmasked 8088 `CL` count and
-leave operands and flags unchanged when that count is zero.
-All immediate- and DX-addressed `IN`/`OUT` forms execute natively as 8088 byte
-bus transfers. The initial XT I/O dispatcher returns `$FF` for open ports and
-provides `$80`/`$81` POST/debug latches with deterministic desktop traces.
-CGA status reads at `03DAh` expose deterministic display-enable transitions so
-BIOS polling loops can complete without host-timing dependence. The XT PPI
-switch bank at `60h`–`62h` advertises an 80-column color adapter.
-The desktop BIOS trace now produces the real Generic Turbo XT BIOS banner in
-the emulated B8000 80x25 text page before waiting for keyboard input.
-C64 KERNAL key events are translated to XT set-1 make scan codes for letters,
-digits, common punctuation, editing keys, and cursor movement, then queued on
-port 60h with keyboard IRQ vector 09h.
-Instruction fetch uses one 256-byte C64-RAM page backed by REU DMA; the
-byte-at-a-time fetch remains only as a bootstrap diagnostic path.
+The native stepper currently covers the following groups:
+
+| Area | Supported instructions and behavior |
+| --- | --- |
+| Core | `NOP`, `HLT`, register/memory `MOV`, direct-offset `A0`-`A3`, and all ModR/M effective-address forms with correct DS/SS defaults. |
+| ALU | `ADD`, `OR`, `ADC`, `SBB`, `AND`, `SUB`, `XOR`, `CMP`, `TEST`, `CMC`, `DAA`, `INC`, `DEC`, `NOT`, `MUL`, `IMUL`, `DIV`, `IDIV`, and Group-1 immediate arithmetic. Byte and word register/memory forms share the native 8088 flag engine. |
+| Shifts | `SHL`/`SAL`, `SHR`, and `SAR` with immediate-one or unmasked `CL` counts, including 8088 flag behavior and zero-count handling. |
+| Control flow | Relative and indirect near `JMP`/`CALL`, far immediate `JMP`/`CALL`, `RET`/`RETF` (with optional immediates), all short conditional branches, `LOOPNE`, `LOOPE`, `LOOP`, and `JCXZ`. |
+| Stack and segments | Register and segment `PUSH`/`POP`, `PUSHF`/`POPF`, `SAHF`/`LAHF`, `LES`, `LDS`, and REU-backed SS:SP accesses. Loading SS applies the 8088 interrupt shadow. |
+| Strings and prefixes | ES/CS/SS/DS overrides; `MOVS`, `CMPS`, `STOS`, `LODS`, and `SCAS` with direction-flag updates, zero-count handling, and `REPE`/`REPNE` stopping rules. |
+| Interrupts | `INT3`, `INT imm8`, `INTO`, `IRET`, PIC IRQ delivery, `STI`/`CLI` interrupt masking, the one-instruction `STI` shadow, halted-guest wakeup, and an IF-independent NMI latch. |
+| I/O and XT devices | Immediate- and DX-addressed byte `IN`/`OUT`, open-port `$FF`, POST/debug latches at `$80`/`$81`, CGA status at `03DAh`, XT PPI switch bank at `60h`-`62h`, and keyboard input through port `60h` with IRQ 09h. |
+| Runtime | 256-byte write-back data pages with instruction-cache coherence, explicit REU flushes, and REU-backed instruction fetch. The byte-at-a-time fetch path remains available for bootstrap diagnostics. |
+
+The desktop BIOS path displays the Generic Turbo XT banner in the emulated
+`B8000` 80x25 text page before waiting for keyboard input.
 
 The canonical register layout, flag masks, and implemented opcode metadata are
 in `config/cpu8088.json`. Regenerate the assembly contract and native smoke
@@ -288,19 +185,18 @@ This writes `build/guest-genxt.reu`, which is ignored because it contains the
 locally acquired ROM. It can be preloaded at REU address zero for bootstrap
 testing.
 
-## User-supplied DOS boot media
+## SvarDOS boot media
 
-The XT boot target uses Microsoft MS-DOS 3.30 `DISK01.IMG` from the WinWorld
-download recorded in `config/dos_media.json`. Keep the downloaded archive and
-extracted images under `.cache/media`; they are proprietary test inputs and
-must never be committed or redistributed. Validate the extracted boot disk:
+The default XT boot target is the raw SvarDOS 360 KiB disk image at
+`third_party/svardos/svdos-360K-disk-1.img`. Build the cartridge with:
 
 ```powershell
-python tools/validate_dos_media.py ".cache/media/msdos330/Microsoft MS-DOS 3.30 (5.25)/DISK01.IMG"
+./build_crt.ps1
 ```
 
-The expected image is a raw 360 KiB floppy with 512-byte sectors, 9 sectors
-per track, 2 heads, 40 cylinders, and an `MSDOS3.3` boot sector.
+The image uses 512-byte sectors, 9 sectors per track, 2 heads, and 40
+cylinders. The builder writes the matching geometry into the native FDC
+configuration and packages the disk into the CRT banks.
 
 ## Host tests
 
