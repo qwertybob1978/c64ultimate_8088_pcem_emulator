@@ -306,6 +306,8 @@ class Reference8088:
         cycles = metadata["cycles"]
         if handler == "nop":
             pass
+        elif handler == "cwd":
+            self.registers["DX"] = 0xFFFF if self.registers["AX"] & 0x8000 else 0
         elif handler == "hlt":
             self.halted = True
             status = 1

@@ -537,6 +537,20 @@
       "expected": { "AX": 24832, "CS": 54784, "IP": 3, "FLAGS": 71 }
     },
     {
+      "name": "cwd_sign_extends_ax_into_dx",
+      "initial": { "CS": 54912, "IP": 0, "AX": 32769, "DX": 4660, "FLAGS": 2 },
+      "program": "99f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 32769, "DX": 65535, "CS": 54912, "IP": 2, "FLAGS": 2 }
+    },
+    {
+      "name": "cwd_zero_extends_positive_ax",
+      "initial": { "CS": 54976, "IP": 0, "AX": 32767, "DX": 65535, "FLAGS": 2051 },
+      "program": "99f4",
+      "statuses": ["ok", "halted"],
+      "expected": { "AX": 32767, "DX": 0, "CS": 54976, "IP": 2, "FLAGS": 2051 }
+    },
+    {
       "name": "xchg_word_registers",
       "initial": { "CS": 55040, "IP": 0, "AX": 4660, "BX": 43981, "FLAGS": 2051 },
       "program": "87d8f4",

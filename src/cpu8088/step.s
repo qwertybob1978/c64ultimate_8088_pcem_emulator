@@ -229,6 +229,8 @@ cpu8088_step:
 @check_after_xchg_accumulator:
     cmp #$98                    ; CBW - Convert Byte to Word
     long_beq @cbw
+    cmp #$99                    ; CWD - Convert Word to Doubleword
+    long_beq @cwd
     cmp #$9C                    ; PUSHF
     long_beq @pushf
     cmp #$9D                    ; POPF
@@ -3011,6 +3013,22 @@ cpu8088_step:
     lda #$00
 @cbw_store_ah:
     sta cpu8088_state+CPU_AX+1        ; store AH
+    lda #$04
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
+    rts
+
+@cwd:
+    lda cpu8088_state+CPU_AX+1
+    asl a
+    bcc @cwd_positive
+    lda #$FF
+    bne @cwd_store_dx
+@cwd_positive:
+    lda #$00
+@cwd_store_dx:
+    sta cpu8088_state+CPU_DX
+    sta cpu8088_state+CPU_DX+1
     lda #$04
     sta cpu8088_last_cycles
     lda #CPU_STEP_OK

@@ -463,6 +463,14 @@
       "cycles": 4
     },
     {
+      "first": 153,
+      "last": 153,
+      "mnemonic": "CWD",
+      "handler": "cwd",
+      "length": 1,
+      "cycles": 4
+    },
+    {
       "first": 154,
       "last": 154,
       "mnemonic": "CALL ptr16:16",
