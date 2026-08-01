@@ -6,12 +6,23 @@
 .import cartridge_stage_media
 .import host_keyboard_translate
 .import host_keyboard_poll
+.import io_keyboard_service
+.import io_keyboard_pa
+.import io_keyboard_key_waiting
+.import io_keyboard_wantirq
+.import io_keyboard_count
+.import io_keyboard_reset
 .import guest_load_genxt
 .import reu_detect
 .import reu_probe_16m
 .import cpu8088_reset
 .import cpu8088_cs_ip_physical
+.import cpu8088_segment_offset_physical
+.import cpu8088_mem_read_u8
+.import cpu8088_mem_write_u8
 .importzp cpu8088_phys_addr
+.importzp cpu8088_segment
+.importzp cpu8088_offset
 .import cpu8088_state
 .import cpu8088_step
 .import cpu8088_last_opcode
@@ -31,7 +42,16 @@
 .import fdc_dor_writes
 .import pic_irq6_requests
 .import pic_irq6_deliveries
+.import pic_irq1_requests
+.import pic_irq1_deliveries
+.import pic_vector_base
+.import pic_mask
 .import cpu8088_irq6_serviced
+.import cpu8088_interrupt_stage
+.import cpu8088_stack_stage
+.import stack_fail_phys
+.import cpu8088_irq_vector
+.import interrupt_vector
 .import io_fdc_data_writes
 .import fdc_data_reads
 .import fdc_last_data_read
@@ -100,6 +120,10 @@ print_screen: .res 2
 .segment "BSS"
 boot_fault_cs:        .res 2
 boot_fault_ip:        .res 2
+boot_fault_ss:        .res 2
+boot_fault_sp:        .res 2
+boot_fault_bytes:     .res 4
+boot_stack_bytes:     .res 4
 boot_prev2_cs:        .res 2
 boot_prev2_ip:        .res 2
 boot_prev2_opcode:    .res 1
@@ -108,6 +132,8 @@ boot_prev_cs:         .res 2
 boot_prev_ip:         .res 2
 boot_prev_opcode:     .res 1
 boot_prev_status:     .res 1
+boot_genxt_ivt_ready: .res 1
+boot_genxt_ivt_index: .res 1
 
 .segment "CODE"
 start:
@@ -238,9 +264,12 @@ boot_guest:
     jsr pit_reset
     jsr cpu8088_fetch_cache_invalidate
     jsr cpu8088_reset
+    jsr io_keyboard_reset
     lda #$00
     sta boot_video_divider
     sta boot_autokey_counter
+    sta boot_autokey_sent
+    sta boot_genxt_ivt_ready
 @boot_batch:
     lda #$40
     sta boot_steps_remaining
@@ -253,6 +282,20 @@ boot_guest:
     sta boot_fault_ip
     lda cpu8088_state+CPU_IP+1
     sta boot_fault_ip+1
+    lda cpu8088_state+CPU_SS
+    sta boot_fault_ss
+    lda cpu8088_state+CPU_SS+1
+    sta boot_fault_ss+1
+    lda cpu8088_state+CPU_SP
+    sta boot_fault_sp
+    lda cpu8088_state+CPU_SP+1
+    sta boot_fault_sp+1
+    jsr install_genxt_boot_ivt
+    bcc :+
+    lda #CPU_STEP_MEMORY
+    sta boot_failure_status
+    jmp @boot_failed
+:
     jsr cpu8088_step
     sta boot_failure_status
     cmp #CPU_STEP_OK
@@ -295,22 +338,41 @@ boot_guest:
 
     jsr host_keyboard_poll
     inc boot_autokey_counter
+    lda boot_autokey_sent
     bne :+
-    ; "Y" satisfies the Generic XT POST "Continue?" prompt and also counts
-    ; as the arbitrary key requested before booting drive A.
+    lda cpu8088_state+CPU_CS
+    bne :+
+    lda cpu8088_state+CPU_CS+1
+    cmp #$F0
+    bne :+
+    lda cpu8088_state+CPU_IP+1
+    cmp #$F9
+    bne :+
+    lda cpu8088_state+CPU_IP
+    cmp #$80
+    bcc :+
+    cmp #$A3
+    bcs :+
+    lda #$01
+    sta boot_autokey_sent
+    ; Answer the Generic XT "Continue?" prompt after POST has initialized its
+    ; keyboard state. The BIOS accepts ASCII Y/y, not a function key.
     lda #$15                    ; XT set-1 Y make code
     jsr io_keyboard_push
+    lda #$95                    ; XT set-1 Y break code
+    jsr io_keyboard_push
+    jsr io_keyboard_service
+    jsr io_keyboard_service
+    jsr io_keyboard_service
     lda #$01
     jsr pic_request_irq
 :
-    jsr pic_service
-    inc boot_video_divider
-    bne @skip_video
     jsr cga_render_text_40
     jsr display_fdc_runtime
 @skip_video:
     jmp @boot_batch
 @boot_failed:
+    jsr capture_boot_fault_context
     jsr cga_render_text_40
     lda cpu8088_last_opcode
     pha
@@ -325,6 +387,58 @@ boot_guest:
     jsr display_boot_failure
     jsr display_fdc_runtime
     jmp diagnostic_done
+
+install_genxt_boot_ivt:
+    lda boot_genxt_ivt_ready
+    bne @done
+    lda cpu8088_state+CPU_CS
+    bne @done
+    lda cpu8088_state+CPU_CS+1
+    cmp #$F0
+    bne @done
+    lda cpu8088_state+CPU_IP
+    cmp #$80
+    bne @done
+    lda cpu8088_state+CPU_IP+1
+    cmp #$F9
+    bne @done
+
+    lda #$20
+    sta cpu8088_phys_addr
+    lda #$00
+    sta cpu8088_phys_addr+1
+    sta cpu8088_phys_addr+2
+    sta boot_genxt_ivt_index
+@copy_vector:
+    ldx boot_genxt_ivt_index
+    lda genxt_boot_vector_offsets,x
+    jsr cpu8088_mem_write_u8
+    bcs @failed
+    jsr increment_phys_addr
+    inc boot_genxt_ivt_index
+    ldx boot_genxt_ivt_index
+    lda genxt_boot_vector_offsets,x
+    jsr cpu8088_mem_write_u8
+    bcs @failed
+    jsr increment_phys_addr
+    lda #$00
+    jsr cpu8088_mem_write_u8
+    bcs @failed
+    jsr increment_phys_addr
+    lda #$F0
+    jsr cpu8088_mem_write_u8
+    bcs @failed
+    jsr increment_phys_addr
+    inc boot_genxt_ivt_index
+    lda boot_genxt_ivt_index
+    cmp #genxt_boot_vector_offsets_size
+    bne @copy_vector
+    lda #$01
+    sta boot_genxt_ivt_ready
+@done:
+    clc
+@failed:
+    rts
 
 display_boot_failure:
     lda #$01                    ; visible white text on failure screen
@@ -426,6 +540,63 @@ display_boot_failure:
     lda boot_fault_ip
     ldx #$34
     jsr display_hex_byte
+    lda #$09                    ; I
+    sta $0460
+    lda #$13                    ; S
+    sta $0461
+    lda #$3A
+    sta $0462
+    lda cpu8088_interrupt_stage
+    ldx #$64
+    jsr display_hex_byte
+    lda #$13                    ; T
+    sta $0468
+    lda #$3A
+    sta $0469
+    lda cpu8088_stack_stage
+    ldx #$6B
+    jsr display_hex_byte
+    lda #$18                    ; X
+    sta $0470
+    lda #$3A
+    sta $0471
+    lda stack_fail_phys+2
+    ldx #$73
+    jsr display_hex_byte
+    lda stack_fail_phys+1
+    ldx #$76
+    jsr display_hex_byte
+    lda stack_fail_phys
+    ldx #$79
+    jsr display_hex_byte
+    lda #$16                    ; V
+    sta $0490
+    lda #$3A
+    sta $0491
+    lda interrupt_vector
+    ldx #$99
+    jsr display_hex_byte
+    lda #$42                    ; B
+    sta $0498
+    lda #$3A
+    sta $0499
+    lda pic_vector_base
+    ldx #$A1
+    jsr display_hex_byte
+    lda #$4D                    ; M
+    sta $04A8
+    lda #$3A
+    sta $04A9
+    lda pic_mask
+    ldx #$B1
+    jsr display_hex_byte
+    lda #$51                    ; Q
+    sta $04B8
+    lda #$3A
+    sta $04B9
+    lda cpu8088_irq_vector
+    ldx #$C1
+    jsr display_hex_byte
     lda #$10                    ; P
     sta $0450
     lda #$12                    ; R
@@ -519,6 +690,80 @@ display_boot_failure:
     lda fdc_last_st0_read
     ldx #$BE
     jsr display_hex_byte
+    lda #$02                    ; B
+    sta $0760
+    lda #$04                    ; D
+    sta $0761
+    lda #$41                    ; A
+    sta $0762
+    lda #$3A
+    sta $0763
+    lda #<$041A
+    sta cpu8088_phys_addr
+    lda #>$041A
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$04
+    jsr display_hex_byte_row22
+    lda #<$041B
+    sta cpu8088_phys_addr
+    lda #>$041B
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$07
+    jsr display_hex_byte_row22
+    lda #$3A
+    sta $076A
+    lda #<$041C
+    sta cpu8088_phys_addr
+    lda #>$041C
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$0A
+    jsr display_hex_byte_row22
+    lda #<$041D
+    sta cpu8088_phys_addr
+    lda #>$041D
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$0D
+    jsr display_hex_byte_row22
+    lda #$20
+    sta $0770
+    lda #$42                    ; B
+    sta $0771
+    lda #$44                    ; D
+    sta $0772
+    lda #$41                    ; A
+    sta $0773
+    lda #$3A
+    sta $0774
+    lda #<$041E
+    sta cpu8088_phys_addr
+    lda #>$041E
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$05
+    jsr display_hex_byte_at
+    lda #<$041F
+    sta cpu8088_phys_addr
+    lda #>$041F
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$08
+    jsr display_hex_byte_at
     rts
 
 ; Keep a compact live FDC/PIC trace on the host's last screen row.  This is
@@ -535,6 +780,36 @@ display_fdc_runtime:
     inx
     cpx #$28
     bne @color
+    lda #$10                    ; K
+    sta $0770
+    lda #$31                    ; 1
+    sta $0771
+    lda #$3A
+    sta $0772
+    lda pic_irq1_requests
+    ldx #$04
+    jsr display_hex_byte_row22
+    lda pic_irq1_deliveries
+    ldx #$07
+    jsr display_hex_byte_row22
+    lda #$08                    ; H
+    sta $077A
+    lda #$16                    ; V
+    sta $077B
+    lda #$3A
+    sta $077C
+    lda cpu8088_irq_vector
+    ldx #$1D
+    jsr display_hex_byte_row22
+    lda #$0C                    ; L
+    sta $077F
+    lda #$16                    ; V
+    sta $0780
+    lda #$3A
+    sta $0781
+    lda interrupt_vector
+    ldx #$22
+    jsr display_hex_byte_row22
     lda #$06                    ; F
     sta $07C0
     lda #$04                    ; D
@@ -590,6 +865,187 @@ display_fdc_runtime:
     lda cpu8088_last_opcode
     ldx #$0F
     jsr display_hex_byte_row23
+    lda #$20                    ; space
+    sta $07A9
+    lda #$53                    ; S
+    sta $07AA
+    lda #$3A
+    sta $07AB
+    lda boot_fault_ss+1
+    ldx #$0D
+    jsr display_hex_byte_row23
+    lda boot_fault_ss
+    ldx #$0F
+    jsr display_hex_byte_row23
+    lda #$3A
+    sta $07B0
+    lda boot_fault_sp+1
+    ldx #$12
+    jsr display_hex_byte_row23
+    lda boot_fault_sp
+    ldx #$14
+    jsr display_hex_byte_row23
+    lda #$20
+    sta $07B7
+    lda #$42                    ; B
+    sta $07B8
+    lda #$3A
+    sta $07B9
+    lda boot_stack_bytes
+    ldx #$1B
+    jsr display_hex_byte_row23
+    lda boot_stack_bytes+1
+    ldx #$1D
+    jsr display_hex_byte_row23
+    lda boot_stack_bytes+2
+    ldx #$1F
+    jsr display_hex_byte_row23
+    lda boot_stack_bytes+3
+    ldx #$21
+    jsr display_hex_byte_row23
+    lda #$02                    ; B
+    sta $0760
+    lda #$44                    ; D
+    sta $0761
+    lda #$41                    ; A
+    sta $0762
+    lda #$3A
+    sta $0763
+    lda #<$041A
+    sta cpu8088_phys_addr
+    lda #>$041A
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$04
+    jsr display_hex_byte_row22
+    lda #<$041B
+    sta cpu8088_phys_addr
+    lda #>$041B
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$07
+    jsr display_hex_byte_row22
+    lda #$3A
+    sta $076A
+    lda #<$041C
+    sta cpu8088_phys_addr
+    lda #>$041C
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$0A
+    jsr display_hex_byte_row22
+    lda #<$041D
+    sta cpu8088_phys_addr
+    lda #>$041D
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$0D
+    jsr display_hex_byte_row22
+    lda #$10                    ; K
+    sta $07D4
+    lda #$04                    ; E
+    sta $07D5
+    lda #$18                    ; Y
+    sta $07D6
+    lda #$3A
+    sta $07D7
+    lda #<$041E
+    sta cpu8088_phys_addr
+    lda #>$041E
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$14
+    jsr display_hex_byte_at
+    lda #<$041F
+    sta cpu8088_phys_addr
+    lda #>$041F
+    sta cpu8088_phys_addr+1
+    lda #$00
+    sta cpu8088_phys_addr+2
+    jsr cpu8088_mem_read_u8
+    ldx #$17
+    jsr display_hex_byte_at
+    lda #$0B                    ; K
+    sta $0748
+    lda #$11                    ; Q
+    sta $0749
+    lda #$3A
+    sta $074A
+    lda io_keyboard_count
+    ldx #$04
+    jsr display_hex_byte_at
+    lda io_keyboard_wantirq
+    ldx #$07
+    jsr display_hex_byte_at
+    lda io_keyboard_key_waiting
+    ldx #$0A
+    jsr display_hex_byte_at
+    lda io_keyboard_pa
+    ldx #$0D
+    jsr display_hex_byte_at
+    rts
+
+capture_boot_fault_context:
+    jsr capture_fault_bytes
+    jsr capture_stack_bytes
+    rts
+
+capture_fault_bytes:
+    jsr cpu8088_cs_ip_physical
+    jsr cpu8088_segment_offset_physical
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_bytes
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_bytes+1
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_bytes+2
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_fault_bytes+3
+    rts
+
+capture_stack_bytes:
+    lda boot_fault_ss
+    sta cpu8088_segment
+    lda boot_fault_ss+1
+    sta cpu8088_segment+1
+    lda boot_fault_sp
+    sta cpu8088_offset
+    lda boot_fault_sp+1
+    sta cpu8088_offset+1
+    jsr cpu8088_segment_offset_physical
+    jsr cpu8088_mem_read_u8
+    sta boot_stack_bytes
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_stack_bytes+1
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_stack_bytes+2
+    jsr increment_phys_addr
+    jsr cpu8088_mem_read_u8
+    sta boot_stack_bytes+3
+    rts
+
+increment_phys_addr:
+    inc cpu8088_phys_addr
+    bne :+
+    inc cpu8088_phys_addr+1
+    bne :+
+    inc cpu8088_phys_addr+2
+:
     rts
 
 display_hex_byte_row23:
@@ -605,6 +1061,21 @@ display_hex_byte_row23:
     and #$0F
     jsr display_hex_nibble
     sta $0798,x
+    rts
+
+display_hex_byte_row22:
+    pha
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jsr display_hex_nibble
+    sta $0760,x
+    inx
+    pla
+    and #$0F
+    jsr display_hex_nibble
+    sta $0760,x
     rts
 
 display_hex_byte:
@@ -1031,9 +1502,16 @@ stepper_steps_remaining: .res 1
 boot_steps_remaining: .res 1
 boot_video_divider: .res 1
 boot_autokey_counter: .res 1
+boot_autokey_sent: .res 1
 boot_failure_status: .res 1
 
 .segment "RODATA"
+genxt_boot_vector_offsets:
+    .word $FEA5,$E987,$FF23,$FF23,$FF23,$FF23,$EF57,$FF23
+    .word $F065,$F84D,$F841,$EC59,$E739,$F859,$E82E,$EFD2
+    .word $FF23,$E6F2,$FE6E,$FF53,$FF53,$F0A4,$EFC7,$0000
+genxt_boot_vector_offsets_size = *-genxt_boot_vector_offsets
+
 msg_title:         .byte $0D, "C64 X86 PHASE 0", $0D, $00
 msg_turbo_ok:      .byte "TURBO CONTROL: OK", $0D, $00
 msg_turbo_fail:    .byte "TURBO CONTROL: NOT AVAILABLE", $0D, $00
@@ -1046,3 +1524,7 @@ msg_cpu_fail:      .byte "8088 RESET VECTOR: FAILED", $0D, $00
 msg_stepper_ok:    .byte "8088 FETCH/STEP: OK", $0D, $00
 msg_stepper_fail:  .byte "8088 FETCH/STEP: FAILED", $0D, $00
 msg_cga_fail:      .byte "CGA TEXT RENDER: FAILED", $0D, $00
+
+
+
+

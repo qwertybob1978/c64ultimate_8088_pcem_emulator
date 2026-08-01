@@ -73,6 +73,45 @@ Reference model tracing revealed exact ports accessed during tight loop:
 
 ## Next bounded task — Milestone D
 
+## Diagnostic checkpoint — 2026-08-01
+
+Tested path:
+
+- `python -m unittest tests.test_cpu8088_reference tests.test_phase0_contracts`:
+   41 tests passed.
+- Native `build.ps1`: passed.
+- Sv a rDOS CRT regeneration: 49 banks, 402256 bytes.
+- VICE 3.10 with 16 MiB REU and 2,000,000,000-cycle limit: reached the limit,
+   but remained blue.
+
+Observed failure after the IRQ stack guard:
+
+- `CS:F000 IP:E003`, opcode `$04` (`CPU_STEP_INVALID`).
+- Interrupt stage `04`, stack stage `02`: interrupt frame writes completed and
+   vector-table reads began.
+- FDC command/read/IRQ6 counters remain zero.
+- The displayed interrupt vector was previously ambiguous because diagnostic
+   fields survived the CPU smoke test; reset now clears those fields.
+
+The requested-vector diagnostic now displays `Q:01` while the vector entering
+`cpu8088_interrupt` displays `V:00`. This proves the IRQ request is being
+latched as vector 1, but the service boundary passes zero into interrupt entry.
+FDC behavior remains unchanged because no FDC command/read/IRQ6 activity has
+begun. The next fix should trace the accumulator across
+`cpu8088_service_pending_interrupt` and `jsr cpu8088_interrupt`, then retest
+the same packaged VICE path.
+
+Status update 2026-08-01: the former F44D hypothesis is closed. Reference
+execution shows F44D is a reusable CGA `$3DA` status helper with `DX=$3DA` and
+alternating `$00/$09` reads; it is not an FDC MSR or digital-input poll. The
+F78D label is also a trace-script error: that region performs CRTC writes at
+`$3B4/$3B5` and `$3D4/$3D5`. Do not modify FDC behavior for either address.
+
+Current work resumes at the later 2-billion-cycle native failure documented in
+`QWEN_EXECUTION_PLAN.md`: approximate `CS:IP=0000:7351`, opcode `$C0`.
+Capture fresh status, prior instructions, SS:SP bytes, media bytes, DMA state,
+and cache state before implementing a fix.
+
 After confirming Milestone C allows POST progress past F78D stall:
 
 ### Option A: If BIOS still stalls at new location

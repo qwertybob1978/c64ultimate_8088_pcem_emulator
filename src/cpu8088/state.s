@@ -10,8 +10,12 @@
 .export cpu8088_repeat_prefix
 
 .import cpu8088_irq_pending
+.import cpu8088_irq_vector
 .import cpu8088_nmi_pending
 .import cpu8088_interrupt_shadow
+.import interrupt_vector
+.import cpu8088_interrupt_stage
+.import cpu8088_stack_stage
 
 .segment "BSS"
 cpu8088_state: .res CPU_STATE_SIZE
@@ -30,8 +34,12 @@ cpu8088_reset:
     sta cpu8088_halted
     sta cpu8088_last_cycles
     sta cpu8088_irq_pending
+    sta cpu8088_irq_vector
     sta cpu8088_nmi_pending
     sta cpu8088_interrupt_shadow
+    sta interrupt_vector
+    sta cpu8088_interrupt_stage
+    sta cpu8088_stack_stage
     ldx #CPU_STATE_SIZE-1
 @clear:
     sta cpu8088_state,x
