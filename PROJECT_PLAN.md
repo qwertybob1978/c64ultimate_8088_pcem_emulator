@@ -23,12 +23,14 @@ floppy image, provide readable text output, accept keyboard input, and run
 ordinary real-mode software. Exact IBM PC bus timing, copy-protection support,
 and demo-grade cycle accuracy are not first-release goals.
 
-Active acceptance target: boot `third_party/svardos/svdos-360K-disk-1.img` with
-the Generic XT BIOS to a usable DOS prompt in the packaged CRT/VICE path,
+Active acceptance target: boot the former MS-DOS 3.30 `DISK01.IMG` with the
+Generic XT BIOS to a usable DOS prompt in the packaged CRT/VICE path,
 then exercise keyboard input and a read-only DOS command before expanding the
 scope of the floppy workload.
 
-Current status (2026-08-01): POST now bypasses the actual Generic XT BIOS
+Current status (2026-08-01): The build now prefers the former MS-DOS 3.30
+`DISK01.IMG` and falls back to SvarDOS when the local MS-DOS cache is absent.
+POST now bypasses the actual Generic XT BIOS
 speaker-delay entry at `F000:F9D4`, fixing the previously observed native loop
 at `F000:F9E8`. The earlier `F000:F78D` theory was disproven: that address is
 normal CGA CRTC setup code. Host contracts, CRT packaging, and the existing

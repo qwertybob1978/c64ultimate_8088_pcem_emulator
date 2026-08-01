@@ -15,7 +15,10 @@ The current verified commit is:
 aa6accc fix: bypass actual BIOS speaker delay
 ```
 
-The packaged media target is `third_party/svardos/svdos-360K-disk-1.img`.
+The SvarDOS checkpoint used `third_party/svardos/svdos-360K-disk-1.img`.
+The current build now prefers the former MS-DOS 3.30 image at
+`.cache/media/msdos330/**/DISK01.IMG`; SvarDOS remains the fallback when that
+local cache is unavailable.
 The BIOS helper at `F000:F78D` was investigated and is normal Generic XT BIOS
 CGA CRTC code; it is not a hardware stall and must not be patched without new
 evidence.

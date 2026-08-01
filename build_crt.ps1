@@ -4,11 +4,12 @@ $ErrorActionPreference = "Stop"
 if ($LASTEXITCODE -ne 0) { throw "payload build failed with exit code $LASTEXITCODE" }
 
 $build = Join-Path $PSScriptRoot "build"
+$msdosImage = Get-ChildItem (Join-Path $PSScriptRoot ".cache/media/msdos330") -Recurse -Filter DISK01.IMG -ErrorAction SilentlyContinue | Select-Object -First 1
 $svardosImage = Join-Path $PSScriptRoot "third_party/svardos/svdos-360K-disk-1.img"
-if (Test-Path $svardosImage) {
+if ($msdosImage) {
+    $diskImage = $msdosImage
+} elseif (Test-Path $svardosImage) {
     $diskImage = Get-Item $svardosImage
-} else {
-    $diskImage = Get-ChildItem (Join-Path $PSScriptRoot ".cache/media/msdos330") -Recurse -Filter DISK01.IMG -ErrorAction SilentlyContinue | Select-Object -First 1
 }
 $portableToolchain = Join-Path $PSScriptRoot ".cache/cc65/bin"
 $assembler = Get-Command ca65 -ErrorAction SilentlyContinue
