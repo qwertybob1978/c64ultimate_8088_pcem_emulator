@@ -220,8 +220,13 @@ cpu8088_step:
     long_beq @alu_modrm
     lda cpu8088_last_opcode
 
-    cmp #$90                    ; NOP
-    long_beq @nop
+    cmp #$90                    ; XCHG AX,r16 (90h is XCHG AX,AX/NOP)
+    bcs :+
+    jmp @check_after_xchg_accumulator
+:
+    cmp #$98
+    long_bcc @xchg_accumulator
+@check_after_xchg_accumulator:
     cmp #$98                    ; CBW - Convert Byte to Word
     long_beq @cbw
     cmp #$9C                    ; PUSHF
@@ -2961,6 +2966,31 @@ cpu8088_step:
 @low_byte_register:
     asl a
     tax
+    rts
+
+@xchg_accumulator:
+    lda #$01
+    sta operand_width
+    lda cpu8088_last_opcode
+    and #$07
+    jsr @register_offset
+    stx destination_offset
+    ldx #CPU_AX
+    jsr @read_register_to_left
+    ldx destination_offset
+    jsr @read_register_to_right
+    lda alu_right
+    sta cpu8088_state+CPU_AX
+    lda alu_right+1
+    sta cpu8088_state+CPU_AX+1
+    ldx destination_offset
+    lda alu_left
+    sta cpu8088_state,x
+    lda alu_left+1
+    sta cpu8088_state+1,x
+    lda #$03
+    sta cpu8088_last_cycles
+    lda #CPU_STEP_OK
     rts
 
 @nop:
