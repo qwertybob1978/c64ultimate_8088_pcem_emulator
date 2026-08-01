@@ -314,6 +314,20 @@ But if P1/P2 are one or two steps before fault at E003, they should show:
 
 If P2 CS=F000 but CPU starts with CS=FFFF, then JMP FAR must have already executed by step N (the P2 step).
 
+**Critical Question:** Why does diagnostic show `CS=F000` if CPU starts with `CS=FFFF`?
+
+Possible explanation: The JMP FAR F000:E05B instruction atomically sets both CS and IP in one operation. So:
+- Step 0: FFFF:0000 (pre-fetch vector)
+- Step 1: Execute JMP FAR → fetch 5 bytes, decode jump parameters
+- Step 2+: Jump to F000:E05B (CS now F000, IP now E05B)
+
+But if P1/P2 are one or two steps before fault at E003, they should show:
+- P2 = Step N: (some instruction)
+- P1 = Step N+1: (some instruction)
+- Fault = Step N+2: F000:E003
+
+If P2 CS=F000 but CPU starts with CS=FFFF, then JMP FAR must have already executed by step N (the P2 step).
+
 **Resolution Path:**
 
 1. Examine P1 bytes from latest VICE run (screenshot/P1B diagnostic field)
@@ -321,5 +335,60 @@ If P2 CS=F000 but CPU starts with CS=FFFF, then JMP FAR must have already execut
 3. If P1 shows JMP is executing: CPU state init is correct, proceed to step 4
 4. If P1 shows data bytes: vector fetch is broken, investigate CPU reset in src/cpu8088/state.s
 5. Determine: Does P1 IP show sequential advance (E003 → E004?) or jump (E05B → ????)
+
+## Diagnostic Challenge — P1/P2 Value Extraction (2026-08-01)
+
+**Problem:** P1B and P2B diagnostic fields are rendered to C64 screen RAM (offsets $0544-$054B and $0551-$0558) as hex characters. These values exist only at runtime in C64 memory, not in cartridge ROM.
+
+**Attempts to extract values:**
+1. ✗ Direct cartridge binary read: Variables at 0x73B1 and 0x73BB are runtime BSS, not in ROM
+2. ✗ VICE debug log: Contains no memory dumps, only hardware initialization logging
+3. ✓ Screenshot visual reading: Difficult due to C64 font rendering making hex digit alignment ambiguous
+4. ~  VICE monitor dump: Would require custom script to invoke VICE monitor and dump RAM
+
+**Extracted variable addresses from symbol table:**
+- boot_prev2_bytes: 0x73B1 (4 bytes)
+- boot_prev_bytes: 0x73BB (4 bytes)
+- These are allocated in C64 RAM during cartridge execution
+
+**Display rendering confirmed working:**
+- hwtest.s lines 688-758: P1B display writes boot_prev_bytes[0-3] as 8 hex digits to screen offsets $0544-$054B
+- hwtest.s lines 749-758: P2B display writes boot_prev2_bytes[0-3] as 8 hex digits to screen offsets $0551-$0558
+- Both use display_hex_nibble subroutine (line 1422) for proper 8088 instruction byte → hex character conversion
+- Screenshot confirms rendering occurs (display present, blue border end state visible)
+
+**Workaround decision:** Proceed with analysis based on known control-flow facts rather than attempting to extract screenshot hex values. P1/P2 extraction can be addressed in next iteration if needed.
+
+## Analysis: CPU Reset Vector Execution (2026-08-01 - CRITICAL FINDING)
+
+**Setup discovered:**
+- BIOS ROM at physical 0xFE000-0xFFFFF (8 KB)
+- CPU reset vector at FFFF:0000 (physical 0xFFFF0) = F000*16 + FFF0 ✓
+- Reset vector contains: EA 5B E0 00 F0 (JMP FAR F000:E05B, 5 bytes)
+- Destination E05B is where actual BIOS code begins (past banner at 0x00-0x4F)
+
+**Mismatch identified:**
+- CPU should start at CS=FFFF, IP=0000
+- Should fetch and execute 5-byte JMP FAR
+- Should land at CS=F000, IP=E05B (actual code)
+- **ACTUAL:** First fault at CS=F000, IP=E003 (INSIDE banner data, 0x58 bytes before code start)
+
+**Two hypotheses:**
+
+1. **Vector fetch is broken:** CPU not fetching reset vector correctly, instead starting execution at F000:E000 and sequential-reading into banner
+   - Evidence: CS=F000 suggests post-jump state, but IP=E003 is wrong
+   - Fix location: src/cpu8088/state.s cpu8088_reset function or CPU step logic
+
+2. **JMP FAR execution is broken:** Reset vector is fetched but JMP FAR doesn't work, falls through or misinterprets bytes
+   - Evidence: IP=E003 could be sequential read of JMP opcode bytes themselves (EA=234, 5B=91, E0=224, 00=0, F0=240)
+   - Fix location: src/cpu8088/instructions.s or far-jump decode/execute logic
+
+**Most likely:** Option 2 (JMP FAR decode bug)
+- If P1 and P2 instruction bytes showed the JMP opcode sequence, that would indicate vector was fetched
+- The CPU may be reading/executing the JMP instruction but decoding destination wrong
+- Far JMP should be: operand IP (LE), operand CS (LE) = 5B E0, 00 F0 → jump to F000:E05B
+- But execution landed at F000:E003 instead
+
+**Next immediate task:** Add diagnostic to capture exact instruction bytes from reset vector location, confirm they match JMP pattern, and trace far-jump decode.
 
 
